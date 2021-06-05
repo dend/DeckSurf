@@ -1,9 +1,13 @@
 ﻿using HidSharp;
+using piglet.SDK.Core;
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace piglet
 {
@@ -16,118 +20,103 @@ namespace piglet
         // PID_SD_XL = "006c"; // 108
         //static string[] PID_STRINGS = new string[] { "0060", "006d", "0063", "006c" };
 
-        static int SUPPORTED_VID = 4057;
-        static int[] SUPPORTED_PIDS = new int[] { 96, 109, 99, 108 };
-
-        const int IMAGE_REPORT_LENGTH = 1024;
-        const int IMAGE_REPORT_HEADER_LENGTH = 8;
-        const int IMAGE_REPORT_PAYLOAD_LENGTH = IMAGE_REPORT_LENGTH - IMAGE_REPORT_HEADER_LENGTH;
-
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-            var deviceList = DeviceList.Local.GetHidDevices();
-
-            foreach(var device in deviceList)
-            {
-                bool supported = IsSupported(device.VendorID, device.ProductID);
-                if (supported)
-                {
-                    Console.WriteLine("Found supported device!");
-                    SetKey(0, @"C:\Users\Librarian\Downloads\test.jpg", device.VendorID, device.ProductID);
-                }
-            }
-
-            Console.ReadKey();
+            return SetupCommandLine(args).Result;
         }
 
-        /// <summary>
-        /// Sets the visual appearance of a key to a pre-defined image.
-        /// </summary>
-        /// <param name="keyId">Numeric index for the key.</param>
-        /// <param name="imagePath">Local path to the JPEG image file.</param>
-        /// <param name="vid">VID for the target device.</param>
-        /// <param name="pid">PID for the target device.</param>
-        /// <returns>True if the change was successful. False if the change failed.</returns>
-        static bool SetKey(byte keyId, string imagePath, int vid, int pid)
+        private static Task<int> SetupCommandLine(string[] args)
         {
-            var device = DeviceList.Local.GetHidDeviceOrNull(vid, pid);
+            var rootCommand = new RootCommand();
 
-            if (device != null)
+            // Command to write content to the StreamDeck.
+            var writeCommand = new Command("write")
             {
-                if (File.Exists(imagePath))
-                {
-                    byte[] imageData = File.ReadAllBytes(imagePath);
+                Handler = CommandHandler.Create<int, int, string, string>(HandleWriteCommand)
+            };
 
-                    var iteration = 0;
-                    var remainingBytes = imageData.Length;
+            writeCommand.AddOption(new Option<int>(
+                   aliases: new[] { "--device-index", "-d" },
+                   getDefaultValue: () => -1,
+                   description: "Index of the connected device, to which a key setting should be written.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
 
-                    using (var stream = device.Open())
-                    {
-                        while (remainingBytes > 0)
-                        {
-                            var sliceLength = Math.Min(remainingBytes, IMAGE_REPORT_PAYLOAD_LENGTH);
-                            var bytesSent = iteration * IMAGE_REPORT_PAYLOAD_LENGTH;
+            writeCommand.AddOption(new Option<int>(
+                   aliases: new[] { "--key-index", "-k" },
+                   getDefaultValue: () => -1,
+                   description: "Index of the key that needs to be written.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
 
-                            byte finalizer = sliceLength == bytesSent ? (byte)1 : (byte)0;
-                            var bitmaskedLength = (byte)(sliceLength & 0xFF);
-                            var shiftedLength = (byte)(sliceLength >> IMAGE_REPORT_HEADER_LENGTH);
-                            var bitmaskedIteration = (byte)(iteration & 0xFF);
-                            var shiftedIteration = (byte)(iteration >> IMAGE_REPORT_HEADER_LENGTH);
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--action", "-a" },
+                   getDefaultValue: () => string.Empty,
+                   description: "ID for the action that needs to be executed.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
 
-                            byte[] header = new byte[] { 0x02, 0x07, keyId, finalizer, bitmaskedLength, shiftedLength, bitmaskedIteration, shiftedIteration };
-                            var payload = header.Concat(new ArraySegment<byte>(imageData, bytesSent, sliceLength)).ToArray();
-                            var padding = new byte[IMAGE_REPORT_LENGTH - payload.Length];
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--action-args", "-g" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Arguments for the defined action.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
 
-                            var finalPayload = payload.Concat(padding).ToArray();
-                            stream.Write(finalPayload);
+            // Command to list connected StreamDeck devices.
+            var listCommand = new Command("list")
+            {
+                Handler = CommandHandler.Create(HandleListCommand)
+            };
 
-                            remainingBytes -= sliceLength;
-                            iteration++;
-                        }
-                    }
-                    return true;
-                }
-            }
-            return false;
+            // Command to listen to events from the StreamDeck.
+            var listenCommand = new Command("listen")
+            {
+                Handler = CommandHandler.Create<int>(HandleListenCommand)
+            };
+            listenCommand.AddOption(new Option<int>(
+                   aliases: new[] { "--device-index", "-d" },
+                   getDefaultValue: () => -1,
+                   description: "Index of the connected device that Piglet should listen to.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            rootCommand.AddCommand(writeCommand);
+            rootCommand.AddCommand(listCommand);
+            rootCommand.AddCommand(listenCommand);
+
+            return rootCommand.InvokeAsync(args);
         }
 
-        /// <summary>
-        /// Parse the vendor and product IDs from the device path.
-        /// </summary>
-        /// <param name="id">Path to the HID device.</param>
-        /// <returns>Null if there is no matching string. A key-value pair with VID and PID if a match is found.</returns>
-        static KeyValuePair<string, string>? GetDeviceId(string id)
+        private static void HandleListenCommand(int deviceIndex)
         {
-            string deviceRegex = "vid_([a-zA-Z0-9]+){1}.+pid_([a-zA-Z0-9]+)";
-            var matches = Regex.Matches(id, deviceRegex);
-
-            if (matches != null && matches.Count > 0)
-            {
-                foreach(var match in matches)
-                {
-                    var vid = ((Match)match).Groups[1];
-                    var pid = ((Match)match).Groups[2];
-
-                    return new KeyValuePair<string, string>(vid.Value, pid.Value);
-                }
-            }
-            return null;
+            throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Determines 
-        /// </summary>
-        /// <param name="vid"></param>
-        /// <param name="pid"></param>
-        /// <returns></returns>
-        static bool IsSupported(int vid, int pid)
+        private static void HandleListCommand()
         {
-            if (vid == SUPPORTED_VID && SUPPORTED_PIDS.Any(x => x == pid))
+            var devices = DeviceManager.GetDeviceList();
+            Console.WriteLine($"{"| Device Name",-21} {"| VID",-10} {"| PID",-10}");
+            Console.WriteLine("===========================================");
+            foreach (var device in devices)
             {
-                return true;
+                Console.WriteLine($"{"| " + device.Name,-21} {"| " + device.VID,-10} {"| " + device.PID,-10}");
             }
-            return false;
+        }
+
+        private static void HandleWriteCommand(int deviceIndex, int keyIndex, string action, string actionArgs)
+        {
+            throw new NotImplementedException();
         }
     }
 }

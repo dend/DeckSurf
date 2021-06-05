@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "piglet": {
+      "commandName": "Project",
+      "commandLineArgs": "list"
+    }
+  }
+}
