@@ -2,7 +2,7 @@
   "profiles": {
     "piglet": {
       "commandName": "Project",
-      "commandLineArgs": "listen --device-index 0"
+      "commandLineArgs": "list"
     }
   }
 }

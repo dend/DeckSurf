@@ -9,7 +9,6 @@ namespace piglet.SDK.Core
     public class DeviceManager
     {
         private static int SUPPORTED_VID = 4057;
-        private static int[] SUPPORTED_PIDS = new int[] { 96, 109, 99, 108 };
 
         private const int IMAGE_REPORT_LENGTH = 1024;
         private const int IMAGE_REPORT_HEADER_LENGTH = 8;
@@ -44,7 +43,7 @@ namespace piglet.SDK.Core
         /// <returns></returns>
         private static bool IsSupported(int vid, int pid)
         {
-            if (vid == SUPPORTED_VID && SUPPORTED_PIDS.Any(x => x == pid))
+            if (vid == SUPPORTED_VID && Enum.IsDefined(typeof(DeviceModel), (byte)pid))
             {
                 return true;
             }
