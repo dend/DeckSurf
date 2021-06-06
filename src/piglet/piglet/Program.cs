@@ -7,6 +7,7 @@ using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace piglet
@@ -100,7 +101,24 @@ namespace piglet
 
         private static void HandleListenCommand(int deviceIndex)
         {
-            throw new NotImplementedException();
+            var devices = DeviceManager.GetDeviceList();
+            if (devices.Any())
+            {
+                var exitSignal = new ManualResetEvent(false);
+
+                var device = devices.ElementAt(deviceIndex);
+                device.OnButtonPress += (s, e) =>
+                {
+                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
+                };
+                device.InitializeDevice();
+
+                exitSignal.WaitOne();
+            }
+            else
+            {
+                Console.WriteLine("No supported devices connected.");
+            }
         }
 
         private static void HandleListCommand()
