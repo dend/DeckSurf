@@ -14,13 +14,6 @@ namespace piglet
 {
     class Program
     {
-        //const string VID_MANUFACTURER = "0fd9"; // 4057 for integer
-        // PID_SD_ORIGINAL = "0060"; // 96
-        // PID_SD_ORIGINAL_V2 = "006d";  // 109
-        // PID_SD_MINI = "0063"; // 99
-        // PID_SD_XL = "006c"; // 108
-        //static string[] PID_STRINGS = new string[] { "0060", "006d", "0063", "006c" };
-
         static int Main(string[] args)
         {
             return SetupCommandLine(args).Result;

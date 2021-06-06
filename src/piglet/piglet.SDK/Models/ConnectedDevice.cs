@@ -17,6 +17,7 @@ namespace piglet.SDK.Models
         public int PID { get; set; }
         public string Path { get; set; }
         public string Name { get; set; }
+        public DeviceModel Model { get; set; }
 
         public delegate void ReceivedButtonPressHandler(object source, ButtonPressEventArgs e);
         public event ReceivedButtonPressHandler OnButtonPress;
@@ -27,12 +28,13 @@ namespace piglet.SDK.Models
         {
         }
 
-        public ConnectedDevice(int vid, int pid, string path, string name)
+        public ConnectedDevice(int vid, int pid, string path, string name, DeviceModel model)
         {
             VID = vid;
             PID = pid;
             Path = path;
             Name = name;
+            Model = model;
         }
 
         public void InitializeDevice()

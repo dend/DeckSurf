@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "piglet", "piglet\piglet.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "piglet.SDK", "piglet.SDK\piglet.SDK.csproj", "{D43C5F7D-5A6A-4C89-BDDA-2AFF4C9EC216}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "piglet.Plugin.Barn", "piglet.Plugin.Barn\piglet.Plugin.Barn.csproj", "{0ED6CEEF-C035-442D-9BA6-DEDCA5D687F8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{D43C5F7D-5A6A-4C89-BDDA-2AFF4C9EC216}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D43C5F7D-5A6A-4C89-BDDA-2AFF4C9EC216}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D43C5F7D-5A6A-4C89-BDDA-2AFF4C9EC216}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0ED6CEEF-C035-442D-9BA6-DEDCA5D687F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0ED6CEEF-C035-442D-9BA6-DEDCA5D687F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0ED6CEEF-C035-442D-9BA6-DEDCA5D687F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0ED6CEEF-C035-442D-9BA6-DEDCA5D687F8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

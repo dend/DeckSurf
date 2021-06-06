@@ -28,7 +28,7 @@ namespace piglet.SDK.Core
                 bool supported = IsSupported(device.VendorID, device.ProductID);
                 if (supported)
                 {
-                    connectedDevices.Add(new ConnectedDevice(device.VendorID, device.ProductID, device.DevicePath, device.GetFriendlyName()));
+                    connectedDevices.Add(new ConnectedDevice(device.VendorID, device.ProductID, device.DevicePath, device.GetFriendlyName(), (DeviceModel)device.ProductID));
                 }
             }
 
