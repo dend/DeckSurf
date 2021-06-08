@@ -8,6 +8,5 @@ namespace piglet.SDK.Models
         public string Version { get; set; }
         public string Author { get; set; }
         public string Website { get; set; }
-        public IEnumerable<DeviceModel> SupportedModels { get; set; }
     }
 }

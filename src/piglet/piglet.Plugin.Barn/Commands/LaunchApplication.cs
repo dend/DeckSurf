@@ -8,21 +8,8 @@ namespace piglet.Plugin.Barn.Commands
     [CompatibleWith(DeviceModel.XL)]
     class LaunchApplication : ICommand
     {
-        public string Name
-        {
-            get
-            {
-                return "Launch Application";
-            }
-        }
-
-        public string Description
-        {
-            get
-            {
-                return "Launches an application on the machine.";
-            }
-        }
+        public string Name => "Launch Application";
+        public string Description => "Launches an application on the machine.";
 
         public void ExecuteOnAction(int keyIndex, string arguments)
         {

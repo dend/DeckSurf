@@ -1,15 +1,35 @@
-﻿using piglet.SDK.Interfaces;
+﻿using piglet.Plugin.Barn.Commands;
+using piglet.SDK.Interfaces;
 using piglet.SDK.Models;
 using System;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace piglet.Plugin.Barn
 {
     public class Plugin : IPlugin
     {
-        public PluginMetadata GetPluginMetadata()
+        private PluginMetadata _metadata = new()
         {
-            throw new NotImplementedException();
+            Author = "Den Delimarsky",
+            Id = "piglet.Plugin.Barn",
+            Version = "0.0.1-alpha",
+            Website = "https://github.com/dend/piglet"
+        };
+
+        public PluginMetadata Metadata
+        {
+            get
+            {
+                return _metadata;
+            }
+        }
+
+        public List<Type> GetSupportedCommands()
+        {
+            return new List<Type>()
+            { 
+                typeof(LaunchApplication) 
+            };
         }
     }
 }

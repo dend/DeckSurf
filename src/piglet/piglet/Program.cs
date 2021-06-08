@@ -1,12 +1,11 @@
-﻿using HidSharp;
+﻿using piglet.Extensibility;
 using piglet.SDK.Core;
+using piglet.SDK.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +13,8 @@ namespace piglet
 {
     class Program
     {
+        private static IEnumerable<IPlugin> _plugins;
+
         static int Main(string[] args)
         {
             return SetupCommandLine(args).Result;
@@ -21,6 +22,8 @@ namespace piglet
 
         private static Task<int> SetupCommandLine(string[] args)
         {
+            _plugins = Loader.Load<IPlugin>();
+
             var rootCommand = new RootCommand();
 
             // Command to write content to the StreamDeck.
@@ -71,6 +74,12 @@ namespace piglet
                 Handler = CommandHandler.Create(HandleListCommand)
             };
 
+            // Command to list all available plug-ins.
+            var listPluginsCommand = new Command("list-plugins")
+            {
+                Handler = CommandHandler.Create(HandleListPluginsCommand)
+            };
+
             // Command to listen to events from the StreamDeck.
             var listenCommand = new Command("listen")
             {
@@ -87,9 +96,18 @@ namespace piglet
 
             rootCommand.AddCommand(writeCommand);
             rootCommand.AddCommand(listCommand);
+            rootCommand.AddCommand(listPluginsCommand);
             rootCommand.AddCommand(listenCommand);
 
             return rootCommand.InvokeAsync(args);
+        }
+
+        private static void HandleListPluginsCommand()
+        {
+            foreach(var plugin in _plugins)
+            {
+                Console.WriteLine($"{"| " + plugin.Metadata.Id,-21} {"| " + plugin.Metadata.Version,-10} {"| " + plugin.Metadata.Author,-10}");
+            }
         }
 
         private static void HandleListenCommand(int deviceIndex)
