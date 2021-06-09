@@ -68,6 +68,15 @@ namespace piglet
                 AllowMultipleArgumentsPerToken = false
             });
 
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--profile", "-p" },
+                   getDefaultValue: () => string.Empty,
+                   description: "The profile to which the command should be added.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
             // Command to list connected StreamDeck devices.
             var listCommand = new Command("list")
             {
