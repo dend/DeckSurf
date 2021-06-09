@@ -107,6 +107,11 @@ namespace piglet
             foreach(var plugin in _plugins)
             {
                 Console.WriteLine($"{"| " + plugin.Metadata.Id,-21} {"| " + plugin.Metadata.Version,-10} {"| " + plugin.Metadata.Author,-10}");
+                foreach (var command in plugin.GetSupportedCommands())
+                {
+                    var commandInstance = (IPigletCommand)Activator.CreateInstance(command);
+                    Console.WriteLine($"   |_ {commandInstance.Name} ({commandInstance.Description})");
+                }
             }
         }
 

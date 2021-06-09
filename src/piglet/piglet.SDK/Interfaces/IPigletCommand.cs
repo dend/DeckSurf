@@ -1,6 +1,6 @@
 ﻿namespace piglet.SDK.Interfaces
 {
-    public interface ICommand
+    public interface IPigletCommand
     {
         public string Name { get; }
         public string Description { get; }
