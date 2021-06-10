@@ -29,7 +29,7 @@ namespace piglet
             // Command to write content to the StreamDeck.
             var writeCommand = new Command("write")
             {
-                Handler = CommandHandler.Create<int, int, string, string>(HandleWriteCommand)
+                Handler = CommandHandler.Create<int, int, string, string, string>(HandleWriteCommand)
             };
 
             writeCommand.AddOption(new Option<int>(
@@ -157,7 +157,7 @@ namespace piglet
             }
         }
 
-        private static void HandleWriteCommand(int deviceIndex, int keyIndex, string action, string actionArgs)
+        private static void HandleWriteCommand(int deviceIndex, int keyIndex, string action, string actionArgs, string profile)
         {
             throw new NotImplementedException();
         }
