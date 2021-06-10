@@ -6,6 +6,7 @@ using System.Diagnostics;
 namespace piglet.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
+    [ExpectedInteractionFormat(CommandType.ACTION)]
     class LaunchApplication : IPigletCommand
     {
         public string Name => "Launch Application";

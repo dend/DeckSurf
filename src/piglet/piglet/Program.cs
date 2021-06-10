@@ -1,6 +1,8 @@
 ﻿using piglet.Extensibility;
 using piglet.SDK.Core;
 using piglet.SDK.Interfaces;
+using piglet.SDK.Models;
+using piglet.SDK.Util;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -29,7 +31,7 @@ namespace piglet
             // Command to write content to the StreamDeck.
             var writeCommand = new Command("write")
             {
-                Handler = CommandHandler.Create<int, int, string, string, string>(HandleWriteCommand)
+                Handler = CommandHandler.Create<int, int, string, string, string, string, string>(HandleWriteCommand)
             };
 
             writeCommand.AddOption(new Option<int>(
@@ -51,9 +53,27 @@ namespace piglet
             });
 
             writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--action", "-a" },
+                   aliases: new[] { "--plugin", "-l" },
                    getDefaultValue: () => string.Empty,
-                   description: "ID for the action that needs to be executed.")
+                   description: "Plugin that contains the relevant command.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--command", "-c" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Command to be executed.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--image-path", "-i" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Path to the default image for the button")
             {
                 IsRequired = true,
                 AllowMultipleArgumentsPerToken = false
@@ -157,9 +177,27 @@ namespace piglet
             }
         }
 
-        private static void HandleWriteCommand(int deviceIndex, int keyIndex, string action, string actionArgs, string profile)
+        private static void HandleWriteCommand(int deviceIndex, int keyIndex, string plugin, string command, string imagePath, string actionArgs, string profile)
         {
-            throw new NotImplementedException();
+            var targetPlugin = (from c in _plugins where string.Equals(c.Metadata.Id, plugin, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
+            
+            if (targetPlugin != null)
+            {
+                var targetCommand = (from c in targetPlugin.GetSupportedCommands() where string.Equals(command, c.Name, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
+                if (targetCommand != null)
+                {
+                    CommandMapping mapping = new CommandMapping
+                    {
+                        ButtonImagePath = imagePath,
+                        ButtonIndex = keyIndex,
+                        CommandArguments = actionArgs,
+                        Plugin = plugin,
+                        Command = command
+                    };
+
+                    ConfigurationHelper.WriteToConfiguration(profile, deviceIndex, mapping);
+                }
+            }
         }
     }
 }
