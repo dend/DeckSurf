@@ -1,11 +1,7 @@
 ﻿using piglet.SDK.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace piglet.SDK.Util
 {
@@ -25,7 +21,7 @@ namespace piglet.SDK.Util
                 }
 
                 var specificProfileFolderPath = Path.Combine(profileFolderPath, profile.ToLower());
-                var profileFolder = Directory.CreateDirectory(profileFolderPath);
+                var profileFolder = Directory.CreateDirectory(specificProfileFolderPath);
 
                 var profileFilePath = Path.Combine(specificProfileFolderPath, ProfileFileName);
                 ConfigurationProfile configurationProfile;
@@ -34,7 +30,6 @@ namespace piglet.SDK.Util
                     configurationProfile = JsonSerializer.Deserialize<ConfigurationProfile>(File.ReadAllText(profileFilePath));
                     configurationProfile.ButtonMap.Add(mapping);
                     configurationProfile.DeviceIndex = deviceIndex;
-
                 }
                 else
                 {

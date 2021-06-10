@@ -197,6 +197,14 @@ namespace piglet
 
                     ConfigurationHelper.WriteToConfiguration(profile, deviceIndex, mapping);
                 }
+                else
+                {
+                    Console.WriteLine($"Could not find the {command} associated with {plugin}.");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Could not find the {plugin} plugin.");
             }
         }
     }
