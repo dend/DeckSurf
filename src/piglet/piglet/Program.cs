@@ -112,12 +112,12 @@ namespace piglet
             // Command to listen to events from the StreamDeck.
             var listenCommand = new Command("listen")
             {
-                Handler = CommandHandler.Create<int>(HandleListenCommand)
+                Handler = CommandHandler.Create<string>(HandleListenCommand)
             };
-            listenCommand.AddOption(new Option<int>(
-                   aliases: new[] { "--device-index", "-d" },
-                   getDefaultValue: () => -1,
-                   description: "Index of the connected device that Piglet should listen to.")
+            listenCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--profile", "-p" },
+                   getDefaultValue: () => string.Empty,
+                   description: "The profile associated with the current device.")
             {
                 IsRequired = true,
                 AllowMultipleArgumentsPerToken = false
@@ -144,26 +144,27 @@ namespace piglet
             }
         }
 
-        private static void HandleListenCommand(int deviceIndex)
+        private static void HandleListenCommand(string profile)
         {
-            var devices = DeviceManager.GetDeviceList();
-            if (devices.Any())
-            {
-                var exitSignal = new ManualResetEvent(false);
+            
+            //var devices = DeviceManager.GetDeviceList();
+            //if (devices.Any())
+            //{
+            //    var exitSignal = new ManualResetEvent(false);
 
-                var device = devices.ElementAt(deviceIndex);
-                device.OnButtonPress += (s, e) =>
-                {
-                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
-                };
-                device.InitializeDevice();
+            //    var device = devices.ElementAt(deviceIndex);
+            //    device.OnButtonPress += (s, e) =>
+            //    {
+            //        Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
+            //    };
+            //    device.InitializeDevice();
 
-                exitSignal.WaitOne();
-            }
-            else
-            {
-                Console.WriteLine("No supported devices connected.");
-            }
+            //    exitSignal.WaitOne();
+            //}
+            //else
+            //{
+            //    Console.WriteLine("No supported devices connected.");
+            //}
         }
 
         private static void HandleListCommand()

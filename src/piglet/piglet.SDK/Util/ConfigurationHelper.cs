@@ -9,29 +9,30 @@ namespace piglet.SDK.Util
     {
         const string ProfileFileName = "profile.json";
 
+        public static string GetProfilePath(string name)
+        {
+            var localAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return Path.Combine(new string[] { localAppDataPath, "DenDev", "Piglet", "Profiles", name, ProfileFileName});
+        }
+
         public static ConfigurationProfile WriteToConfiguration(string profile, int deviceIndex, CommandMapping mapping)
         {
             try
             {
-                var localAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                var profileFolderPath = Path.Combine(localAppDataPath, "DenDev", "Piglet", "Profiles");
-                if (!Directory.Exists(profileFolderPath))
-                {
-                    Directory.CreateDirectory(profileFolderPath);
-                }
+                var path = GetProfilePath(profile);
 
-                var specificProfileFolderPath = Path.Combine(profileFolderPath, profile.ToLower());
-                var profileFolder = Directory.CreateDirectory(specificProfileFolderPath);
+                // In case the profile does not exist, let's make sure that we create
+                // the full path. If it already exists, this does nothing.
+                (new FileInfo(path)).Directory.Create();
 
-                var profileFilePath = Path.Combine(specificProfileFolderPath, ProfileFileName);
                 ConfigurationProfile configurationProfile;
 
                 // We have to make sure that the file both exists, and is not empty. If
                 // the file is empty, then the deserialization will fail, and the function
                 // will return NULL.
-                if (File.Exists(profileFilePath) && new FileInfo(profileFilePath).Length != 0)
+                if (File.Exists(path) && new FileInfo(path).Length != 0)
                 {
-                    configurationProfile = JsonSerializer.Deserialize<ConfigurationProfile>(File.ReadAllText(profileFilePath));
+                    configurationProfile = JsonSerializer.Deserialize<ConfigurationProfile>(File.ReadAllText(path));
                     configurationProfile.ButtonMap.Add(mapping);
                     configurationProfile.DeviceIndex = deviceIndex;
                 }
@@ -44,7 +45,7 @@ namespace piglet.SDK.Util
                     configurationProfile.ButtonMap.Add(mapping);
                 }
 
-                File.WriteAllText(profileFilePath, JsonSerializer.Serialize(configurationProfile));
+                File.WriteAllText(path, JsonSerializer.Serialize(configurationProfile));
 
                 return configurationProfile;
             }
