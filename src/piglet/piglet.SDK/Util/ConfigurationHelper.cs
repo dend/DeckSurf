@@ -25,7 +25,11 @@ namespace piglet.SDK.Util
 
                 var profileFilePath = Path.Combine(specificProfileFolderPath, ProfileFileName);
                 ConfigurationProfile configurationProfile;
-                if (File.Exists(profileFilePath))
+
+                // We have to make sure that the file both exists, and is not empty. If
+                // the file is empty, then the deserialization will fail, and the function
+                // will return NULL.
+                if (File.Exists(profileFilePath) && new FileInfo(profileFilePath).Length != 0)
                 {
                     configurationProfile = JsonSerializer.Deserialize<ConfigurationProfile>(File.ReadAllText(profileFilePath));
                     configurationProfile.ButtonMap.Add(mapping);
