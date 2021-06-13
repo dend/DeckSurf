@@ -1,9 +1,13 @@
-﻿using System.Drawing;
+﻿// Copyright (c) Den Delimarsky
+// Den Delimarsky licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 
-namespace piglet.SDK.Util
+namespace Piglet.SDK.Util
 {
     public class ImageHelpers
     {
@@ -17,8 +21,8 @@ namespace piglet.SDK.Util
                 var targetImage = new Bitmap(width, height);
 
                 targetImage.SetResolution(currentImage.HorizontalResolution, currentImage.VerticalResolution);
-                
-                using(var graphics = Graphics.FromImage(targetImage))
+
+                using (var graphics = Graphics.FromImage(targetImage))
                 {
                     graphics.CompositingMode = CompositingMode.SourceCopy;
                     graphics.CompositingQuality = CompositingQuality.HighQuality;
@@ -26,11 +30,9 @@ namespace piglet.SDK.Util
                     graphics.SmoothingMode = SmoothingMode.HighQuality;
                     graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-                    using (var wrapMode = new ImageAttributes())
-                    {
-                        wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                        graphics.DrawImage(currentImage, targetRectangle, 0, 0, currentImage.Width, currentImage.Height, GraphicsUnit.Pixel, wrapMode);
-                    }
+                    using var wrapMode = new ImageAttributes();
+                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
+                    graphics.DrawImage(currentImage, targetRectangle, 0, 0, currentImage.Width, currentImage.Height, GraphicsUnit.Pixel, wrapMode);
                 }
 
                 var converter = new ImageConverter();

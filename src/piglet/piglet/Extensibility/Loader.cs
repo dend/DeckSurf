@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace piglet.Extensibility
+namespace Piglet.Extensibility
 {
     internal class Loader
     {

@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31321.278
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "piglet", "piglet\piglet.csproj", "{6459234A-C61B-4346-991C-684D5BC9A07F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Piglet", "piglet\Piglet.csproj", "{6459234A-C61B-4346-991C-684D5BC9A07F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "piglet.SDK", "piglet.SDK\piglet.SDK.csproj", "{D43C5F7D-5A6A-4C89-BDDA-2AFF4C9EC216}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Piglet.SDK", "piglet.SDK\Piglet.SDK.csproj", "{D43C5F7D-5A6A-4C89-BDDA-2AFF4C9EC216}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "piglet.Plugin.Barn", "piglet.Plugin.Barn\piglet.Plugin.Barn.csproj", "{0ED6CEEF-C035-442D-9BA6-DEDCA5D687F8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Piglet.Plugin.Barn", "piglet.Plugin.Barn\Piglet.Plugin.Barn.csproj", "{0ED6CEEF-C035-442D-9BA6-DEDCA5D687F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

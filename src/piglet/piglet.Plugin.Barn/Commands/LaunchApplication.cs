@@ -1,9 +1,9 @@
-﻿using piglet.SDK.Interfaces;
-using piglet.SDK.Models;
+﻿using Piglet.SDK.Interfaces;
+using Piglet.SDK.Models;
 using System;
 using System.Diagnostics;
 
-namespace piglet.Plugin.Barn.Commands
+namespace Piglet.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
     [ExpectedInteractionFormat(CommandType.ACTION)]

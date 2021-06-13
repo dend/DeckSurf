@@ -1,18 +1,21 @@
-﻿using HidSharp;
-using piglet.SDK.Models;
+﻿// Copyright (c) Den Delimarsky
+// Den Delimarsky licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using HidSharp;
+using Piglet.SDK.Models;
 
-namespace piglet.SDK.Core
+namespace Piglet.SDK.Core
 {
     public class DeviceManager
     {
-        private static int SUPPORTED_VID = 4057;
-
-        private const int IMAGE_REPORT_LENGTH = 1024;
-        private const int IMAGE_REPORT_HEADER_LENGTH = 8;
-        private const int IMAGE_REPORT_PAYLOAD_LENGTH = IMAGE_REPORT_LENGTH - IMAGE_REPORT_HEADER_LENGTH;
+        private static readonly int SupportedVid = 4057;
+        private static readonly int ImageReportLength = 1024;
+        private static readonly int ImageReportHeaderLength = 8;
+        private static readonly int ImageReportPayloadLength = ImageReportLength - ImageReportHeaderLength;
 
         /// <summary>
         /// Return a list of connected devices supported by Piglet.
@@ -43,7 +46,7 @@ namespace piglet.SDK.Core
         /// <returns></returns>
         private static bool IsSupported(int vid, int pid)
         {
-            if (vid == SUPPORTED_VID && Enum.IsDefined(typeof(DeviceModel), (byte)pid))
+            if (vid == SupportedVid && Enum.IsDefined(typeof(DeviceModel), (byte)pid))
             {
                 return true;
             }
@@ -75,18 +78,18 @@ namespace piglet.SDK.Core
                     {
                         while (remainingBytes > 0)
                         {
-                            var sliceLength = Math.Min(remainingBytes, IMAGE_REPORT_PAYLOAD_LENGTH);
-                            var bytesSent = iteration * IMAGE_REPORT_PAYLOAD_LENGTH;
+                            var sliceLength = Math.Min(remainingBytes, ImageReportPayloadLength);
+                            var bytesSent = iteration * ImageReportPayloadLength;
 
                             byte finalizer = sliceLength == remainingBytes ? (byte)1 : (byte)0;
                             var bitmaskedLength = (byte)(sliceLength & 0xFF);
-                            var shiftedLength = (byte)(sliceLength >> IMAGE_REPORT_HEADER_LENGTH);
+                            var shiftedLength = (byte)(sliceLength >> ImageReportHeaderLength);
                             var bitmaskedIteration = (byte)(iteration & 0xFF);
-                            var shiftedIteration = (byte)(iteration >> IMAGE_REPORT_HEADER_LENGTH);
+                            var shiftedIteration = (byte)(iteration >> ImageReportHeaderLength);
 
                             byte[] header = new byte[] { 0x02, 0x07, keyId, finalizer, bitmaskedLength, shiftedLength, bitmaskedIteration, shiftedIteration };
                             var payload = header.Concat(new ArraySegment<byte>(image, bytesSent, sliceLength)).ToArray();
-                            var padding = new byte[IMAGE_REPORT_LENGTH - payload.Length];
+                            var padding = new byte[ImageReportLength - payload.Length];
 
                             var finalPayload = payload.Concat(padding).ToArray();
                             stream.Write(finalPayload);
@@ -95,8 +98,10 @@ namespace piglet.SDK.Core
                             iteration++;
                         }
                     }
+
                     return true;
                 }
+
                 return false;
             }
             else

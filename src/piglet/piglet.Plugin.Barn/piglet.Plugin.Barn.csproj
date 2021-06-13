@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\piglet.SDK\piglet.SDK.csproj" />
+    <ProjectReference Include="..\piglet.SDK\Piglet.SDK.csproj" />
   </ItemGroup>
 
 </Project>

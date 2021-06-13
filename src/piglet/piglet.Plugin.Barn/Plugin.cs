@@ -1,10 +1,10 @@
-﻿using piglet.Plugin.Barn.Commands;
-using piglet.SDK.Interfaces;
-using piglet.SDK.Models;
+﻿using Piglet.Plugin.Barn.Commands;
+using Piglet.SDK.Interfaces;
+using Piglet.SDK.Models;
 using System;
 using System.Collections.Generic;
 
-namespace piglet.Plugin.Barn
+namespace Piglet.Plugin.Barn
 {
     public class Plugin : IPlugin
     {

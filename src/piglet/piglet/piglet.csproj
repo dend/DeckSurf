@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\piglet.SDK\piglet.SDK.csproj" />
+    <ProjectReference Include="..\piglet.SDK\Piglet.SDK.csproj" />
   </ItemGroup>
 
 </Project>

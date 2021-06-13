@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Copyright (c) Den Delimarsky
+// Den Delimarsky licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-namespace piglet.SDK.Models
+namespace Piglet.SDK.Models
 {
     public enum ButtonEventKind
     {
         DOWN = 0,
-        UP = 1
+        UP = 1,
     }
 }

@@ -1,7 +1,10 @@
-﻿using System;
-using System.Text;
+﻿// Copyright (c) Den Delimarsky
+// Den Delimarsky licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-namespace piglet.SDK.Util
+using System;
+
+namespace Piglet.SDK.Util
 {
     public class DataHelpers
     {

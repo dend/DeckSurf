@@ -1,8 +1,8 @@
-﻿using piglet.Extensibility;
-using piglet.SDK.Core;
-using piglet.SDK.Interfaces;
-using piglet.SDK.Models;
-using piglet.SDK.Util;
+﻿using Piglet.Extensibility;
+using Piglet.SDK.Core;
+using Piglet.SDK.Interfaces;
+using Piglet.SDK.Models;
+using Piglet.SDK.Util;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -11,7 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace piglet
+namespace Piglet
 {
     class Program
     {
@@ -146,7 +146,16 @@ namespace piglet
 
         private static void HandleListenCommand(string profile)
         {
-            
+            var workingProfile = ConfigurationHelper.GetProfile(profile);
+            if (workingProfile != null)
+            {
+
+            }
+            else
+            {
+                Console.WriteLine($"Could not load profile: {profile}. Make sure that the profile exists.");
+            }
+
             //var devices = DeviceManager.GetDeviceList();
             //if (devices.Any())
             //{

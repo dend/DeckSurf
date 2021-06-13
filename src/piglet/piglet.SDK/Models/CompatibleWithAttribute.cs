@@ -1,16 +1,19 @@
-﻿using System;
+﻿// Copyright (c) Den Delimarsky
+// Den Delimarsky licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-namespace piglet.SDK.Models
+using System;
+
+namespace Piglet.SDK.Models
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
     public class CompatibleWithAttribute : Attribute
     {
-        private DeviceModel compatibleModel;
-        private DeviceModel CompatibleModel { get => compatibleModel; set => compatibleModel = value; }
-
         public CompatibleWithAttribute(DeviceModel model)
         {
-            CompatibleModel = model;
+            this.CompatibleModel = model;
         }
+
+        private DeviceModel CompatibleModel { get; set; }
     }
 }
