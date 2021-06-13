@@ -109,5 +109,34 @@ namespace Piglet.SDK.Core
                 throw new IndexOutOfRangeException("Device index is not within the range of the number of connected devices.");
             }
         }
+
+        public static ConnectedDevice SetupDevice(ConfigurationProfile profile)
+        {
+            try
+            {
+                var devices = GetDeviceList();
+                if (devices != null &&
+                    devices.Count() != 0 &&
+                    profile.DeviceIndex <= devices.Count() - 1)
+                {
+                    var targetDevice = devices.ElementAt(profile.DeviceIndex);
+                    SetupDeviceButtonMap(targetDevice, profile.ButtonMap);
+                    return targetDevice;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static void SetupDeviceButtonMap(ConnectedDevice device, IEnumerable<CommandMapping> buttonMap)
+        {
+
+        }
     }
 }

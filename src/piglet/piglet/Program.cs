@@ -149,7 +149,17 @@ namespace Piglet
             var workingProfile = ConfigurationHelper.GetProfile(profile);
             if (workingProfile != null)
             {
+                var device = DeviceManager.SetupDevice(workingProfile);
+                var exitSignal = new ManualResetEvent(false);
 
+                device.OnButtonPress += (s, e) =>
+                {
+                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
+                };
+
+                device.InitializeDevice();
+
+                exitSignal.WaitOne();
             }
             else
             {

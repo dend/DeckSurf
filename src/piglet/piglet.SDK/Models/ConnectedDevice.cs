@@ -26,6 +26,15 @@ namespace Piglet.SDK.Models
             this.Path = path;
             this.Name = name;
             this.Model = model;
+
+            this.ButtonCount = model switch
+            {
+                DeviceModel.XL => DeviceConstants.XLButtonCount,
+                DeviceModel.ORIGINAL => DeviceConstants.OriginalButtonCount,
+                DeviceModel.MINI => DeviceConstants.MiniButtonCount,
+                DeviceModel.ORIGINAL_V2 => DeviceConstants.OriginalV2ButtonCount,
+                _ => 0,
+            };
         }
 
         public delegate void ReceivedButtonPressHandler(object source, ButtonPressEventArgs e);
@@ -41,6 +50,8 @@ namespace Piglet.SDK.Models
         public string Name { get; set; }
 
         public DeviceModel Model { get; set; }
+
+        public int ButtonCount { get; }
 
         private Device UnderlyingDevice { get; set; }
 
