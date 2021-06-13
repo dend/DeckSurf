@@ -2,7 +2,8 @@
   "profiles": {
     "piglet": {
       "commandName": "Project",
-      "commandLineArgs": "write --device-index 0 --key-index 0 --plugin piglet.Plugin.Barn --command launchapplication --image-path C:\\Users\\Kona\\Downloads\\run.png --action-args \"C:\\Program Files (x86)\\1Password 4\\1Password.exe\" --profile main"
+      "commandLineArgs": "listen --profile main"
+      //"commandLineArgs": "write --device-index 0 --key-index 0 --plugin piglet.Plugin.Barn --command launchapplication --image-path C:\\Users\\Kona\\Downloads\\run.png --action-args \"C:\\Program Files (x86)\\1Password 4\\1Password.exe\" --profile main"
     }
   }
 }

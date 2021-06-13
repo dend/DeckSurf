@@ -11,37 +11,44 @@ namespace Piglet.SDK.Util
 {
     public class ImageHelpers
     {
-        public static byte[] ResizeImage(string path, int width, int height)
+        public static byte[] ResizeImage(byte[] buffer, int width, int height)
         {
-            if (File.Exists(path))
+            Image currentImage = GetImage(buffer);
+
+            var targetRectangle = new Rectangle(0, 0, width, height);
+            var targetImage = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+
+            targetImage.SetResolution(currentImage.HorizontalResolution, currentImage.VerticalResolution);
+
+            using (var graphics = Graphics.FromImage(targetImage))
             {
-                Image currentImage = Image.FromFile(path);
+                graphics.CompositingMode = CompositingMode.SourceCopy;
+                graphics.CompositingQuality = CompositingQuality.HighQuality;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphics.SmoothingMode = SmoothingMode.HighQuality;
+                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-                var targetRectangle = new Rectangle(0, 0, width, height);
-                var targetImage = new Bitmap(width, height);
-
-                targetImage.SetResolution(currentImage.HorizontalResolution, currentImage.VerticalResolution);
-
-                using (var graphics = Graphics.FromImage(targetImage))
-                {
-                    graphics.CompositingMode = CompositingMode.SourceCopy;
-                    graphics.CompositingQuality = CompositingQuality.HighQuality;
-                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    graphics.SmoothingMode = SmoothingMode.HighQuality;
-                    graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                    using var wrapMode = new ImageAttributes();
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(currentImage, targetRectangle, 0, 0, currentImage.Width, currentImage.Height, GraphicsUnit.Pixel, wrapMode);
-                }
-
-                var converter = new ImageConverter();
-                return (byte[])converter.ConvertTo(targetImage, typeof(byte[]));
+                graphics.DrawImage(currentImage, targetRectangle, 0, 0, currentImage.Width, currentImage.Height, GraphicsUnit.Pixel);
             }
-            else
+
+            // TODO: I am not sure if every image needs to be rotated, but
+            // in my limited experiments, this seems to be the case.
+            targetImage.RotateFlip(RotateFlipType.Rotate180FlipX);
+
+            using var bufferStream = new MemoryStream();
+            targetImage.Save(bufferStream, ImageFormat.Jpeg);
+            return bufferStream.ToArray();
+        }
+
+        public static Image GetImage(byte[] buffer)
+        {
+            Image image = null;
+            using (MemoryStream ms = new(buffer))
             {
-                throw new FileNotFoundException("File not found. Make sure the path is correct.");
+                image = Image.FromStream(ms);
             }
+
+            return image;
         }
     }
 }

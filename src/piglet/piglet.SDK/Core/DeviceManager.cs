@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using HidSharp;
 using Piglet.SDK.Models;
+using Piglet.SDK.Util;
 
 namespace Piglet.SDK.Core
 {
@@ -38,12 +40,6 @@ namespace Piglet.SDK.Core
             return connectedDevices;
         }
 
-        /// <summary>
-        /// Determines 
-        /// </summary>
-        /// <param name="vid"></param>
-        /// <param name="pid"></param>
-        /// <returns></returns>
         private static bool IsSupported(int vid, int pid)
         {
             if (vid == SupportedVid && Enum.IsDefined(typeof(DeviceModel), (byte)pid))
@@ -53,60 +49,47 @@ namespace Piglet.SDK.Core
             return false;
         }
 
-        /// <summary>
-        /// Sets the visual appearance of a key to a pre-defined image.
-        /// </summary>
-        /// <param name="deviceIndex">Zero-based index of the device that is currently in operation.</param>
-        /// <param name="keyId">Numeric index for the key.</param>
-        /// <param name="image">Byte array containing the JPEG image.</param>
-        /// <param name="vid">VID for the target device.</param>
-        /// <param name="pid">PID for the target device.</param>
-        /// <returns>True if the change was successful. False if the change failed.</returns>
-        public static bool SetKey(int deviceIndex, byte keyId, byte[] image, int vid, int pid)
+        public static bool SetKey(ConnectedDevice device, int keyId, byte[] image)
         {
-            var devices = DeviceList.Local.GetHidDevices(vid, pid);
+            var content = image ?? DeviceConstants.XLDefaultBlackButton;
 
-            if (deviceIndex <= (devices.Count() - 1))
+            if (device != null)
             {
-                var device = devices.ElementAt(deviceIndex);
-                if (device != null)
+                var iteration = 0;
+                var remainingBytes = content.Length;
+
+                using (var stream = device.Open())
                 {
-                    var iteration = 0;
-                    var remainingBytes = image.Length;
-
-                    using (var stream = device.Open())
+                    while (remainingBytes > 0)
                     {
-                        while (remainingBytes > 0)
-                        {
-                            var sliceLength = Math.Min(remainingBytes, ImageReportPayloadLength);
-                            var bytesSent = iteration * ImageReportPayloadLength;
+                        var sliceLength = Math.Min(remainingBytes, ImageReportPayloadLength);
+                        var bytesSent = iteration * ImageReportPayloadLength;
 
-                            byte finalizer = sliceLength == remainingBytes ? (byte)1 : (byte)0;
-                            var bitmaskedLength = (byte)(sliceLength & 0xFF);
-                            var shiftedLength = (byte)(sliceLength >> ImageReportHeaderLength);
-                            var bitmaskedIteration = (byte)(iteration & 0xFF);
-                            var shiftedIteration = (byte)(iteration >> ImageReportHeaderLength);
+                        byte finalizer = sliceLength == remainingBytes ? (byte)1 : (byte)0;
+                        var bitmaskedLength = (byte)(sliceLength & 0xFF);
+                        var shiftedLength = (byte)(sliceLength >> ImageReportHeaderLength);
+                        var bitmaskedIteration = (byte)(iteration & 0xFF);
+                        var shiftedIteration = (byte)(iteration >> ImageReportHeaderLength);
 
-                            byte[] header = new byte[] { 0x02, 0x07, keyId, finalizer, bitmaskedLength, shiftedLength, bitmaskedIteration, shiftedIteration };
-                            var payload = header.Concat(new ArraySegment<byte>(image, bytesSent, sliceLength)).ToArray();
-                            var padding = new byte[ImageReportLength - payload.Length];
+                        // TODO: This is different for different device classes, so I will need
+                        // to make sure that I adjust the header format.
+                        byte[] header = new byte[] { 0x02, 0x07, (byte)keyId, finalizer, bitmaskedLength, shiftedLength, bitmaskedIteration, shiftedIteration };
+                        var payload = header.Concat(new ArraySegment<byte>(content, bytesSent, sliceLength)).ToArray();
+                        var padding = new byte[ImageReportLength - payload.Length];
 
-                            var finalPayload = payload.Concat(padding).ToArray();
-                            stream.Write(finalPayload);
+                        var finalPayload = payload.Concat(padding).ToArray();
+                        stream.Write(finalPayload);
 
-                            remainingBytes -= sliceLength;
-                            iteration++;
-                        }
+                        remainingBytes -= sliceLength;
+                        iteration++;
                     }
-
-                    return true;
                 }
 
-                return false;
+                return true;
             }
             else
             {
-                throw new IndexOutOfRangeException("Device index is not within the range of the number of connected devices.");
+                return false;
             }
         }
 
@@ -116,7 +99,7 @@ namespace Piglet.SDK.Core
             {
                 var devices = GetDeviceList();
                 if (devices != null &&
-                    devices.Count() != 0 &&
+                    devices.Any() &&
                     profile.DeviceIndex <= devices.Count() - 1)
                 {
                     var targetDevice = devices.ElementAt(profile.DeviceIndex);
@@ -136,7 +119,18 @@ namespace Piglet.SDK.Core
 
         public static void SetupDeviceButtonMap(ConnectedDevice device, IEnumerable<CommandMapping> buttonMap)
         {
-
+            foreach (var button in buttonMap)
+            {
+                if (button.ButtonIndex <= device.ButtonCount - 1)
+                {
+                    if (File.Exists(button.ButtonImagePath))
+                    {
+                        byte[] imageBuffer = File.ReadAllBytes(button.ButtonImagePath);
+                        imageBuffer = ImageHelpers.ResizeImage(imageBuffer, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
+                        SetKey(device, button.ButtonIndex, imageBuffer);
+                    }
+                }
+            }
         }
     }
 }

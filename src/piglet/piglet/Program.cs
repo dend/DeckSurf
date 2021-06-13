@@ -150,16 +150,16 @@ namespace Piglet
             if (workingProfile != null)
             {
                 var device = DeviceManager.SetupDevice(workingProfile);
-                var exitSignal = new ManualResetEvent(false);
+                //var exitSignal = new ManualResetEvent(false);
 
-                device.OnButtonPress += (s, e) =>
-                {
-                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
-                };
+                //device.OnButtonPress += (s, e) =>
+                //{
+                //    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
+                //};
 
-                device.InitializeDevice();
+                //device.InitializeDevice();
 
-                exitSignal.WaitOne();
+                //exitSignal.WaitOne();
             }
             else
             {
@@ -193,7 +193,7 @@ namespace Piglet
             Console.WriteLine("===========================================");
             foreach (var device in devices)
             {
-                Console.WriteLine($"{"| " + device.Name,-21} {"| " + device.VID,-10} {"| " + device.PID,-10}");
+                Console.WriteLine($"{"| " + device.Name,-21} {"| " + device.VId,-10} {"| " + device.PId,-10}");
             }
         }
 

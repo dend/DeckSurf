@@ -21,18 +21,18 @@ namespace Piglet.SDK.Models
 
         public ConnectedDevice(int vid, int pid, string path, string name, DeviceModel model)
         {
-            this.VID = vid;
-            this.PID = pid;
+            this.VId = vid;
+            this.PId = pid;
             this.Path = path;
             this.Name = name;
             this.Model = model;
+            this.UnderlyingDevice = DeviceList.Local.GetHidDeviceOrNull(this.VId, this.PId);
 
             this.ButtonCount = model switch
             {
                 DeviceModel.XL => DeviceConstants.XLButtonCount,
-                DeviceModel.ORIGINAL => DeviceConstants.OriginalButtonCount,
                 DeviceModel.MINI => DeviceConstants.MiniButtonCount,
-                DeviceModel.ORIGINAL_V2 => DeviceConstants.OriginalV2ButtonCount,
+                DeviceModel.ORIGINAL or DeviceModel.ORIGINAL_V2 => DeviceConstants.OriginalButtonCount,
                 _ => 0,
             };
         }
@@ -41,9 +41,9 @@ namespace Piglet.SDK.Models
 
         public event ReceivedButtonPressHandler OnButtonPress;
 
-        public int VID { get; set; }
+        public int VId { get; set; }
 
-        public int PID { get; set; }
+        public int PId { get; set; }
 
         public string Path { get; set; }
 
@@ -53,17 +53,20 @@ namespace Piglet.SDK.Models
 
         public int ButtonCount { get; }
 
-        private Device UnderlyingDevice { get; set; }
+        private Device UnderlyingDevice { get; }
 
         private DeviceStream UnderlyingInputStream { get; set; }
 
         public void InitializeDevice()
         {
-            this.UnderlyingDevice = DeviceList.Local.GetHidDeviceOrNull(VID, PID);
-
             this.UnderlyingInputStream = this.UnderlyingDevice.Open();
             this.UnderlyingInputStream.ReadTimeout = Timeout.Infinite;
             this.UnderlyingInputStream.BeginRead(this.keyPressBuffer, 0, this.keyPressBuffer.Length, this.KeyPressCallback, null);
+        }
+
+        public DeviceStream Open()
+        {
+            return this.UnderlyingDevice.Open();
         }
 
         private void KeyPressCallback(IAsyncResult result)
