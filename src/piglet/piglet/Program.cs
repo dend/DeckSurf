@@ -72,7 +72,7 @@ namespace Piglet
             writeCommand.AddOption(new Option<string>(
                    aliases: new[] { "--image-path", "-i" },
                    getDefaultValue: () => string.Empty,
-                   description: "Path to the default image for the button")
+                   description: "Path to the default image for the button.")
             {
                 IsRequired = true,
                 AllowMultipleArgumentsPerToken = false

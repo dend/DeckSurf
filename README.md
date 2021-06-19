@@ -15,8 +15,20 @@ The goal of this project is to create open, lightweight, and accessible tooling 
 
 To get started, it's necessary to create a new profile, with a set of commands that will be associated with a button on the Stream Deck. To do that, you can use the `write` command in the Piglet CLI.
 
-```
-piglet write --device-index DEVICE_INDEX --key-index KEY_INDEX --plugin PLUGIN --command COMMAND_ID --image-path IMAGE_PATH --action-args ARGS --profile PROFILE_ID
+```bash
+Usage:
+  piglet write [options] 
+
+Options:
+  -d, --device-index <device-index> (REQUIRED)  Index of the connected device, to which a key setting should be
+                                                written. [default: -1]
+  -k, --key-index <key-index> (REQUIRED)        Index of the key that needs to be written. [default: -1]
+  -l, --plugin <plugin> (REQUIRED)              Plugin that contains the relevant command. [default: ]
+  -c, --command <command> (REQUIRED)            Command to be executed. [default: ]
+  -i, --image-path <image-path> (REQUIRED)      Path to the default image for the button. [default: ]
+  -g, --action-args <action-args> (REQUIRED)    Arguments for the defined action. [default: ]
+  -p, --profile <profile> (REQUIRED)            The profile to which the command should be added. [default: ]
+  -?, -h, --help                                Show help and usage information
 ```
 
 The following arguments are used, and are required:
