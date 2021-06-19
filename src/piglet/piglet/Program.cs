@@ -16,6 +16,7 @@ namespace Piglet
     class Program
     {
         private static IEnumerable<IPlugin> _plugins;
+        private static IDictionary<string, IEnumerable<IPigletCommand>> _commands;
 
         static int Main(string[] args)
         {
@@ -24,8 +25,6 @@ namespace Piglet
 
         private static Task<int> SetupCommandLine(string[] args)
         {
-            _plugins = Loader.Load<IPlugin>();
-
             var rootCommand = new RootCommand();
 
             // Command to write content to the StreamDeck.
@@ -133,7 +132,9 @@ namespace Piglet
 
         private static void HandleListPluginsCommand()
         {
-            foreach(var plugin in _plugins)
+            _plugins = Loader.Load<IPlugin>();
+
+            foreach (var plugin in _plugins)
             {
                 Console.WriteLine($"{"| " + plugin.Metadata.Id,-21} {"| " + plugin.Metadata.Version,-10} {"| " + plugin.Metadata.Author,-10}");
                 foreach (var command in plugin.GetSupportedCommands())
@@ -155,7 +156,33 @@ namespace Piglet
                 device.OnButtonPress += (s, e) =>
                 {
                     Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
+                    var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.ButtonIndex == e.Id);
+                    if (buttonEntry != null)
+                    {
+                        var targetPluginName = buttonEntry.Plugin.ToLower();
+                        if (_commands.ContainsKey(targetPluginName))
+                        {
+                            var targetPlugin = _commands[targetPluginName];
+                            var targetCommand = (from c in targetPlugin where string.Equals(c.GetType().Name, buttonEntry.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
+                            if (targetCommand != null)
+                            {
+                                targetCommand.ExecuteOnAction(e.Id, buttonEntry.CommandArguments);
+                            }
+                        }
+                    }
                 };
+
+                // With a detected device, let's load the plugins
+                // and the associated commands.
+                _plugins = Loader.Load<IPlugin>();
+
+                var commandMap = new Dictionary<string, IEnumerable<IPigletCommand>>();
+                var commandList = new List<IPigletCommand>();
+                foreach (var plugin in _plugins)
+                {
+                    commandMap.Add(plugin.Metadata.Id.ToLower(), Loader.LoadCommands(plugin, device.Model));
+                }
+                _commands = new Dictionary<string, IEnumerable<IPigletCommand>>(commandMap);
 
                 device.InitializeDevice();
 
@@ -165,25 +192,6 @@ namespace Piglet
             {
                 Console.WriteLine($"Could not load profile: {profile}. Make sure that the profile exists.");
             }
-
-            //var devices = DeviceManager.GetDeviceList();
-            //if (devices.Any())
-            //{
-            //    var exitSignal = new ManualResetEvent(false);
-
-            //    var device = devices.ElementAt(deviceIndex);
-            //    device.OnButtonPress += (s, e) =>
-            //    {
-            //        Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
-            //    };
-            //    device.InitializeDevice();
-
-            //    exitSignal.WaitOne();
-            //}
-            //else
-            //{
-            //    Console.WriteLine("No supported devices connected.");
-            //}
         }
 
         private static void HandleListCommand()
@@ -199,6 +207,8 @@ namespace Piglet
 
         private static void HandleWriteCommand(int deviceIndex, int keyIndex, string plugin, string command, string imagePath, string actionArgs, string profile)
         {
+            _plugins = Loader.Load<IPlugin>();
+
             var targetPlugin = (from c in _plugins where string.Equals(c.Metadata.Id, plugin, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
             
             if (targetPlugin != null)

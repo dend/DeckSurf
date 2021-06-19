@@ -14,6 +14,6 @@ namespace Piglet.SDK.Models
             this.CompatibleModel = model;
         }
 
-        private DeviceModel CompatibleModel { get; set; }
+        public DeviceModel CompatibleModel { get; set; }
     }
 }
