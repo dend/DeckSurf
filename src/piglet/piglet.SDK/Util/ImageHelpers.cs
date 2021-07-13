@@ -50,5 +50,12 @@ namespace Piglet.SDK.Util
 
             return image;
         }
+
+        public static byte[] GetImageBuffer(Image image)
+        {
+            ImageConverter converter = new();
+            byte[] buffer = (byte[])converter.ConvertTo(image, typeof(byte[]));
+            return buffer;
+        }
     }
 }
