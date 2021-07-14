@@ -2,6 +2,8 @@
 // Den Delimarsky licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Deck.Surf.SDK.Models;
+
 namespace Deck.Surf.SDK.Interfaces
 {
     public interface IPigletCommand
@@ -10,8 +12,8 @@ namespace Deck.Surf.SDK.Interfaces
 
         public string Description { get; }
 
-        public void ExecuteOnActivation(int keyIndex, string arguments);
+        public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice);
 
-        public void ExecuteOnAction(int keyIndex, string arguments);
+        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice);
     }
 }

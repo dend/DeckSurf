@@ -166,7 +166,7 @@ namespace Deck.Surf
                             var targetCommand = (from c in targetPlugin where string.Equals(c.GetType().Name, buttonEntry.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
                             if (targetCommand != null)
                             {
-                                targetCommand.ExecuteOnAction(e.Id, buttonEntry.CommandArguments);
+                                targetCommand.ExecuteOnAction(buttonEntry, device);
                             }
                         }
                     }
@@ -186,6 +186,11 @@ namespace Deck.Surf
 
                 device.InitializeDevice();
 
+                foreach(var mappedButton in workingProfile.ButtonMap)
+                {
+
+                }
+                
                 exitSignal.WaitOne();
             }
             else
@@ -216,7 +221,7 @@ namespace Deck.Surf
                 var targetCommand = (from c in targetPlugin.GetSupportedCommands() where string.Equals(command, c.Name, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
                 if (targetCommand != null)
                 {
-                    CommandMapping mapping = new CommandMapping
+                    CommandMapping mapping = new()
                     {
                         ButtonImagePath = imagePath,
                         ButtonIndex = keyIndex,

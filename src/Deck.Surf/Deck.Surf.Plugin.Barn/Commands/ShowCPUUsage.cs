@@ -15,17 +15,15 @@ namespace Deck.Surf.Plugin.Barn.Commands
         public string Name => "Launch Application";
         public string Description => "Launches an application on the machine.";
 
-        public void ExecuteOnAction(int keyIndex, string arguments)
+        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
             throw new NotImplementedException();
         }
 
-        public void ExecuteOnActivation(int keyIndex, string arguments)
+        public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
             var randomIconFromText = IconGenerator.GenerateTestImageFromText("92%", new Font("Consolas", 12), Color.Red, Color.Blue);
             var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
-
-
         }
     }
 }

@@ -12,12 +12,12 @@ namespace Deck.Surf.Plugin.Barn.Commands
         public string Name => "Launch Application";
         public string Description => "Launches an application on the machine.";
 
-        public void ExecuteOnAction(int keyIndex, string arguments)
+        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
-            Process.Start(arguments);
+            Process.Start(mappedCommand.CommandArguments);
         }
 
-        public void ExecuteOnActivation(int keyIndex, string arguments)
+        public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
             throw new NotImplementedException();
         }

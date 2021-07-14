@@ -14,6 +14,6 @@ namespace Deck.Surf.SDK.Models
             this.CommandType = type;
         }
 
-        private CommandType CommandType { get; set; }
+        public CommandType CommandType { get; set; }
     }
 }
