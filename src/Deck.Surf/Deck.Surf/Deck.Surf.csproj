@@ -9,6 +9,7 @@
     <Authors>Den Delimarsky</Authors>
     <Version>0.0.1</Version>
     <Copyright>2021 by Den Delimarsky. All rights reserved.</Copyright>
+    <AssemblyName>deck</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
