@@ -17,7 +17,7 @@ To get started, it's necessary to create a new profile, with a set of commands t
 
 ```bash
 Usage:
-  piglet write [options] 
+  Deck.Surf write [options] 
 
 Options:
   -d, --device-index <device-index> (REQUIRED)  Index of the connected device, to which a key setting should be
