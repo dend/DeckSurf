@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <Platforms>x64</Platforms>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <ApplicationIcon>piglet.ico</ApplicationIcon>
+    <Authors>Den Delimarsky</Authors>
+    <Version>0.0.1</Version>
+    <Copyright>2021 by Den Delimarsky. All rights reserved.</Copyright>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutputPath>$(SolutionDir)\..\bin</OutputPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="6.2.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21216.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deck.Surf.SDK\Deck.Surf.SDK.csproj" />
+  </ItemGroup>
+
+</Project>
