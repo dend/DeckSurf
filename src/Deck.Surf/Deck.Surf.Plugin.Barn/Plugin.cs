@@ -28,7 +28,8 @@ namespace Deck.Surf.Plugin.Barn
         {
             return new List<Type>()
             { 
-                typeof(LaunchApplication) 
+                typeof(LaunchApplication),
+                typeof(ShowCPUUsage)
             };
         }
     }

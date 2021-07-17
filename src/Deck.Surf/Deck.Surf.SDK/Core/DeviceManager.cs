@@ -6,9 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using HidSharp;
 using Deck.Surf.SDK.Models;
 using Deck.Surf.SDK.Util;
+using HidSharp;
 
 namespace Deck.Surf.SDK.Core
 {
@@ -38,15 +38,6 @@ namespace Deck.Surf.SDK.Core
             }
 
             return connectedDevices;
-        }
-
-        private static bool IsSupported(int vid, int pid)
-        {
-            if (vid == SupportedVid && Enum.IsDefined(typeof(DeviceModel), (byte)pid))
-            {
-                return true;
-            }
-            return false;
         }
 
         public static bool SetKey(ConnectedDevice device, int keyId, byte[] image)
@@ -132,5 +123,16 @@ namespace Deck.Surf.SDK.Core
                 }
             }
         }
+
+        public static bool IsSupported(int vid, int pid)
+        {
+            if (vid == SupportedVid && Enum.IsDefined(typeof(DeviceModel), (byte)pid))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
     }
 }

@@ -6,7 +6,6 @@ using System.Diagnostics;
 namespace Deck.Surf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
-    [ExpectedInteractionFormat(CommandType.ACTION)]
     class LaunchApplication : IDSCommand
     {
         public string Name => "Launch Application";
@@ -19,7 +18,7 @@ namespace Deck.Surf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
-            throw new NotImplementedException();
+            
         }
     }
 }

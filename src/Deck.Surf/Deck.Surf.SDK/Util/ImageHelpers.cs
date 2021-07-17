@@ -33,7 +33,7 @@ namespace Deck.Surf.SDK.Util
 
             // TODO: I am not sure if every image needs to be rotated, but
             // in my limited experiments, this seems to be the case.
-            targetImage.RotateFlip(RotateFlipType.Rotate180FlipX);
+            targetImage.RotateFlip(RotateFlipType.Rotate180FlipNone);
 
             using var bufferStream = new MemoryStream();
             targetImage.Save(bufferStream, ImageFormat.Jpeg);

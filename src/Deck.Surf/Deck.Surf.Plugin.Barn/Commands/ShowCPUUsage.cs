@@ -3,13 +3,11 @@ using Deck.Surf.SDK.Core;
 using Deck.Surf.SDK.Interfaces;
 using Deck.Surf.SDK.Models;
 using Deck.Surf.SDK.Util;
-using System;
 using System.Drawing;
 
 namespace Deck.Surf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
-    [ExpectedInteractionFormat(CommandType.ACTIVATION)]
     class ShowCPUUsage : IDSCommand
     {
         public string Name => "Launch Application";
@@ -17,13 +15,15 @@ namespace Deck.Surf.Plugin.Barn.Commands
 
         public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
-            throw new NotImplementedException();
+            
         }
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
             var randomIconFromText = IconGenerator.GenerateTestImageFromText("92%", new Font("Consolas", 12), Color.Red, Color.Blue);
             var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
+
+            DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, resizeImage);
         }
     }
 }

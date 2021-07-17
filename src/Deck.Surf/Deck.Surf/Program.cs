@@ -188,7 +188,16 @@ namespace Deck.Surf
 
                 foreach(var mappedButton in workingProfile.ButtonMap)
                 {
-
+                    var targetPluginName = mappedButton.Plugin.ToLower();
+                    if (_commands.ContainsKey(targetPluginName))
+                    {
+                        var targetPlugin = _commands[targetPluginName];
+                        var targetCommand = (from c in targetPlugin where string.Equals(c.GetType().Name, mappedButton.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
+                        if (targetCommand != null)
+                        {
+                            targetCommand.ExecuteOnActivation(mappedButton, device);
+                        }
+                    }
                 }
                 
                 exitSignal.WaitOne();
