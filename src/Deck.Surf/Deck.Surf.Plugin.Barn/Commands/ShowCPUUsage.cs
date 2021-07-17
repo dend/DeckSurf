@@ -10,7 +10,7 @@ namespace Deck.Surf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
     [ExpectedInteractionFormat(CommandType.ACTIVATION)]
-    class ShowCPUUsage : IPigletCommand
+    class ShowCPUUsage : IDSCommand
     {
         public string Name => "Launch Application";
         public string Description => "Launches an application on the machine.";

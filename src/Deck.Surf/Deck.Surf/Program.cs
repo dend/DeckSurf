@@ -15,8 +15,8 @@ namespace Deck.Surf
 {
     class Program
     {
-        private static IEnumerable<IPlugin> _plugins;
-        private static IDictionary<string, IEnumerable<IPigletCommand>> _commands;
+        private static IEnumerable<IDSPlugin> _plugins;
+        private static IDictionary<string, IEnumerable<IDSCommand>> _commands;
 
         static int Main(string[] args)
         {
@@ -132,14 +132,14 @@ namespace Deck.Surf
 
         private static void HandleListPluginsCommand()
         {
-            _plugins = Loader.Load<IPlugin>();
+            _plugins = Loader.Load<IDSPlugin>();
 
             foreach (var plugin in _plugins)
             {
                 Console.WriteLine($"{"| " + plugin.Metadata.Id,-21} {"| " + plugin.Metadata.Version,-10} {"| " + plugin.Metadata.Author,-10}");
                 foreach (var command in plugin.GetSupportedCommands())
                 {
-                    var commandInstance = (IPigletCommand)Activator.CreateInstance(command);
+                    var commandInstance = (IDSCommand)Activator.CreateInstance(command);
                     Console.WriteLine($"   |_ {commandInstance.Name} ({commandInstance.Description})");
                 }
             }
@@ -174,15 +174,15 @@ namespace Deck.Surf
 
                 // With a detected device, let's load the plugins
                 // and the associated commands.
-                _plugins = Loader.Load<IPlugin>();
+                _plugins = Loader.Load<IDSPlugin>();
 
-                var commandMap = new Dictionary<string, IEnumerable<IPigletCommand>>();
-                var commandList = new List<IPigletCommand>();
+                var commandMap = new Dictionary<string, IEnumerable<IDSCommand>>();
+                var commandList = new List<IDSCommand>();
                 foreach (var plugin in _plugins)
                 {
                     commandMap.Add(plugin.Metadata.Id.ToLower(), Loader.LoadCommands(plugin, device.Model));
                 }
-                _commands = new Dictionary<string, IEnumerable<IPigletCommand>>(commandMap);
+                _commands = new Dictionary<string, IEnumerable<IDSCommand>>(commandMap);
 
                 device.InitializeDevice();
 
@@ -212,7 +212,7 @@ namespace Deck.Surf
 
         private static void HandleWriteCommand(int deviceIndex, int keyIndex, string plugin, string command, string imagePath, string actionArgs, string profile)
         {
-            _plugins = Loader.Load<IPlugin>();
+            _plugins = Loader.Load<IDSPlugin>();
 
             var targetPlugin = (from c in _plugins where string.Equals(c.Metadata.Id, plugin, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
             

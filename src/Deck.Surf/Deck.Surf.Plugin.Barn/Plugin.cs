@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Deck.Surf.Plugin.Barn
 {
-    public class Plugin : IPlugin
+    public class Plugin : IDSPlugin
     {
         private PluginMetadata _metadata = new()
         {

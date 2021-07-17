@@ -30,9 +30,9 @@ namespace Deck.Surf.Extensibility
             return container.Resolve<IEnumerable<T>>();
         }
 
-        internal static IEnumerable<IPigletCommand> LoadCommands(IPlugin plugin, DeviceModel model)
+        internal static IEnumerable<IDSCommand> LoadCommands(IDSPlugin plugin, DeviceModel model)
         {
-            List<IPigletCommand> commandList = new();
+            List<IDSCommand> commandList = new();
 
             foreach (var command in plugin.GetSupportedCommands())
             {
@@ -41,7 +41,7 @@ namespace Deck.Surf.Extensibility
                 var attribute = Attribute.GetCustomAttributes(command, typeof(CompatibleWithAttribute));
                 if (attribute.Any(x => ((CompatibleWithAttribute)x).CompatibleModel == model))
                 {
-                    var commandInstance = (IPigletCommand)Activator.CreateInstance(command);
+                    var commandInstance = (IDSCommand)Activator.CreateInstance(command);
                     commandList.Add(commandInstance);
                 }
             }
