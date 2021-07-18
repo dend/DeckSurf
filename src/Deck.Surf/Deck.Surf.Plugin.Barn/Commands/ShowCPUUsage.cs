@@ -3,8 +3,11 @@ using Deck.Surf.SDK.Core;
 using Deck.Surf.SDK.Interfaces;
 using Deck.Surf.SDK.Models;
 using Deck.Surf.SDK.Util;
+using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading;
+using System.Timers;
 
 namespace Deck.Surf.Plugin.Barn.Commands
 {
@@ -21,18 +24,25 @@ namespace Deck.Surf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
-            var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Consolas", 12), Color.Red, Color.Blue);
-            var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
+            var cpuUsageTimer = new System.Timers.Timer(2000);
+            cpuUsageTimer.Elapsed += (s, e) =>
+            {
+                var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Consolas", 12), Color.Red, Color.Blue);
+                var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
 
-            DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, resizeImage);
+                DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, resizeImage);
+            };
+            cpuUsageTimer.Start();
         }
 
-        private static uint GetCPUUsage()
+        private static int GetCPUUsage()
         {
-            var osNameAndVersion = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
-
             PerformanceCounter perfCounter = new("Processor", "% Processor Time", "_Total");
-            return (uint)perfCounter.NextValue();
+            // Dummy call because PerformanceCounter will always start with zero.
+            var inspectionDummy = perfCounter.NextValue();
+            Thread.Sleep(1000);
+            var targetCPUUsage = (int)Math.Round(perfCounter.NextValue());
+            return targetCPUUsage;
         }
     }
 }
