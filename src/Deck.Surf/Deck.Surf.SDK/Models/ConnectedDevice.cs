@@ -4,8 +4,8 @@
 
 using System;
 using System.Threading;
-using HidSharp;
 using Deck.Surf.SDK.Core;
+using HidSharp;
 
 namespace Deck.Surf.SDK.Models
 {
@@ -86,6 +86,14 @@ namespace Deck.Surf.SDK.Models
             Array.Clear(this.keyPressBuffer, 0, this.keyPressBuffer.Length);
 
             this.UnderlyingInputStream.BeginRead(this.keyPressBuffer, 0, this.keyPressBuffer.Length, this.KeyPressCallback, null);
+        }
+
+        public void ClearPanel()
+        {
+            for (int i = 0; i < this.ButtonCount; i++)
+            {
+                DeviceManager.SetKey(this, i, DeviceConstants.XLDefaultBlackButton);
+            }
         }
     }
 }

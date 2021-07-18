@@ -14,6 +14,6 @@ namespace Deck.Surf.SDK.Interfaces
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice);
 
-        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice);
+        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice, int activatingButton = -1);
     }
 }

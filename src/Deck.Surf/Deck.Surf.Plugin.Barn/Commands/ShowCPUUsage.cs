@@ -17,7 +17,7 @@ namespace Deck.Surf.Plugin.Barn.Commands
         public string Name => "Launch Application";
         public string Description => "Launches an application on the machine.";
 
-        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
+        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice, int activatingButton = -1)
         {
             
         }

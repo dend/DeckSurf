@@ -29,7 +29,8 @@ namespace Deck.Surf.Plugin.Barn
             return new List<Type>()
             { 
                 typeof(LaunchApplication),
-                typeof(ShowCPUUsage)
+                typeof(ShowCPUUsage),
+                typeof(SnakeGame)
             };
         }
     }

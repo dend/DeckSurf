@@ -156,17 +156,21 @@ namespace Deck.Surf
                 device.OnButtonPress += (s, e) =>
                 {
                     Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
-                    var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.ButtonIndex == e.Id);
-                    if (buttonEntry != null)
+
+                    if (e.Kind == ButtonEventKind.DOWN)
                     {
-                        var targetPluginName = buttonEntry.Plugin.ToLower();
-                        if (_commands.ContainsKey(targetPluginName))
+                        var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.ButtonIndex == e.Id);
+                        if (buttonEntry != null)
                         {
-                            var targetPlugin = _commands[targetPluginName];
-                            var targetCommand = (from c in targetPlugin where string.Equals(c.GetType().Name, buttonEntry.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
-                            if (targetCommand != null)
+                            ExecuteButtonAction(buttonEntry, device);
+                        }
+
+                        var anyButtonCatchers = workingProfile.ButtonMap.Where(x => x.ButtonIndex == -1);
+                        if (anyButtonCatchers.Any())
+                        {
+                            foreach (var button in anyButtonCatchers)
                             {
-                                targetCommand.ExecuteOnAction(buttonEntry, device);
+                                ExecuteButtonAction(button, device, e.Id);
                             }
                         }
                     }
@@ -205,6 +209,20 @@ namespace Deck.Surf
             else
             {
                 Console.WriteLine($"Could not load profile: {profile}. Make sure that the profile exists.");
+            }
+        }
+
+        private static void ExecuteButtonAction(CommandMapping buttonEntry, ConnectedDevice device, int activatingButton = -1)
+        {
+            var targetPluginName = buttonEntry.Plugin.ToLower();
+            if (_commands.ContainsKey(targetPluginName))
+            {
+                var targetPlugin = _commands[targetPluginName];
+                var targetCommand = (from c in targetPlugin where string.Equals(c.GetType().Name, buttonEntry.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
+                if (targetCommand != null)
+                {
+                    targetCommand.ExecuteOnAction(buttonEntry, device, activatingButton);
+                }
             }
         }
 
