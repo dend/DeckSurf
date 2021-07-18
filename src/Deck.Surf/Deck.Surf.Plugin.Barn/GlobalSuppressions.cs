@@ -5,4 +5,4 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "The CPU function is only expected to work on Windows.", Scope = "member", Target = "~M:Deck.Surf.Plugin.Barn.Commands.ShowCPUUsage.GetCPUUsage~System.UInt32")]
+[assembly: SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "CPU function should only be used in Windows.", Scope = "member", Target = "~M:Deck.Surf.Plugin.Barn.Commands.ShowCPUUsage.GetCPUUsage~System.Int32")]

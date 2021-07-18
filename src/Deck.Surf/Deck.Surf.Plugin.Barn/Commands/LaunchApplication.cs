@@ -1,6 +1,5 @@
 ﻿using Deck.Surf.SDK.Interfaces;
 using Deck.Surf.SDK.Models;
-using System;
 using System.Diagnostics;
 
 namespace Deck.Surf.Plugin.Barn.Commands

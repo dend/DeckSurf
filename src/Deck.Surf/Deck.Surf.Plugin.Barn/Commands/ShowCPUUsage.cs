@@ -7,13 +7,16 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
-using System.Timers;
 
 namespace Deck.Surf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
     class ShowCPUUsage : IDSCommand
     {
+        private const string CategoryName = "Processor";
+        private const string CounterName = "% Processor Time";
+        private const string InstanceName = "_Total";
+
         public string Name => "Launch Application";
         public string Description => "Launches an application on the machine.";
 
@@ -37,9 +40,9 @@ namespace Deck.Surf.Plugin.Barn.Commands
 
         private static int GetCPUUsage()
         {
-            PerformanceCounter perfCounter = new("Processor", "% Processor Time", "_Total");
+            PerformanceCounter perfCounter = new(CategoryName, CounterName, InstanceName);
             // Dummy call because PerformanceCounter will always start with zero.
-            var inspectionDummy = perfCounter.NextValue();
+            perfCounter.NextValue();
             Thread.Sleep(1000);
             var targetCPUUsage = (int)Math.Round(perfCounter.NextValue());
             return targetCPUUsage;
