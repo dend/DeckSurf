@@ -3,6 +3,7 @@ using Deck.Surf.SDK.Core;
 using Deck.Surf.SDK.Interfaces;
 using Deck.Surf.SDK.Models;
 using Deck.Surf.SDK.Util;
+using System.Diagnostics;
 using System.Drawing;
 
 namespace Deck.Surf.Plugin.Barn.Commands
@@ -20,10 +21,18 @@ namespace Deck.Surf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
-            var randomIconFromText = IconGenerator.GenerateTestImageFromText("92%", new Font("Consolas", 12), Color.Red, Color.Blue);
+            var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Consolas", 12), Color.Red, Color.Blue);
             var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
 
             DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, resizeImage);
+        }
+
+        private static uint GetCPUUsage()
+        {
+            var osNameAndVersion = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+
+            PerformanceCounter perfCounter = new("Processor", "% Processor Time", "_Total");
+            return (uint)perfCounter.NextValue();
         }
     }
 }
