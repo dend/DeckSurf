@@ -25,6 +25,7 @@ namespace Deck.Surf.Plugin.Barn.Helpers
             Brush textBrush = new SolidBrush(textColor);
 
             drawing.TextRenderingHint = TextRenderingHint.AntiAlias;
+            drawing.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
             drawing.DrawString(text, font, textBrush, 0, 0);
 
             drawing.Save();

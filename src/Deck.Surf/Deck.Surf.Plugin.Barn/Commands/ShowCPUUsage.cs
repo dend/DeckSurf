@@ -30,7 +30,7 @@ namespace Deck.Surf.Plugin.Barn.Commands
             var cpuUsageTimer = new System.Timers.Timer(2000);
             cpuUsageTimer.Elapsed += (s, e) =>
             {
-                var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Consolas", 12), Color.Red, Color.Blue);
+                var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Consolas", 94), Color.Red, Color.Black);
                 var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
 
                 DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, resizeImage);
