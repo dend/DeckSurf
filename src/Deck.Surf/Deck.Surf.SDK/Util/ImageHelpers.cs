@@ -126,12 +126,12 @@ namespace Deck.Surf.SDK.Util
 
         private static IntPtr GetBitmapPointer(string fileName, int width, int height, SIIGBF options)
         {
-            Guid shellItem2Guid = new(WindowsAPIHelpers.IID_IShellItem2);
-            int retCode = WindowsAPIHelpers.SHCreateItemFromParsingName(fileName, IntPtr.Zero, ref shellItem2Guid, out IShellItem nativeShellItem);
+            Guid itemIdentifier = new(WindowsAPIHelpers.IID_IShellItem2);
+            int returnCode = WindowsAPIHelpers.SHCreateItemFromParsingName(fileName, IntPtr.Zero, ref itemIdentifier, out IShellItem nativeShellItem);
 
-            if (retCode != 0)
+            if (returnCode != 0)
             {
-                throw Marshal.GetExceptionForHR(retCode);
+                throw Marshal.GetExceptionForHR(returnCode);
             }
 
             SIZE nativeSize = default;

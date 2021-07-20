@@ -23,10 +23,9 @@ namespace Deck.Surf.Plugin.Barn.Commands
             {
                 try
                 {
-                    var icon = ImageHelpers.GetFileIcon(mappedCommand.CommandArguments, 256, 256, SIIGBF.SIIGBF_ICONONLY);
+                    var icon = ImageHelpers.GetFileIcon(mappedCommand.CommandArguments, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
                     var byteContent = ImageHelpers.GetImageBuffer(icon);
-                    var targetImage = ImageHelpers.ResizeImage(byteContent, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
-                    DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, targetImage);
+                    DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, byteContent);
                 }
                 catch
                 {
