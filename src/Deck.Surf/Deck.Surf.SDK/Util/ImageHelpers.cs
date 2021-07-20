@@ -2,10 +2,16 @@
 // Den Delimarsky licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using Deck.Surf.SDK.Interfaces;
+using Deck.Surf.SDK.Models;
 
 namespace Deck.Surf.SDK.Util
 {
@@ -56,6 +62,92 @@ namespace Deck.Surf.SDK.Util
             ImageConverter converter = new();
             byte[] buffer = (byte[])converter.ConvertTo(image, typeof(byte[]));
             return buffer;
+        }
+
+        public static byte[] GetImageBuffer(Icon icon)
+        {
+            using MemoryStream stream = new();
+            icon.Save(stream);
+            return stream.ToArray();
+        }
+
+        public static Bitmap GetFileIcon(string fileName, int width, int height, SIIGBF options)
+        {
+            IntPtr hBitmap = GetBitmapPointer(fileName, width, height, options);
+
+            try
+            {
+                return GetBitmapFromHBitmap(hBitmap);
+            }
+            finally
+            {
+                WindowsAPIHelpers.DeleteObject(hBitmap);
+            }
+        }
+
+        private static Bitmap GetBitmapFromHBitmap(IntPtr nativeHBitmap)
+        {
+            Bitmap bitmap = Image.FromHbitmap(nativeHBitmap);
+
+            if (Image.GetPixelFormatSize(bitmap.PixelFormat) < 32)
+            {
+                return bitmap;
+            }
+
+            return CreateAlphaBitmap(bitmap, PixelFormat.Format32bppArgb);
+        }
+
+        // Refer to Stack Overflow answer: https://stackoverflow.com/a/21752100 and https://stackoverflow.com/a/42178963
+        private static Bitmap CreateAlphaBitmap(Bitmap sourceBitmap, PixelFormat targetPixelFormat)
+        {
+            Bitmap outputBitmap = new(sourceBitmap.Width, sourceBitmap.Height, targetPixelFormat);
+            Rectangle boundary = new(0, 0, sourceBitmap.Width, sourceBitmap.Height);
+            BitmapData sourceBitmapData = sourceBitmap.LockBits(boundary, ImageLockMode.ReadOnly, sourceBitmap.PixelFormat);
+
+            try
+            {
+                for (int i = 0; i <= sourceBitmapData.Height - 1; i++)
+                {
+                    for (int j = 0; j <= sourceBitmapData.Width - 1; j++)
+                    {
+                        Color pixelColor = Color.FromArgb(Marshal.ReadInt32(sourceBitmapData.Scan0, (sourceBitmapData.Stride * i) + (4 * j)));
+
+                        outputBitmap.SetPixel(j, i, pixelColor);
+                    }
+                }
+            }
+            finally
+            {
+                sourceBitmap.UnlockBits(sourceBitmapData);
+            }
+
+            return outputBitmap;
+        }
+
+        private static IntPtr GetBitmapPointer(string fileName, int width, int height, SIIGBF options)
+        {
+            Guid shellItem2Guid = new(WindowsAPIHelpers.IID_IShellItem2);
+            int retCode = WindowsAPIHelpers.SHCreateItemFromParsingName(fileName, IntPtr.Zero, ref shellItem2Guid, out IShellItem nativeShellItem);
+
+            if (retCode != 0)
+            {
+                throw Marshal.GetExceptionForHR(retCode);
+            }
+
+            SIZE nativeSize = default;
+            nativeSize.Width = width;
+            nativeSize.Height = height;
+
+            HResult hr = ((IShellItemImageFactory)nativeShellItem).GetImage(nativeSize, options, out IntPtr hBitmap);
+
+            Marshal.ReleaseComObject(nativeShellItem);
+
+            if (hr == HResult.S_OK)
+            {
+                return hBitmap;
+            }
+
+            throw Marshal.GetExceptionForHR((int)hr);
         }
     }
 }
