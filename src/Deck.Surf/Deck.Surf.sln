@@ -12,6 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A4362C75-6F9E-4A88-B230-94D9DBC353BA}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		..\..\.github\workflows\build.yaml = ..\..\.github\workflows\build.yaml
 	EndProjectSection
 EndProject
 Global
