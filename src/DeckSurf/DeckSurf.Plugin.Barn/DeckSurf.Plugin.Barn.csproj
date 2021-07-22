@@ -18,11 +18,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DeckSurf.SDK" Version="0.0.2" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.0-preview.6.21352.12" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Deck.Surf.SDK\DeckSurf.SDK.csproj" />
   </ItemGroup>
 
 </Project>
