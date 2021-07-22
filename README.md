@@ -1,6 +1,6 @@
 <div align="center">
 	<img alt="Piglet icon" src="images/logo.png" width="200" height="200" />
-	<h1>🌊 Deck.Surf - The Open Stream Deck CLI & Tooling</h1>
+	<h1>🌊 DeckSurf - The Open Stream Deck CLI & Tooling</h1>
 	<p>
 		<b>Lightweight and open way to manage your Stream Deck device.</b>
 	</p>
