@@ -9,6 +9,9 @@
 	<br>
 </div>
 
+<div align="center">
+	<p><a href="https://github.com/dend/decksurf-sdk">Software Development Kit</a></p>
+</div>
 
 
 ## How It Works
