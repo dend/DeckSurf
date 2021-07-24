@@ -10,7 +10,7 @@
 </div>
 
 <div align="center">
-	<p><a href="https://github.com/dend/decksurf-sdk">Software Development Kit</a></p>
+	<p><a href="https://github.com/dend/decksurf-sdk">Software Development Kit</a> | <a href="https://docs.deck.surf">Documentation</a></p>
 </div>
 
 
