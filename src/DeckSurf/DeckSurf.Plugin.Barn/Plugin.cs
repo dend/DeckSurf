@@ -11,7 +11,7 @@ namespace DeckSurf.Plugin.Barn
         private PluginMetadata _metadata = new()
         {
             Author = "Den Delimarsky",
-            Id = "Deck.Surf.Plugin.Barn",
+            Id = "DeckSurf.Plugin.Barn",
             Version = "0.0.1-alpha",
             Website = "https://github.com/dend/piglet"
         };

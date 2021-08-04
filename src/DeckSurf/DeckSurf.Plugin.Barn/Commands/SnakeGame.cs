@@ -78,7 +78,7 @@ namespace DeckSurf.Plugin.Barn.Commands
             Timer timer = new(1000);
             timer.Elapsed += (s, e) =>
             {
-                DeviceManager.SetKey(mappedDevice, UpdateSnakePosition(_direction), DeviceConstants.XLDefaultBlackButton);
+                mappedDevice.SetKey(UpdateSnakePosition(_direction), DeviceConstants.XLDefaultBlackButton);
                 UpdateSnakeRendering(mappedDevice);
             };
             timer.Start();
@@ -121,7 +121,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         {
             foreach (var snakeNode in _snake)
             {
-                DeviceManager.SetKey(mappedDevice, snakeNode, DeviceConstants.XLDefaultWhiteButton);
+                mappedDevice.SetKey(snakeNode, DeviceConstants.XLDefaultWhiteButton);
             }
         }
     }

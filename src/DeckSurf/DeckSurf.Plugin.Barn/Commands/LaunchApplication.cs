@@ -25,7 +25,10 @@ namespace DeckSurf.Plugin.Barn.Commands
                 {
                     var icon = ImageHelpers.GetFileIcon(mappedCommand.CommandArguments, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
                     var byteContent = ImageHelpers.GetImageBuffer(icon);
-                    DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, byteContent);
+
+                    // TODO: Make sure that this works beyond the XL model.
+                    var resizedByteContent = ImageHelpers.ResizeImage(byteContent, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
+                    mappedDevice.SetKey(mappedCommand.ButtonIndex, resizedByteContent);
                 }
                 catch
                 {

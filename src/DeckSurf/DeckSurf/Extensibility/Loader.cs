@@ -17,7 +17,7 @@ namespace DeckSurf.Extensibility
         {
             var builder = new ContainerBuilder();
 
-            Regex assemblyPattern = new Regex(@"Deck\.Surf\.Plugin\..+\.dll");
+            Regex assemblyPattern = new Regex(@"DeckSurf\.Plugin\..+\.dll");
 
             var pluginPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "plugins");
             var assemblies = Directory.EnumerateFiles(pluginPath, "*.dll", SearchOption.AllDirectories)

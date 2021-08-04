@@ -17,8 +17,8 @@ namespace DeckSurf.Plugin.Barn.Commands
         private const string CounterName = "% Processor Time";
         private const string InstanceName = "_Total";
 
-        public string Name => "Launch Application";
-        public string Description => "Launches an application on the machine.";
+        public string Name => "Show CPU Usage";
+        public string Description => "Shows % of the CPU being used.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice, int activatingButton = -1)
         {
@@ -33,14 +33,15 @@ namespace DeckSurf.Plugin.Barn.Commands
                 var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Bahnschrift", 94), Color.Red, Color.Black);
                 var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
 
-                DeviceManager.SetKey(mappedDevice, mappedCommand.ButtonIndex, resizeImage);
+                mappedDevice.SetKey(mappedCommand.ButtonIndex, resizeImage);
             };
             cpuUsageTimer.Start();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Intended to work on Windows only at this time.")]
         private static int GetCPUUsage()
         {
-            PerformanceCounter perfCounter = new(CategoryName, CounterName, InstanceName);
+            PerformanceCounter perfCounter = new(categoryName: CategoryName, counterName: CounterName, instanceName: InstanceName);
             // Dummy call because PerformanceCounter will always start with zero.
             perfCounter.NextValue();
             Thread.Sleep(1000);
