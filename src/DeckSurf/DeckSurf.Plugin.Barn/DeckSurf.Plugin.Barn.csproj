@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="GregsStack.InputSimulatorStandard" Version="1.3.5" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.0-preview.6.21352.12" />
   </ItemGroup>
 
