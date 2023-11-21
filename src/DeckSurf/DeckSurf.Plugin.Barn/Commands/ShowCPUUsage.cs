@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
-    [CompatibleWith(DeviceModel.XL)]
+    [CompatibleWith(DeviceModel.XL), CompatibleWith(DeviceModel.ORIGINAL_V2)]
     class ShowCPUUsage : IDSCommand
     {
         private const string CategoryName = "Processor";
@@ -27,11 +27,13 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
+            ImageHelpers.GetDeviceIconSizes(mappedDevice.Model, out var width, out var height, out var emSize);
+
             var cpuUsageTimer = new System.Timers.Timer(2000);
             cpuUsageTimer.Elapsed += (s, e) =>
             {
-                var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Bahnschrift", 94), Color.Red, Color.Black);
-                var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
+                var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Bahnschrift", emSize), Color.Red, Color.Black);
+                var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), width, height);
 
                 mappedDevice.SetKey(mappedCommand.ButtonIndex, resizeImage);
             };
