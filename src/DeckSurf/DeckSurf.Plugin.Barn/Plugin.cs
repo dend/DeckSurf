@@ -30,7 +30,8 @@ namespace DeckSurf.Plugin.Barn
             { 
                 typeof(LaunchApplication),
                 typeof(ShowCPUUsage),
-                typeof(SnakeGame)
+                typeof(SnakeGame),
+                typeof(ExecuteKeystroke)
             };
         }
     }
