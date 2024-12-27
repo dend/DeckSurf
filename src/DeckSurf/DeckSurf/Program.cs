@@ -34,7 +34,7 @@ namespace DeckSurf
             };
 
             writeCommand.AddOption(new Option<int>(
-                   aliases: new[] { "--device-index", "-d" },
+                   aliases: ["--device-index", "-d"],
                    getDefaultValue: () => -1,
                    description: "Index of the connected device, to which a key setting should be written.")
             {
@@ -43,7 +43,7 @@ namespace DeckSurf
             });
 
             writeCommand.AddOption(new Option<int>(
-                   aliases: new[] { "--key-index", "-k" },
+                   aliases: ["--key-index", "-k"],
                    getDefaultValue: () => -1,
                    description: "Index of the key that needs to be written.")
             {
@@ -52,7 +52,7 @@ namespace DeckSurf
             });
 
             writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--plugin", "-l" },
+                   aliases: ["--plugin", "-l"],
                    getDefaultValue: () => string.Empty,
                    description: "Plugin that contains the relevant command.")
             {
@@ -61,7 +61,7 @@ namespace DeckSurf
             });
 
             writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--command", "-c" },
+                   aliases: ["--command", "-c"],
                    getDefaultValue: () => string.Empty,
                    description: "Command to be executed.")
             {
@@ -70,7 +70,7 @@ namespace DeckSurf
             });
 
             writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--image-path", "-i" },
+                   aliases: ["--image-path", "-i"],
                    getDefaultValue: () => string.Empty,
                    description: "Path to the default image for the button.")
             {
@@ -79,7 +79,7 @@ namespace DeckSurf
             });
 
             writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--action-args", "-g" },
+                   aliases: ["--action-args", "-g"],
                    getDefaultValue: () => string.Empty,
                    description: "Arguments for the defined action.")
             {
@@ -88,7 +88,7 @@ namespace DeckSurf
             });
 
             writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--profile", "-p" },
+                   aliases: ["--profile", "-p"],
                    getDefaultValue: () => string.Empty,
                    description: "The profile to which the command should be added.")
             {
@@ -114,7 +114,7 @@ namespace DeckSurf
                 Handler = CommandHandler.Create<string>(HandleListenCommand)
             };
             listenCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--profile", "-p" },
+                   aliases: ["--profile", "-p"],
                    getDefaultValue: () => string.Empty,
                    description: "The profile associated with the current device.")
             {
@@ -155,9 +155,9 @@ namespace DeckSurf
 
                 device.OnButtonPress += (s, e) =>
                 {
-                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
+                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.EventKind}");
 
-                    if (e.Kind == ButtonEventKind.DOWN)
+                    if (e.EventKind == ButtonEventKind.DOWN)
                     {
                         var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.ButtonIndex == e.Id);
                         if (buttonEntry != null)
@@ -188,7 +188,7 @@ namespace DeckSurf
                 }
                 _commands = new Dictionary<string, IEnumerable<IDSCommand>>(commandMap);
 
-                device.InitializeDevice();
+                device.StartListening();
 
                 foreach(var mappedButton in workingProfile.ButtonMap)
                 {
@@ -229,11 +229,11 @@ namespace DeckSurf
         private static void HandleListCommand()
         {
             var devices = DeviceManager.GetDeviceList();
-            Console.WriteLine($"{"| Device Name",-21} {"| VID",-10} {"| PID",-10}");
+            Console.WriteLine($"{"| Device Name",-21} {"| VID",-10} {"| PID",-10} {"| Serial Number",-10}");
             Console.WriteLine("===========================================");
             foreach (var device in devices)
             {
-                Console.WriteLine($"{"| " + device.Name,-21} {"| " + device.VId,-10} {"| " + device.PId,-10}");
+                Console.WriteLine($"{"| " + device.Name,-21} {"| " + device.VId,-10} {"| " + $"0x{((int)device.Model):X}",-10} {"| " + device.Serial ,-10}");
             }
         }
 

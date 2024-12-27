@@ -1,8 +1,9 @@
-﻿using DeckSurf.SDK.Core;
-using DeckSurf.SDK.Interfaces;
+﻿using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
+using DeckSurf.SDK.Util;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Timers;
 
 namespace DeckSurf.Plugin.Barn.Commands
@@ -72,13 +73,13 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
         {
-            mappedDevice.ClearPanel();
+            mappedDevice.ClearButtons();
 
             UpdateSnakeRendering(mappedDevice);
             Timer timer = new(1000);
             timer.Elapsed += (s, e) =>
             {
-                mappedDevice.SetKey(UpdateSnakePosition(_direction), DeviceConstants.XLDefaultBlackButton);
+                mappedDevice.SetKey(UpdateSnakePosition(_direction), ImageHelpers.CreateBlankImage(mappedDevice.ButtonResolution, Color.Black));
                 UpdateSnakeRendering(mappedDevice);
             };
             timer.Start();
@@ -121,7 +122,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         {
             foreach (var snakeNode in _snake)
             {
-                mappedDevice.SetKey(snakeNode, DeviceConstants.XLDefaultWhiteButton);
+                mappedDevice.SetKey(snakeNode, ImageHelpers.CreateBlankImage(mappedDevice.ButtonResolution, Color.White));
             }
         }
     }

@@ -15,9 +15,11 @@
 
 [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://den.dev/ukraine)
 
-## How It Works
+## Setup & operation
 
-To get started, it's necessary to create a new profile, with a set of commands that will be associated with a button on the Stream Deck. To do that, you can use the `write` command in the Piglet CLI.
+### Creating a new profile
+
+To get started, it's necessary to **create a new profile**, with a set of commands that will be associated with a button on the Stream Deck. To do that, you can use the `write` command in the Piglet CLI.
 
 ```bash
 Usage:
@@ -47,7 +49,15 @@ The following arguments are used, and are required:
 | `--action-args` or `-a`  | Arguments to pass to the command being executed. This string is specific to each command. |
 | `--profile` or `-p`      | The name of the profile to be used. If no profile with a given name exists, a new one will be created. |
 
-The created profile will be located in `%LOCALAPPDATA%\DenDev\{PROFILE_NAME}`. The settings are stored in a `profile.json` file within the profile folder.
+The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\{PROFILE_NAME}`. The settings are stored in a `profile.json` file within the profile folder.
+
+### Listing existing devices
+
+To list existing devices, run:
+
+```powershell
+deck list
+```
 
 ## FAQ
 

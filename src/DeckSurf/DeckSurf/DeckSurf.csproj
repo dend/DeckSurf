@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Platforms>x64</Platforms>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <ApplicationIcon>piglet.ico</ApplicationIcon>
     <Authors>Den Delimarsky</Authors>
-    <Version>0.0.1</Version>
-    <Copyright>2021 by Den Delimarsky. All rights reserved.</Copyright>
+    <Version>0.0.2</Version>
+    <Copyright>Copyright © 2024 by Den Delimarsky. All rights reserved.</Copyright>
     <AssemblyName>deck</AssemblyName>
   </PropertyGroup>
 
@@ -21,8 +21,8 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="6.2.0" />
-    <PackageReference Include="DeckSurf.SDK" Version="0.0.3" />
+    <PackageReference Include="Autofac" Version="8.2.0" />
+    <PackageReference Include="DeckSurf.SDK" Version="0.0.4" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1" />
   </ItemGroup>
 

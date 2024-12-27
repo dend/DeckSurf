@@ -1,5 +1,4 @@
-﻿using DeckSurf.SDK.Core;
-using DeckSurf.SDK.Interfaces;
+﻿using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
 using System.Diagnostics;
@@ -23,11 +22,11 @@ namespace DeckSurf.Plugin.Barn.Commands
             {
                 try
                 {
-                    var icon = ImageHelpers.GetFileIcon(mappedCommand.CommandArguments, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
+                    var icon = ImageHelpers.GetFileIcon(mappedCommand.CommandArguments, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
                     var byteContent = ImageHelpers.GetImageBuffer(icon);
 
                     // TODO: Make sure that this works beyond the XL model.
-                    var resizedByteContent = ImageHelpers.ResizeImage(byteContent, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
+                    var resizedByteContent = ImageHelpers.ResizeImage(byteContent, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, mappedDevice.IsButtonImageFlipRequired);
                     mappedDevice.SetKey(mappedCommand.ButtonIndex, resizedByteContent);
                 }
                 catch

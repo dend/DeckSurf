@@ -31,7 +31,7 @@ namespace DeckSurf.Plugin.Barn.Commands
             cpuUsageTimer.Elapsed += (s, e) =>
             {
                 var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Bahnschrift", 94), Color.Red, Color.Black);
-                var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
+                var resizeImage = ImageHelpers.ResizeImage(ImageHelpers.GetImageBuffer(randomIconFromText), mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, mappedDevice.IsButtonImageFlipRequired);
 
                 mappedDevice.SetKey(mappedCommand.ButtonIndex, resizeImage);
             };
