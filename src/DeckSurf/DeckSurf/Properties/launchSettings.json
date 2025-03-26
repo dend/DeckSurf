@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "piglet": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --profile main"
+    }
+  }
+}
