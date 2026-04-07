@@ -34,12 +34,6 @@ namespace DeckSurf.Plugin.Barn.Commands
         public SnakeGame()
         {
             _snake = new();
-            _snake.Enqueue(0);
-            _snake.Enqueue(1);
-            _snake.Enqueue(2);
-            _snake.Enqueue(3);
-            _head = 3;
-
             _direction = SnakeDirection.RIGHT;
         }
 
@@ -90,6 +84,15 @@ namespace DeckSurf.Plugin.Barn.Commands
         {
             _columns = mappedDevice.ButtonColumns;
             _rows = mappedDevice.ButtonRows;
+
+            // Initialize the snake to fit within the first row of the device.
+            _snake.Clear();
+            var initialLength = Math.Min(3, _columns);
+            for (int i = 0; i < initialLength; i++)
+            {
+                _snake.Enqueue(i);
+            }
+            _head = initialLength - 1;
 
             mappedDevice.ClearButtons();
 
