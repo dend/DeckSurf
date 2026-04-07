@@ -7,7 +7,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <ApplicationIcon>piglet.ico</ApplicationIcon>
     <Authors>Den Delimarsky</Authors>
-    <Version>0.0.2</Version>
+    <Version>0.0.3</Version>
     <Copyright>2026 Den Delimarsky. All rights reserved.</Copyright>
     <AssemblyName>deck</AssemblyName>
 
