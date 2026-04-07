@@ -28,8 +28,8 @@ namespace DeckSurf.Plugin.Barn.Commands
         private int _head;
         private Timer _timer;
         private readonly object _lock = new();
-        private int _columns;
-        private int _rows;
+        private int _columns = 8;
+        private int _rows = 4;
 
         public SnakeGame()
         {

@@ -66,7 +66,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Intended to work on Windows only at this time.")]
         private static int GetCPUUsage()
         {
-            PerformanceCounter perfCounter = new(categoryName: CategoryName, counterName: CounterName, instanceName: InstanceName);
+            using PerformanceCounter perfCounter = new(categoryName: CategoryName, counterName: CounterName, instanceName: InstanceName);
             // Dummy call because PerformanceCounter will always start with zero.
             perfCounter.NextValue();
             Thread.Sleep(1000);

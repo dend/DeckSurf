@@ -28,5 +28,5 @@ jobs:
       with:
         dotnet-version: '10.0.x'
     - name: Build
-      working-directory: ./src/DeckSurf
+      working-directory: src/DeckSurf
       run: dotnet build DeckSurf.sln --configuration Release
