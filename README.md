@@ -127,7 +127,7 @@ The `--action-args` (`-g`) value is the full path to the executable to launch.
 
 ### ShowCPUUsage
 
-Displays a live-updating CPU usage percentage on the mapped button. The display refreshes every 2 seconds, rendering the current percentage as red text on a black background. This command uses Windows Performance Counters and is Windows-only.
+Displays a live-updating system-wide CPU usage percentage on the mapped button. The display refreshes every 2 seconds. On Windows, the percentage is rendered as red text on a black background. On macOS and Linux, the button color shifts from green (low usage) through yellow to red (high usage).
 
 **Usage example:**
 
