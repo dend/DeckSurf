@@ -30,7 +30,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         private System.Timers.Timer _cpuUsageTimer;
 
         public string Name => "Show CPU Usage";
-        public string Description => "Shows % of the CPU being used. Windows only.";
+        public string Description => "Displays live CPU usage percentage on a Stream Deck button. Windows only.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {

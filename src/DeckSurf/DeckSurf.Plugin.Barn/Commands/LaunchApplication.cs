@@ -20,7 +20,7 @@ namespace DeckSurf.Plugin.Barn.Commands
     class LaunchApplication : IDeckSurfCommand
     {
         public string Name => "Launch Application";
-        public string Description => "Launches an application on the machine.";
+        public string Description => "Launches an application from a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {

@@ -21,7 +21,7 @@ namespace DeckSurf.Plugin.Barn.Commands
     {
         public string Name => "Snake Game";
 
-        public string Description => "A simple game of snake that can be played on Stream Deck.";
+        public string Description => "Plays a game of snake on the Stream Deck button grid.";
 
         private Queue<int> _snake;
         private SnakeDirection _direction;
