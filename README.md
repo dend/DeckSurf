@@ -67,10 +67,10 @@ Options:
   -d, --device-index <device-index> (REQUIRED)  Index of the connected device, to which a key setting should be
                                                 written. [default: -1]
   -k, --key-index <key-index> (REQUIRED)        Index of the key that needs to be written. [default: -1]
-  -l, --plugin <plugin> (REQUIRED)              Plugin that contains the relevant command. [default: ]
+  -n, --plugin <plugin> (REQUIRED)              Plugin that contains the relevant command. [default: ]
   -c, --command <command> (REQUIRED)            Command to be executed. [default: ]
   -i, --image-path <image-path> (REQUIRED)      Path to the default image for the button. [default: ]
-  -g, --action-args <action-args> (REQUIRED)    Arguments for the defined action. [default: ]
+  -a, --action-args <action-args> (REQUIRED)    Arguments for the defined action. [default: ]
   -p, --profile <profile> (REQUIRED)            The profile to which the command should be added. [default: ]
   -?, -h, --help                                Show help and usage information
 ```
@@ -81,10 +81,10 @@ The following arguments are used, and are required:
 |:-------------------------|:------------|
 | `--device-index` or `-d` | Zero-based index of the connected Stream Deck device. If only one device is connected, the index is `0`. |
 | `--key-index` or `-k`    | Zero-based index of the key that is being written to. Should be within the boundaries of the keys for the connected device. |
-| `--plugin` or `-l`       | The full identifier of the DeckSurf plugin that will be used for command handling. Should match the name of the plugin DLL, without the file extension. |
+| `--plugin` or `-n`       | The full identifier of the DeckSurf plugin that will be used for command handling. Should match the plugin ID (e.g., `DeckSurf.Plugin.Barn`). |
 | `--command` or `-c`      | Command identifier. Should match the name of the command class in the plugin assembly. |
 | `--image-path` or `-i`   | Path to the image that will be used for the button that is being written to. This can be the default image, that will be replaced later on through one of the commands. |
-| `--action-args` or `-g`  | Arguments to pass to the command being executed. This string is specific to each command. |
+| `--action-args` or `-a`  | Arguments to pass to the command being executed. This string is specific to each command. |
 | `--profile` or `-p`      | The name of the profile to be used. If no profile with a given name exists, a new one will be created. |
 
 The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles\{PROFILE_NAME}`. The settings are stored in a `profile.json` file within the profile folder.
@@ -93,15 +93,15 @@ The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles
 
 | Command        | Description |
 |:---------------|:------------|
-| `deck write`   | Write a button configuration to a profile. |
-| `deck list`    | List all connected Stream Deck devices. |
-| `deck list-plugins` | List all available plugins and their commands. |
-| `deck listen`  | Start listening for button presses on a configured profile. |
+| `deck devices list` | List all connected Stream Deck devices. |
+| `deck devices info` | Show detailed information about a connected device. |
+| `deck devices brightness` | Set the brightness level of a connected device. |
+| `deck plugins list` | List all available plugins and their commands. |
 | `deck profiles list` | List all saved profiles. |
 | `deck profiles show <name>` | Show details and button mappings for a profile. |
 | `deck profiles delete <name>` | Delete a saved profile. |
-| `deck info`    | Show detailed information about a connected device. |
-| `deck brightness` | Set the brightness level of a connected device. |
+| `deck write`   | Write a button configuration to a profile. |
+| `deck listen`  | Start listening for button presses on a configured profile. |
 
 ## Included Plugin: Barn
 

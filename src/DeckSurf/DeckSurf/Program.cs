@@ -9,6 +9,7 @@ using System.CommandLine;
 using System.CommandLine.NamingConventionBinder;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,104 +25,62 @@ namespace DeckSurf
 
         private static Task<int> SetupCommandLine(string[] args)
         {
-            var rootCommand = new RootCommand();
+            var rootCommand = new RootCommand("DeckSurf - open, hackable CLI for managing Elgato Stream Deck devices.");
 
-            // Command to write content to the StreamDeck.
-            var writeCommand = new Command("write")
-            {
-                Handler = CommandHandler.Create<int, int, string, string, string, string, string>(HandleWriteCommand)
-            };
+            // ── devices ──
+            var devicesCommand = new Command("devices", "Manage connected Stream Deck devices.");
 
-            writeCommand.AddOption(new Option<int>(
-                   aliases: new[] { "--device-index", "-d" },
-                   getDefaultValue: () => -1,
-                   description: "Index of the connected device, to which a key setting should be written.")
-            {
-                IsRequired = true,
-                AllowMultipleArgumentsPerToken = false
-            });
-
-            writeCommand.AddOption(new Option<int>(
-                   aliases: new[] { "--key-index", "-k" },
-                   getDefaultValue: () => -1,
-                   description: "Index of the key that needs to be written.")
-            {
-                IsRequired = true,
-                AllowMultipleArgumentsPerToken = false
-            });
-
-            writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--plugin", "-l" },
-                   getDefaultValue: () => string.Empty,
-                   description: "Plugin that contains the relevant command.")
-            {
-                IsRequired = true,
-                AllowMultipleArgumentsPerToken = false
-            });
-
-            writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--command", "-c" },
-                   getDefaultValue: () => string.Empty,
-                   description: "Command to be executed.")
-            {
-                IsRequired = true,
-                AllowMultipleArgumentsPerToken = false
-            });
-
-            writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--image-path", "-i" },
-                   getDefaultValue: () => string.Empty,
-                   description: "Path to the default image for the button.")
-            {
-                IsRequired = true,
-                AllowMultipleArgumentsPerToken = false
-            });
-
-            writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--action-args", "-g" },
-                   getDefaultValue: () => string.Empty,
-                   description: "Arguments for the defined action.")
-            {
-                IsRequired = true,
-                AllowMultipleArgumentsPerToken = false
-            });
-
-            writeCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--profile", "-p" },
-                   getDefaultValue: () => string.Empty,
-                   description: "The profile to which the command should be added.")
-            {
-                IsRequired = true,
-                AllowMultipleArgumentsPerToken = false
-            });
-
-            // Command to list connected StreamDeck devices.
-            var listCommand = new Command("list")
+            var devicesListCommand = new Command("list", "List all connected Stream Deck devices.")
             {
                 Handler = CommandHandler.Create(HandleListCommand)
             };
 
-            // Command to list all available plug-ins.
-            var listPluginsCommand = new Command("list-plugins")
+            var devicesInfoCommand = new Command("info", "Show detailed information about a connected device.")
             {
-                Handler = CommandHandler.Create(HandleListPluginsCommand)
+                Handler = CommandHandler.Create<int>(HandleDeviceInfoCommand)
             };
+            devicesInfoCommand.AddOption(new Option<int>(
+                   aliases: new[] { "--device-index", "-d" },
+                   getDefaultValue: () => 0,
+                   description: "Zero-based index of the connected device.")
+            {
+                AllowMultipleArgumentsPerToken = false
+            });
 
-            // Command to listen to events from the StreamDeck.
-            var listenCommand = new Command("listen")
+            var devicesBrightnessCommand = new Command("brightness", "Set the brightness level of a connected device.")
             {
-                Handler = CommandHandler.Create<string>(HandleListenCommand)
+                Handler = CommandHandler.Create<int, int>(HandleBrightnessCommand)
             };
-            listenCommand.AddOption(new Option<string>(
-                   aliases: new[] { "--profile", "-p" },
-                   getDefaultValue: () => string.Empty,
-                   description: "The profile associated with the current device.")
+            devicesBrightnessCommand.AddOption(new Option<int>(
+                   aliases: new[] { "--device-index", "-d" },
+                   getDefaultValue: () => 0,
+                   description: "Zero-based index of the connected device.")
+            {
+                AllowMultipleArgumentsPerToken = false
+            });
+            devicesBrightnessCommand.AddOption(new Option<int>(
+                   aliases: new[] { "--level", "-l" },
+                   description: "Brightness level (0-100).")
             {
                 IsRequired = true,
                 AllowMultipleArgumentsPerToken = false
             });
 
-            // Profiles command group.
+            devicesCommand.AddCommand(devicesListCommand);
+            devicesCommand.AddCommand(devicesInfoCommand);
+            devicesCommand.AddCommand(devicesBrightnessCommand);
+
+            // ── plugins ──
+            var pluginsCommand = new Command("plugins", "Manage and inspect available plugins.");
+
+            var pluginsListCommand = new Command("list", "List all available plugins and their commands.")
+            {
+                Handler = CommandHandler.Create(HandleListPluginsCommand)
+            };
+
+            pluginsCommand.AddCommand(pluginsListCommand);
+
+            // ── profiles ──
             var profilesCommand = new Command("profiles", "Manage device profiles.");
 
             var profilesListCommand = new Command("list", "List all available profiles.")
@@ -147,46 +106,95 @@ namespace DeckSurf
             profilesCommand.AddCommand(profilesShowCommand);
             profilesCommand.AddCommand(profilesDeleteCommand);
 
-            // Device info command.
-            var deviceInfoCommand = new Command("info", "Show detailed information about a connected device.")
+            // ── write ──
+            var writeCommand = new Command("write", "Write a button configuration to a profile.")
             {
-                Handler = CommandHandler.Create<int>(HandleDeviceInfoCommand)
+                Handler = CommandHandler.Create<int, int, string, string, string, string, string>(HandleWriteCommand)
             };
-            deviceInfoCommand.AddOption(new Option<int>(
-                   aliases: new[] { "--device-index", "-d" },
-                   getDefaultValue: () => 0,
-                   description: "Index of the connected device.")
-            {
-                AllowMultipleArgumentsPerToken = false
-            });
 
-            // Brightness command.
-            var brightnessCommand = new Command("brightness", "Set the brightness level of a connected device.")
-            {
-                Handler = CommandHandler.Create<int, int>(HandleBrightnessCommand)
-            };
-            brightnessCommand.AddOption(new Option<int>(
+            writeCommand.AddOption(new Option<int>(
                    aliases: new[] { "--device-index", "-d" },
-                   getDefaultValue: () => 0,
-                   description: "Index of the connected device.")
-            {
-                AllowMultipleArgumentsPerToken = false
-            });
-            brightnessCommand.AddOption(new Option<int>(
-                   aliases: new[] { "--level", "-b" },
-                   description: "Brightness level (0-100).")
+                   getDefaultValue: () => -1,
+                   description: "Zero-based index of the connected device.")
             {
                 IsRequired = true,
                 AllowMultipleArgumentsPerToken = false
             });
 
-            rootCommand.AddCommand(writeCommand);
-            rootCommand.AddCommand(listCommand);
-            rootCommand.AddCommand(listPluginsCommand);
-            rootCommand.AddCommand(listenCommand);
+            writeCommand.AddOption(new Option<int>(
+                   aliases: new[] { "--key-index", "-k" },
+                   getDefaultValue: () => -1,
+                   description: "Zero-based index of the key to configure.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--plugin", "-n" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Plugin ID (e.g., DeckSurf.Plugin.Barn).")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--command", "-c" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Command class name within the plugin.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--image-path", "-i" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Path to the default image for the button.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--action-args", "-a" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Arguments passed to the command.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--profile", "-p" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Profile name. Created if it does not exist.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            // ── listen ──
+            var listenCommand = new Command("listen", "Start listening for button presses on a configured profile.")
+            {
+                Handler = CommandHandler.Create<string>(HandleListenCommand)
+            };
+            listenCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--profile", "-p" },
+                   getDefaultValue: () => string.Empty,
+                   description: "The profile to activate.")
+            {
+                IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            // ── register commands ──
+            rootCommand.AddCommand(devicesCommand);
+            rootCommand.AddCommand(pluginsCommand);
             rootCommand.AddCommand(profilesCommand);
-            rootCommand.AddCommand(deviceInfoCommand);
-            rootCommand.AddCommand(brightnessCommand);
+            rootCommand.AddCommand(writeCommand);
+            rootCommand.AddCommand(listenCommand);
 
             return rootCommand.InvokeAsync(args);
         }
@@ -194,6 +202,12 @@ namespace DeckSurf
         private static void HandleListPluginsCommand()
         {
             var plugins = Loader.Load<IDeckSurfPlugin>();
+
+            if (!plugins.Any())
+            {
+                Console.WriteLine("No plugins found. Ensure plugin DLLs are in the plugins/ directory.");
+                return;
+            }
 
             Console.WriteLine($"{"Plugin ID",-25} {"Version",-12} {"Author",-15}");
             Console.WriteLine(new string('-', 52));
@@ -257,14 +271,13 @@ namespace DeckSurf
                     }
                 };
 
-                // With a detected device, let's load the plugins
-                // and the associated commands.
                 foreach (var plugin in plugins)
                 {
                     commands.Add(plugin.Metadata.Id.ToLower(), Loader.LoadCommands(plugin, device.Model));
                 }
 
                 device.StartListening();
+                Console.WriteLine($"Listening on profile '{profile}'. Press Ctrl+C to stop.");
 
                 foreach (var mappedButton in workingProfile.ButtonMap)
                 {
@@ -284,7 +297,6 @@ namespace DeckSurf
             }
             finally
             {
-                // Dispose all command instances.
                 foreach (var commandGroup in commands.Values)
                 {
                     foreach (var command in commandGroup)
@@ -296,7 +308,6 @@ namespace DeckSurf
                     }
                 }
 
-                // Dispose the device.
                 if (device is IDisposable disposableDevice)
                 {
                     disposableDevice.Dispose();
@@ -321,17 +332,23 @@ namespace DeckSurf
         private static void HandleListCommand()
         {
             var devices = DeviceManager.GetDeviceList();
-            Console.WriteLine($"{"| Device Name",-21} {"| VID",-10} {"| Serial",-20} {"| Model",-15}");
-            Console.WriteLine(new string('=', 66));
+            if (devices.Count == 0)
+            {
+                Console.WriteLine("No Stream Deck devices found.");
+                Console.WriteLine("Make sure your device is connected and the Elgato Stream Deck software is closed.");
+                return;
+            }
+
+            Console.WriteLine($"{"Device Name",-20} {"VID",-10} {"Serial",-20} {"Model",-15}");
+            Console.WriteLine(new string('-', 65));
             foreach (var device in devices)
             {
-                Console.WriteLine($"{"| " + device.Name,-21} {"| " + device.VendorId,-10} {"| " + device.Serial,-20} {"| " + device.Model,-15}");
+                Console.WriteLine($"{device.Name,-20} {device.VendorId,-10} {device.Serial,-20} {device.Model,-15}");
             }
         }
 
         private static void HandleWriteCommand(int deviceIndex, int keyIndex, string plugin, string command, string imagePath, string actionArgs, string profile)
         {
-            // Validate image path if provided.
             if (!string.IsNullOrEmpty(imagePath) && !File.Exists(imagePath))
             {
                 Console.WriteLine($"Image file not found: {imagePath}");
@@ -357,15 +374,19 @@ namespace DeckSurf
                     };
 
                     ConfigurationHelper.WriteToConfiguration(profile, deviceIndex, mapping);
+                    Console.WriteLine($"Button {keyIndex} configured on profile '{profile}'.");
+                    Console.WriteLine($"Run 'deck listen -p {profile}' to activate.");
                 }
                 else
                 {
-                    Console.WriteLine($"Could not find the {command} associated with {plugin}.");
+                    Console.WriteLine($"Command '{command}' not found in plugin '{plugin}'.");
+                    Console.WriteLine("Run 'deck plugins list' to see available commands.");
                 }
             }
             else
             {
-                Console.WriteLine($"Could not find the {plugin} plugin.");
+                Console.WriteLine($"Plugin '{plugin}' not found.");
+                Console.WriteLine("Run 'deck plugins list' to see available plugins.");
             }
         }
 
@@ -377,14 +398,14 @@ namespace DeckSurf
 
             if (!Directory.Exists(profilesPath))
             {
-                Console.WriteLine("No profiles directory found.");
+                Console.WriteLine("No profiles found. Use 'deck write' to create one.");
                 return;
             }
 
             var directories = Directory.GetDirectories(profilesPath);
             if (directories.Length == 0)
             {
-                Console.WriteLine("No profiles found.");
+                Console.WriteLine("No profiles found. Use 'deck write' to create one.");
                 return;
             }
 
@@ -440,7 +461,6 @@ namespace DeckSurf
                 "Den.Dev", "DeckSurf", "Profiles"));
             var profilesPath = Path.GetFullPath(Path.Combine(profilesRoot, name));
 
-            // Prevent path traversal — ensure the resolved path is inside the profiles directory.
             if (!profilesPath.StartsWith(profilesRoot, StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine($"Invalid profile name: {name}");
@@ -463,7 +483,8 @@ namespace DeckSurf
             var devices = DeviceManager.GetDeviceList();
             if (devices.Count == 0)
             {
-                Console.WriteLine("No connected devices found.");
+                Console.WriteLine("No Stream Deck devices found.");
+                Console.WriteLine("Make sure your device is connected and the Elgato Stream Deck software is closed.");
                 return;
             }
 
@@ -476,17 +497,17 @@ namespace DeckSurf
             var device = devices[deviceIndex];
             Console.WriteLine("Device Information:");
             Console.WriteLine(new string('-', 35));
-            Console.WriteLine($"  Name:             {device.Name}");
-            Console.WriteLine($"  Serial:           {device.Serial}");
-            Console.WriteLine($"  Model:            {device.Model}");
-            Console.WriteLine($"  Button Count:     {device.ButtonCount}");
-            Console.WriteLine($"  Button Layout:    {device.ButtonColumns} x {device.ButtonRows}");
-            Console.WriteLine($"  Button Resolution:{device.ButtonResolution}");
-            Console.WriteLine($"  Screen Supported: {device.IsScreenSupported}");
+            Console.WriteLine($"  Name:              {device.Name}");
+            Console.WriteLine($"  Serial:            {device.Serial}");
+            Console.WriteLine($"  Model:             {device.Model}");
+            Console.WriteLine($"  Button Count:      {device.ButtonCount}");
+            Console.WriteLine($"  Button Layout:     {device.ButtonColumns} x {device.ButtonRows}");
+            Console.WriteLine($"  Button Resolution: {device.ButtonResolution}");
+            Console.WriteLine($"  Screen Supported:  {device.IsScreenSupported}");
             if (device.IsScreenSupported)
             {
-                Console.WriteLine($"  Screen Width:     {device.ScreenWidth}");
-                Console.WriteLine($"  Screen Height:    {device.ScreenHeight}");
+                Console.WriteLine($"  Screen Width:      {device.ScreenWidth}");
+                Console.WriteLine($"  Screen Height:     {device.ScreenHeight}");
             }
         }
 
@@ -501,7 +522,8 @@ namespace DeckSurf
             var devices = DeviceManager.GetDeviceList();
             if (devices.Count == 0)
             {
-                Console.WriteLine("No connected devices found.");
+                Console.WriteLine("No Stream Deck devices found.");
+                Console.WriteLine("Make sure your device is connected and the Elgato Stream Deck software is closed.");
                 return;
             }
 

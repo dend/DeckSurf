@@ -24,11 +24,24 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
-            Process.Start(new ProcessStartInfo
+            if (OperatingSystem.IsMacOS())
             {
-                FileName = mappedCommand.CommandArguments,
-                UseShellExecute = false,
-            });
+                // macOS needs 'open' to launch .app bundles.
+                Process.Start("open", mappedCommand.CommandArguments);
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                // Linux needs 'xdg-open' to handle desktop files and URLs.
+                Process.Start("xdg-open", mappedCommand.CommandArguments);
+            }
+            else
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = mappedCommand.CommandArguments,
+                    UseShellExecute = false,
+                });
+            }
         }
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
