@@ -156,7 +156,7 @@ The Stream Deck Plus and Neo also support LCD screen output via `IConnectedDevic
 
 ### Why was this project created?
 
-I was fiddling with the default Stream Deck software, and realized that it [was constantly scanning my registry and process tree](https://twitter.com/DennisCode/status/1401230392527523856). According to Elgato support, this is necessary for [Smart Profiles](https://help.elgato.com/hc/en-us/articles/360053419071-Elgato-Stream-Deck-Smart-Profiles); however, the process monitoring occurs even when Smart Profiles are not configured. While the feature itself is nice, I wasn't too comfortable with some software constantly monitoring what I run without a way to disable that, so I decided to tinker with the device and see if I can figure out how to write my own software that manages the Stream Deck device.
+The Stream Deck is a great piece of hardware, but the official software is closed-source and opaque. DeckSurf was created to build an open, hackable alternative — by reverse engineering the USB HID protocol that the Stream Deck uses, we can give developers and tinkerers full control over their devices without relying on proprietary tooling. The goal is an open ecosystem where anyone can extend, automate, and integrate their Stream Deck however they see fit.
 
 ### Is this official/endorsed by Elgato?
 
