@@ -1,6 +1,6 @@
-﻿using DeckSurf.SDK.Core;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
+using DeckSurf.SDK.Util;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Timers;
@@ -8,7 +8,7 @@ using System.Timers;
 namespace DeckSurf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
-    class SnakeGame : IDSCommand
+    class SnakeGame : IDeckSurfCommand
     {
         public string Name => "Snake Game";
 
@@ -17,6 +17,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         private Queue<int> _snake;
         private SnakeDirection _direction;
         private int _head;
+        private Timer _timer;
 
         public SnakeGame()
         {
@@ -38,7 +39,7 @@ namespace DeckSurf.Plugin.Barn.Commands
             RIGHT,
         }
 
-        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice, int activatingButton = -1)
+        public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
             var headRow = _head / 8;
             var pressedButtonRow = activatingButton / 8;
@@ -70,18 +71,19 @@ namespace DeckSurf.Plugin.Barn.Commands
             }
         }
 
-        public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
+        public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            mappedDevice.ClearPanel();
+            mappedDevice.ClearButtons();
 
             UpdateSnakeRendering(mappedDevice);
-            Timer timer = new(1000);
-            timer.Elapsed += (s, e) =>
+            _timer = new Timer(1000);
+            _timer.Elapsed += (s, e) =>
             {
-                mappedDevice.SetKey(UpdateSnakePosition(_direction), DeviceConstants.XLDefaultBlackButton);
+                var clearedIndex = UpdateSnakePosition(_direction);
+                mappedDevice.SetKeyColor(clearedIndex, DeviceColor.Black);
                 UpdateSnakeRendering(mappedDevice);
             };
-            timer.Start();
+            _timer.Start();
         }
 
         private int UpdateSnakePosition(SnakeDirection direction)
@@ -117,12 +119,18 @@ namespace DeckSurf.Plugin.Barn.Commands
             return -1;
         }
 
-        private void UpdateSnakeRendering(ConnectedDevice mappedDevice)
+        private void UpdateSnakeRendering(IConnectedDevice mappedDevice)
         {
             foreach (var snakeNode in _snake)
             {
-                mappedDevice.SetKey(snakeNode, DeviceConstants.XLDefaultWhiteButton);
+                mappedDevice.SetKeyColor(snakeNode, DeviceColor.White);
             }
+        }
+
+        public void Dispose()
+        {
+            _timer?.Stop();
+            _timer?.Dispose();
         }
     }
 }

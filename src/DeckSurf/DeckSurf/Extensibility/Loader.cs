@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using System;
@@ -30,9 +30,9 @@ namespace DeckSurf.Extensibility
             return container.Resolve<IEnumerable<T>>();
         }
 
-        internal static IEnumerable<IDSCommand> LoadCommands(IDSPlugin plugin, DeviceModel model)
+        internal static IEnumerable<IDeckSurfCommand> LoadCommands(IDeckSurfPlugin plugin, DeviceModel model)
         {
-            List<IDSCommand> commandList = new();
+            List<IDeckSurfCommand> commandList = new();
 
             foreach (var command in plugin.GetSupportedCommands())
             {
@@ -41,7 +41,7 @@ namespace DeckSurf.Extensibility
                 var attribute = Attribute.GetCustomAttributes(command, typeof(CompatibleWithAttribute));
                 if (attribute.Any(x => ((CompatibleWithAttribute)x).CompatibleModel == model))
                 {
-                    var commandInstance = (IDSCommand)Activator.CreateInstance(command);
+                    var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
                     commandList.Add(commandInstance);
                 }
             }

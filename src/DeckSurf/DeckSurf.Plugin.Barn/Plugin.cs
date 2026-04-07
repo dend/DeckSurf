@@ -1,4 +1,4 @@
-﻿using DeckSurf.Plugin.Barn.Commands;
+using DeckSurf.Plugin.Barn.Commands;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace DeckSurf.Plugin.Barn
 {
-    public class Plugin : IDSPlugin
+    public class Plugin : IDeckSurfPlugin
     {
         private PluginMetadata _metadata = new()
         {
@@ -27,7 +27,7 @@ namespace DeckSurf.Plugin.Barn
         public List<Type> GetSupportedCommands()
         {
             return new List<Type>()
-            { 
+            {
                 typeof(LaunchApplication),
                 typeof(ShowCPUUsage),
                 typeof(SnakeGame)

@@ -1,6 +1,6 @@
 <div align="center">
 	<img alt="Piglet icon" src="images/logo.png" width="200" height="200" />
-	<h1>🌊 DeckSurf - The Open Stream Deck CLI & Tooling</h1>
+	<h1>DeckSurf - The Open Stream Deck CLI & Tooling</h1>
 	<p>
 		<b>Lightweight and open way to manage your Stream Deck device.</b>
 	</p>
@@ -13,9 +13,17 @@
 	<p><a href="https://github.com/dend/decksurf-sdk">Software Development Kit</a> | <a href="https://docs.deck.surf">Documentation</a></p>
 </div>
 
+## Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- A supported Elgato Stream Deck device (XL, XL 2022, Plus, Original, Original 2019, MK.2, Mini, Mini 2022, Neo)
+- **Windows:** The Elgato Stream Deck software must be closed before running DeckSurf (it holds exclusive USB access)
+- **macOS:** USB entitlements (`com.apple.security.device.usb`) are required
+- **Linux:** udev rules must be configured for Stream Deck USB access
+
 ## How It Works
 
-To get started, it's necessary to create a new profile, with a set of commands that will be associated with a button on the Stream Deck. To do that, you can use the `write` command in the Piglet CLI.
+To get started, it's necessary to create a new profile, with a set of commands that will be associated with a button on the Stream Deck. To do that, you can use the `write` command in the DeckSurf CLI.
 
 ```bash
 Usage:
@@ -39,13 +47,110 @@ The following arguments are used, and are required:
 |:-------------------------|:------------|
 | `--device-index` or `-d` | Zero-based index of the connected Stream Deck device. If only one device is connected, the index is `0`. |
 | `--key-index` or `-k`    | Zero-based index of the key that is being written to. Should be within the boundaries of the keys for the connected device. |
-| `--plugin` or `-l`       | The full identifier of the Piglet plugin that will be used for command handling. Should match the name of the plugin DLL, without the file extension. |
+| `--plugin` or `-l`       | The full identifier of the DeckSurf plugin that will be used for command handling. Should match the name of the plugin DLL, without the file extension. |
 | `--command` or `-c`      | Command identifier. Should match the name of the command class in the plugin assembly. |
 | `--image-path` or `-i`   | Path to the image that will be used for the button that is being written to. This can be the default image, that will be replaced later on through one of the commands. |
-| `--action-args` or `-a`  | Arguments to pass to the command being executed. This string is specific to each command. |
+| `--action-args` or `-g`  | Arguments to pass to the command being executed. This string is specific to each command. |
 | `--profile` or `-p`      | The name of the profile to be used. If no profile with a given name exists, a new one will be created. |
 
-The created profile will be located in `%LOCALAPPDATA%\DenDev\{PROFILE_NAME}`. The settings are stored in a `profile.json` file within the profile folder.
+The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles\{PROFILE_NAME}`. The settings are stored in a `profile.json` file within the profile folder.
+
+## Available CLI Commands
+
+| Command        | Description |
+|:---------------|:------------|
+| `deck write`   | Write a button configuration to a profile. |
+| `deck list`    | List all connected Stream Deck devices. |
+| `deck list-plugins` | List all available plugins and their commands. |
+| `deck listen`  | Start listening for button presses on a configured profile. |
+
+## Building a Plugin
+
+DeckSurf uses a plugin architecture powered by the [DeckSurf SDK](https://github.com/dend/decksurf-sdk). Plugins are .NET class libraries that implement the `IDeckSurfPlugin` and `IDeckSurfCommand` interfaces.
+
+### Plugin Interface
+
+Each plugin must implement `IDeckSurfPlugin`:
+
+```csharp
+using DeckSurf.SDK.Interfaces;
+using DeckSurf.SDK.Models;
+
+public class Plugin : IDeckSurfPlugin
+{
+    public PluginMetadata Metadata => new()
+    {
+        Author = "Your Name",
+        Id = "DeckSurf.Plugin.YourPlugin",
+        Version = "1.0.0",
+        Website = "https://example.com"
+    };
+
+    public List<Type> GetSupportedCommands()
+    {
+        return new List<Type>() { typeof(YourCommand) };
+    }
+}
+```
+
+### Command Interface
+
+Each command implements `IDeckSurfCommand` (which extends `IDisposable`):
+
+```csharp
+using DeckSurf.SDK.Interfaces;
+using DeckSurf.SDK.Models;
+
+[CompatibleWith(DeviceModel.XL)]
+class YourCommand : IDeckSurfCommand
+{
+    public string Name => "Your Command";
+    public string Description => "Description of the command.";
+
+    public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+    {
+        // Called when the command is loaded and the device is initialized.
+    }
+
+    public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
+    {
+        // Called when the mapped button is pressed.
+    }
+
+    public void Dispose()
+    {
+        // Clean up any resources (timers, handles, etc.)
+    }
+}
+```
+
+### Key SDK Types
+
+| Type | Description |
+|:-----|:------------|
+| `IConnectedDevice` | Represents a connected Stream Deck device. Provides properties like `ButtonResolution`, `ButtonColumns`, `ButtonRows`, `Model`, `Serial`, and methods like `SetKey()`, `SetKeyColor()`, `SetBrightness()`, `ClearButtons()`. |
+| `CommandMapping` | Maps a button index to a plugin, command, arguments, and image path. |
+| `DeviceColor` | RGB color struct with built-in presets (`Black`, `White`, `Red`, etc.). |
+| `DeviceModel` | Enum for supported device models. |
+| `ButtonEventKind` | Enum with `Down` and `Up` values for button press events. |
+| `ImageHelper` | Utility for image resizing, blank image creation, and Windows file icon extraction. |
+| `ConfigurationHelper` | Manages profile loading and saving. |
+
+### Plugin Deployment
+
+Plugin DLLs must follow the naming convention `DeckSurf.Plugin.*.dll` and be placed in a `plugins/{PluginName}/` subdirectory relative to the `deck` executable.
+
+## Supported Devices
+
+| Device | Buttons | Grid | Button Resolution |
+|:-------|:--------|:-----|:------------------|
+| Stream Deck Original / 2019 / MK.2 | 15 | 5x3 | 72x72 px |
+| Stream Deck XL / XL 2022 | 32 | 8x4 | 96x96 px |
+| Stream Deck Mini / Mini 2022 | 6 | 3x2 | 80x80 px |
+| Stream Deck Neo | 8 | 4x2 | 96x96 px |
+| Stream Deck Plus | 8 | 4x2 | 120x120 px |
+
+The Stream Deck Plus and Neo also support LCD screen output via `IConnectedDevice.SetScreen()`.
 
 ## FAQ
 
@@ -63,7 +168,7 @@ This repository generally should be a good starting point, but you can also go t
 
 ### Can I run this on Linux/macOS?
 
-Not yet - I am still exploring the best way to make this tooling reliably work on Windows. Once that is done, I would love to make this also work on macOS and Linux.
+Starting with DeckSurf SDK 0.0.7, the underlying SDK supports Windows, macOS, and Linux. Cross-platform support in the CLI tooling is a work in progress.
 
 ### Is there a GUI management app for this?
 

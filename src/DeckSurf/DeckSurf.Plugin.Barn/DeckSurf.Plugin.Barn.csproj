@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Platforms>x64</Platforms>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
@@ -18,8 +18,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DeckSurf.SDK" Version="0.0.3" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.0-preview.6.21352.12" />
+    <PackageReference Include="DeckSurf.SDK" Version="0.0.7" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.0-preview.4.25258.110" />
   </ItemGroup>
 
 </Project>

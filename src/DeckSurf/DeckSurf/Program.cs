@@ -1,4 +1,4 @@
-﻿using DeckSurf.Extensibility;
+using DeckSurf.Extensibility;
 using DeckSurf.SDK.Core;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
@@ -15,8 +15,8 @@ namespace DeckSurf
 {
     class Program
     {
-        private static IEnumerable<IDSPlugin> _plugins;
-        private static IDictionary<string, IEnumerable<IDSCommand>> _commands;
+        private static IEnumerable<IDeckSurfPlugin> _plugins;
+        private static IDictionary<string, IEnumerable<IDeckSurfCommand>> _commands;
 
         static int Main(string[] args)
         {
@@ -132,14 +132,14 @@ namespace DeckSurf
 
         private static void HandleListPluginsCommand()
         {
-            _plugins = Loader.Load<IDSPlugin>();
+            _plugins = Loader.Load<IDeckSurfPlugin>();
 
             foreach (var plugin in _plugins)
             {
                 Console.WriteLine($"{"| " + plugin.Metadata.Id,-21} {"| " + plugin.Metadata.Version,-10} {"| " + plugin.Metadata.Author,-10}");
                 foreach (var command in plugin.GetSupportedCommands())
                 {
-                    var commandInstance = (IDSCommand)Activator.CreateInstance(command);
+                    var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
                     Console.WriteLine($"   |_ {commandInstance.Name} ({commandInstance.Description})");
                 }
             }
@@ -153,11 +153,11 @@ namespace DeckSurf
                 var device = DeviceManager.SetupDevice(workingProfile);
                 var exitSignal = new ManualResetEvent(false);
 
-                device.OnButtonPress += (s, e) =>
+                device.ButtonPressed += (s, e) =>
                 {
-                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.Kind}");
+                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.EventKind}");
 
-                    if (e.Kind == ButtonEventKind.DOWN)
+                    if (e.EventKind == ButtonEventKind.Down)
                     {
                         var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.ButtonIndex == e.Id);
                         if (buttonEntry != null)
@@ -178,17 +178,17 @@ namespace DeckSurf
 
                 // With a detected device, let's load the plugins
                 // and the associated commands.
-                _plugins = Loader.Load<IDSPlugin>();
+                _plugins = Loader.Load<IDeckSurfPlugin>();
 
-                var commandMap = new Dictionary<string, IEnumerable<IDSCommand>>();
-                var commandList = new List<IDSCommand>();
+                var commandMap = new Dictionary<string, IEnumerable<IDeckSurfCommand>>();
+                var commandList = new List<IDeckSurfCommand>();
                 foreach (var plugin in _plugins)
                 {
                     commandMap.Add(plugin.Metadata.Id.ToLower(), Loader.LoadCommands(plugin, device.Model));
                 }
-                _commands = new Dictionary<string, IEnumerable<IDSCommand>>(commandMap);
+                _commands = new Dictionary<string, IEnumerable<IDeckSurfCommand>>(commandMap);
 
-                device.InitializeDevice();
+                device.StartListening();
 
                 foreach(var mappedButton in workingProfile.ButtonMap)
                 {
@@ -203,7 +203,7 @@ namespace DeckSurf
                         }
                     }
                 }
-                
+
                 exitSignal.WaitOne();
             }
             else
@@ -212,7 +212,7 @@ namespace DeckSurf
             }
         }
 
-        private static void ExecuteButtonAction(CommandMapping buttonEntry, ConnectedDevice device, int activatingButton = -1)
+        private static void ExecuteButtonAction(CommandMapping buttonEntry, IConnectedDevice device, int activatingButton = -1)
         {
             var targetPluginName = buttonEntry.Plugin.ToLower();
             if (_commands.ContainsKey(targetPluginName))
@@ -229,20 +229,20 @@ namespace DeckSurf
         private static void HandleListCommand()
         {
             var devices = DeviceManager.GetDeviceList();
-            Console.WriteLine($"{"| Device Name",-21} {"| VID",-10} {"| PID",-10}");
-            Console.WriteLine("===========================================");
+            Console.WriteLine($"{"| Device Name",-21} {"| VID",-10} {"| Serial",-20}");
+            Console.WriteLine("=====================================================");
             foreach (var device in devices)
             {
-                Console.WriteLine($"{"| " + device.Name,-21} {"| " + device.VId,-10} {"| " + device.PId,-10}");
+                Console.WriteLine($"{"| " + device.Name,-21} {"| " + device.VendorId,-10} {"| " + device.Serial,-20}");
             }
         }
 
         private static void HandleWriteCommand(int deviceIndex, int keyIndex, string plugin, string command, string imagePath, string actionArgs, string profile)
         {
-            _plugins = Loader.Load<IDSPlugin>();
+            _plugins = Loader.Load<IDeckSurfPlugin>();
 
             var targetPlugin = (from c in _plugins where string.Equals(c.Metadata.Id, plugin, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
-            
+
             if (targetPlugin != null)
             {
                 var targetCommand = (from c in targetPlugin.GetSupportedCommands() where string.Equals(command, c.Name, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
