@@ -8,7 +8,7 @@
     <ApplicationIcon>piglet.ico</ApplicationIcon>
     <Authors>Den Delimarsky</Authors>
     <Version>0.0.2</Version>
-    <Copyright>2021-2026 Den Delimarsky. All rights reserved.</Copyright>
+    <Copyright>2026 Den Delimarsky. All rights reserved.</Copyright>
     <AssemblyName>deck</AssemblyName>
 
     <!-- .NET Global Tool configuration -->

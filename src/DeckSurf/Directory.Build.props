@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <Company>Den Delimarsky</Company>
-    <Copyright>2021-2026 Den Delimarsky. All rights reserved.</Copyright>
+    <Copyright>2026 Den Delimarsky. All rights reserved.</Copyright>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
