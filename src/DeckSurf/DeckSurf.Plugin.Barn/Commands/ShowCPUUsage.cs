@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace DeckSurf.Plugin.Barn.Commands
@@ -19,6 +20,7 @@ namespace DeckSurf.Plugin.Barn.Commands
     [CompatibleWith(DeviceModel.Mini2022)]
     [CompatibleWith(DeviceModel.Plus)]
     [CompatibleWith(DeviceModel.Neo)]
+    [SupportedOSPlatform("windows")]
     class ShowCPUUsage : IDeckSurfCommand
     {
         private const string CategoryName = "Processor";
@@ -28,7 +30,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         private System.Timers.Timer _cpuUsageTimer;
 
         public string Name => "Show CPU Usage";
-        public string Description => "Shows % of the CPU being used.";
+        public string Description => "Shows % of the CPU being used. Windows only.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
@@ -63,7 +65,6 @@ namespace DeckSurf.Plugin.Barn.Commands
             _cpuUsageTimer.Start();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Intended to work on Windows only at this time.")]
         private static int GetCPUUsage()
         {
             using PerformanceCounter perfCounter = new(categoryName: CategoryName, counterName: CounterName, instanceName: InstanceName);
