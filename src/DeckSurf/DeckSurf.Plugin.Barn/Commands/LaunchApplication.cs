@@ -1,10 +1,10 @@
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
+using System;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
@@ -33,28 +33,83 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            if (string.IsNullOrEmpty(mappedCommand.ButtonImagePath))
+            if (!string.IsNullOrEmpty(mappedCommand.ButtonImagePath))
             {
-                try
+                return;
+            }
+
+            try
+            {
+                byte[] imageBytes = null;
+
+                if (OperatingSystem.IsWindows())
                 {
-                    using var bitmap = ImageHelper.GetFileIcon(mappedCommand.CommandArguments, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
-
-                    byte[] byteContent;
-                    using (var ms = new MemoryStream())
-                    {
-                        bitmap.Save(ms, ImageFormat.Png);
-                        byteContent = ms.ToArray();
-                    }
-
-                    var resizedByteContent = ImageHelper.ResizeImage(byteContent, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, mappedDevice.ImageRotation, mappedDevice.KeyImageFormat);
-                    mappedDevice.SetKey(mappedCommand.ButtonIndex, resizedByteContent);
+                    imageBytes = TryGetWindowsFileIcon(mappedCommand.CommandArguments, mappedDevice);
                 }
-                catch
+
+                if (imageBytes == null)
                 {
-                    // Could not set up the right configuration for the button image.
-                    Debug.WriteLine($"Could not set icon for {mappedCommand.CommandArguments}");
+                    // Cross-platform fallback: use a custom image if the command
+                    // argument points to an image file, otherwise set a colored key.
+                    var arg = mappedCommand.CommandArguments;
+                    if (File.Exists(arg) && IsImageFile(arg))
+                    {
+                        imageBytes = File.ReadAllBytes(arg);
+                    }
+                }
+
+                if (imageBytes != null)
+                {
+                    var resized = ImageHelper.ResizeImage(
+                        imageBytes,
+                        mappedDevice.ButtonResolution,
+                        mappedDevice.ButtonResolution,
+                        mappedDevice.ImageRotation,
+                        mappedDevice.KeyImageFormat);
+                    mappedDevice.SetKey(mappedCommand.ButtonIndex, resized);
+                }
+                else
+                {
+                    // No icon available — set a recognizable colored key.
+                    mappedDevice.SetKeyColor(mappedCommand.ButtonIndex, DeviceColor.Cyan);
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Could not set icon for {mappedCommand.CommandArguments}: {ex.Message}");
+                mappedDevice.SetKeyColor(mappedCommand.ButtonIndex, DeviceColor.Cyan);
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static byte[] TryGetWindowsFileIcon(string filePath, IConnectedDevice device)
+        {
+            try
+            {
+                using var bitmap = ImageHelper.GetFileIcon(
+                    filePath,
+                    device.ButtonResolution,
+                    device.ButtonResolution,
+                    SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
+
+                using var ms = new MemoryStream();
+                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                return ms.ToArray();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsImageFile(string path)
+        {
+            var ext = Path.GetExtension(path);
+            return ext.Equals(".png", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".bmp", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".gif", StringComparison.OrdinalIgnoreCase);
         }
 
         public void Dispose()
