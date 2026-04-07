@@ -4,6 +4,7 @@ using DeckSurf.SDK.Util;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Drawing.Imaging;
 using System.Runtime.Versioning;
 
 namespace DeckSurf.Plugin.Barn.Commands
@@ -106,7 +107,7 @@ namespace DeckSurf.Plugin.Barn.Commands
                     SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
 
                 using var ms = new MemoryStream();
-                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                bitmap.Save(ms, ImageFormat.Png);
                 return ms.ToArray();
             }
             catch

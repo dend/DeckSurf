@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="DeckSurf.SDK" Version="0.0.7" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.7" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.0-preview.4.25258.110" />
   </ItemGroup>
 

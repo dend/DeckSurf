@@ -2,10 +2,12 @@ using DeckSurf.Plugin.Barn.Helpers;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
+using SixLabors.Fonts;
+using SixLabors.ImageSharp;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
@@ -39,14 +41,7 @@ namespace DeckSurf.Plugin.Barn.Commands
                     int cpuUsage = CpuMonitor.GetSystemCpuUsage();
                     if (cpuUsage < 0) return;
 
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        RenderTextButton(cpuUsage, mappedCommand, mappedDevice);
-                    }
-                    else
-                    {
-                        RenderColorButton(cpuUsage, mappedCommand, mappedDevice);
-                    }
+                    RenderTextButton(cpuUsage, mappedCommand, mappedDevice);
                 }
                 catch (Exception ex)
                 {
@@ -56,19 +51,20 @@ namespace DeckSurf.Plugin.Barn.Commands
             _cpuUsageTimer.Start();
         }
 
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         private static void RenderTextButton(int cpuUsage, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            var font = ResolveFont(94);
+
             using var image = IconGenerator.GenerateTestImageFromText(
                 cpuUsage + "%",
-                new System.Drawing.Font("Bahnschrift", 94),
-                System.Drawing.Color.Red,
-                System.Drawing.Color.Black);
+                font,
+                Color.Red,
+                Color.Black);
 
             byte[] byteContent;
             using (var ms = new MemoryStream())
             {
-                image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                image.SaveAsPng(ms);
                 byteContent = ms.ToArray();
             }
 
@@ -82,33 +78,18 @@ namespace DeckSurf.Plugin.Barn.Commands
             mappedDevice.SetKey(mappedCommand.ButtonIndex, resized);
         }
 
-        private static void RenderColorButton(int cpuUsage, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+        private static Font ResolveFont(float size)
         {
-            // Map CPU usage to a green (low) -> yellow (mid) -> red (high) gradient.
-            var color = CpuUsageToColor(cpuUsage);
-            mappedDevice.SetKeyColor(mappedCommand.ButtonIndex, color);
-        }
-
-        private static DeviceColor CpuUsageToColor(int percent)
-        {
-            percent = Math.Clamp(percent, 0, 100);
-
-            // 0% = green (0,180,0), 50% = yellow (255,200,0), 100% = red (255,0,0)
-            byte r, g, b = 0;
-            if (percent <= 50)
+            string[] candidates = ["DejaVu Sans", "Liberation Sans", "Arial", "Segoe UI"];
+            foreach (var name in candidates)
             {
-                double t = percent / 50.0;
-                r = (byte)(t * 255);
-                g = (byte)(180 + t * 20);
-            }
-            else
-            {
-                double t = (percent - 50) / 50.0;
-                r = 255;
-                g = (byte)(200 * (1 - t));
+                if (SystemFonts.TryGet(name, out var family))
+                    return family.CreateFont(size);
             }
 
-            return new DeviceColor(r, g, b);
+            return SystemFonts.Families.GetEnumerator().MoveNext()
+                ? SystemFonts.Families.First().CreateFont(size)
+                : throw new InvalidOperationException("No system fonts available.");
         }
 
         public void Dispose()
