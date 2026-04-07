@@ -15,6 +15,7 @@
 
 ## Table of Contents
 
+- [Installation](#installation)
 - [Prerequisites](#prerequisites)
 - [How It Works](#how-it-works)
 - [Available CLI Commands](#available-cli-commands)
@@ -29,6 +30,22 @@
   - [Plugin Deployment](#plugin-deployment)
 - [Supported Devices](#supported-devices)
 - [FAQ](#faq)
+
+## Installation
+
+DeckSurf is distributed as a .NET global tool. Install it with:
+
+```bash
+dotnet tool install -g DeckSurf
+```
+
+Once installed, the `deck` command is available from any terminal. To update to the latest version:
+
+```bash
+dotnet tool update -g DeckSurf
+```
+
+The tool includes the Barn plugin out of the box, so you can start using commands like `LaunchApplication`, `ShowCPUUsage`, and `SnakeGame` immediately.
 
 ## Prerequisites
 

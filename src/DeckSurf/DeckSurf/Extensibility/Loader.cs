@@ -16,16 +16,36 @@ namespace DeckSurf.Extensibility
         {
             Regex assemblyPattern = new Regex(@"DeckSurf\.Plugin\..+\.dll");
 
-            var pluginPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "plugins");
+            var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var pluginPath = Path.Combine(basePath, "plugins");
 
-            if (!Directory.Exists(pluginPath))
+            var dllPaths = new List<string>();
+
+            // Scan the plugins/ subdirectory (standard layout for local/dev builds).
+            if (Directory.Exists(pluginPath))
             {
-                Console.Error.WriteLine($"[Warning] Plugins directory not found: {pluginPath}");
-                return Enumerable.Empty<T>();
+                dllPaths.AddRange(
+                    Directory.EnumerateFiles(pluginPath, "*.dll", SearchOption.AllDirectories)
+                        .Where(path => assemblyPattern.IsMatch(Path.GetFileName(path))));
             }
 
-            var dllPaths = Directory.EnumerateFiles(pluginPath, "*.dll", SearchOption.AllDirectories)
-                .Where(path => assemblyPattern.IsMatch(Path.GetFileName(path)));
+            // Also scan the executable's own directory (global tool layout where
+            // all DLLs are side-by-side).
+            dllPaths.AddRange(
+                Directory.EnumerateFiles(basePath, "*.dll", SearchOption.TopDirectoryOnly)
+                    .Where(path => assemblyPattern.IsMatch(Path.GetFileName(path))));
+
+            // Deduplicate by filename in case the same plugin appears in both locations.
+            dllPaths = dllPaths
+                .GroupBy(p => Path.GetFileName(p), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
+
+            if (dllPaths.Count == 0)
+            {
+                Console.Error.WriteLine("[Warning] No plugin assemblies found.");
+                return Enumerable.Empty<T>();
+            }
 
             var assemblies = new List<Assembly>();
             foreach (var dllPath in dllPaths)
