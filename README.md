@@ -13,6 +13,23 @@
 	<p><a href="https://github.com/dend/decksurf-sdk">Software Development Kit</a> | <a href="https://docs.deck.surf">Documentation</a></p>
 </div>
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [How It Works](#how-it-works)
+- [Available CLI Commands](#available-cli-commands)
+- [Included Plugin: Barn](#included-plugin-barn)
+  - [LaunchApplication](#launchapplication)
+  - [ShowCPUUsage](#showcpuusage)
+  - [SnakeGame](#snakegame)
+- [Building a Plugin](#building-a-plugin)
+  - [Plugin Interface](#plugin-interface)
+  - [Command Interface](#command-interface)
+  - [Key SDK Types](#key-sdk-types)
+  - [Plugin Deployment](#plugin-deployment)
+- [Supported Devices](#supported-devices)
+- [FAQ](#faq)
+
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
@@ -63,6 +80,57 @@ The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles
 | `deck list`    | List all connected Stream Deck devices. |
 | `deck list-plugins` | List all available plugins and their commands. |
 | `deck listen`  | Start listening for button presses on a configured profile. |
+| `deck profiles list` | List all saved profiles. |
+| `deck profiles show <name>` | Show details and button mappings for a profile. |
+| `deck profiles delete <name>` | Delete a saved profile. |
+| `deck info`    | Show detailed information about a connected device. |
+| `deck brightness` | Set the brightness level of a connected device. |
+
+## Included Plugin: Barn
+
+DeckSurf ships with **DeckSurf.Plugin.Barn**, a built-in plugin that demonstrates the plugin system and provides useful commands out of the box. All Barn commands are currently compatible with the Stream Deck XL.
+
+| Command | Description |
+|:--------|:------------|
+| `LaunchApplication` | Launch any application from a Stream Deck button. |
+| `ShowCPUUsage` | Display live CPU usage percentage on a button. |
+| `SnakeGame` | Play a game of snake directly on the Stream Deck button grid. |
+
+### LaunchApplication
+
+Launches an application when the mapped button is pressed. On activation, it automatically extracts the file icon from the target executable and displays it on the button (Windows only). If a custom `--image-path` is provided in the profile, that image is used instead.
+
+**Usage example:**
+
+```bash
+deck write -d 0 -k 5 -l DeckSurf.Plugin.Barn -c LaunchApplication -i "" -g "C:\Windows\System32\notepad.exe" -p myprofile
+```
+
+The `--action-args` (`-g`) value is the full path to the executable to launch.
+
+### ShowCPUUsage
+
+Displays a live-updating CPU usage percentage on the mapped button. The display refreshes every 2 seconds, rendering the current percentage as red text on a black background. This command uses Windows Performance Counters and is Windows-only.
+
+**Usage example:**
+
+```bash
+deck write -d 0 -k 10 -l DeckSurf.Plugin.Barn -c ShowCPUUsage -i "" -g "" -p myprofile
+```
+
+No arguments are required for this command.
+
+### SnakeGame
+
+A fully playable game of snake that runs on the Stream Deck button grid. The snake moves automatically once per second, and you steer it by pressing buttons on the device. Press a button above or below the snake's head to change vertical direction, or left/right to change horizontal direction. The snake wraps around the edges of the grid.
+
+**Usage example:**
+
+```bash
+deck write -d 0 -k 0 -l DeckSurf.Plugin.Barn -c SnakeGame -i "" -g "" -p myprofile
+```
+
+The game uses the device's full button grid (e.g., 8x4 on the XL). Snake segments are displayed as white buttons and empty space is black.
 
 ## Building a Plugin
 
@@ -156,7 +224,7 @@ The Stream Deck Plus and Neo also support LCD screen output via `IConnectedDevic
 
 ### Why was this project created?
 
-The Stream Deck is a great piece of hardware, but the official software is closed-source and opaque. DeckSurf was created to build an open, hackable alternative — by reverse engineering the USB HID protocol that the Stream Deck uses, we can give developers and tinkerers full control over their devices without relying on proprietary tooling. The goal is an open ecosystem where anyone can extend, automate, and integrate their Stream Deck however they see fit.
+The Stream Deck is a great piece of hardware, but the official software is closed-source and opaque. I created DeckSurf to build an open, hackable alternative — by reverse engineering the USB HID protocol that the Stream Deck uses, I wanted to give developers and tinkerers full control over their devices without relying on proprietary tooling. The goal is an open ecosystem where anyone can extend, automate, and integrate their Stream Deck however they see fit.
 
 ### Is this official/endorsed by Elgato?
 
