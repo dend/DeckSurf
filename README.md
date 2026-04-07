@@ -64,14 +64,13 @@ Usage:
   deck write [options] 
 
 Options:
-  -d, --device-index <device-index> (REQUIRED)  Index of the connected device, to which a key setting should be
-                                                written. [default: -1]
-  -k, --key-index <key-index> (REQUIRED)        Index of the key that needs to be written. [default: -1]
-  -n, --plugin <plugin> (REQUIRED)              Plugin that contains the relevant command. [default: ]
-  -c, --command <command> (REQUIRED)            Command to be executed. [default: ]
+  -d, --device-index <device-index> (REQUIRED)  Zero-based index of the connected device. [default: -1]
+  -k, --key-index <key-index> (REQUIRED)        Zero-based index of the key to configure. [default: -1]
+  -n, --plugin <plugin> (REQUIRED)              Plugin ID (e.g., DeckSurf.Plugin.Barn). [default: ]
+  -c, --command <command> (REQUIRED)            Command class name within the plugin. [default: ]
   -i, --image-path <image-path> (REQUIRED)      Path to the default image for the button. [default: ]
-  -a, --action-args <action-args> (REQUIRED)    Arguments for the defined action. [default: ]
-  -p, --profile <profile> (REQUIRED)            The profile to which the command should be added. [default: ]
+  -a, --action-args <action-args> (REQUIRED)    Arguments passed to the command. [default: ]
+  -p, --profile <profile> (REQUIRED)            Profile name. Created if it does not exist. [default: ]
   -?, -h, --help                                Show help and usage information
 ```
 
@@ -120,7 +119,7 @@ Launches an application when the mapped button is pressed. On activation, it aut
 **Usage example:**
 
 ```bash
-deck write -d 0 -k 5 -l DeckSurf.Plugin.Barn -c LaunchApplication -i "" -g "C:\Windows\System32\notepad.exe" -p myprofile
+deck write -d 0 -k 5 -n DeckSurf.Plugin.Barn -c LaunchApplication -i "" -a "C:\Windows\System32\notepad.exe" -p myprofile
 ```
 
 The `--action-args` (`-g`) value is the full path to the executable to launch.
@@ -132,7 +131,7 @@ Displays a live-updating system-wide CPU usage percentage on the mapped button. 
 **Usage example:**
 
 ```bash
-deck write -d 0 -k 10 -l DeckSurf.Plugin.Barn -c ShowCPUUsage -i "" -g "" -p myprofile
+deck write -d 0 -k 10 -n DeckSurf.Plugin.Barn -c ShowCPUUsage -i "" -a "" -p myprofile
 ```
 
 No arguments are required for this command.
@@ -144,7 +143,7 @@ A fully playable game of snake that runs on the Stream Deck button grid. The sna
 **Usage example:**
 
 ```bash
-deck write -d 0 -k 0 -l DeckSurf.Plugin.Barn -c SnakeGame -i "" -g "" -p myprofile
+deck write -d 0 -k 0 -n DeckSurf.Plugin.Barn -c SnakeGame -i "" -a "" -p myprofile
 ```
 
 The game uses the device's full button grid (e.g., 8x4 on the XL). Snake segments are displayed as white buttons and empty space is black.
