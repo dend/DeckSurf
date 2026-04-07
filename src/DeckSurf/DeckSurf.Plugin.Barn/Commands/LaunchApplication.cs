@@ -16,7 +16,11 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
-            Process.Start(mappedCommand.CommandArguments);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = mappedCommand.CommandArguments,
+                UseShellExecute = true,
+            });
         }
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
@@ -25,7 +29,7 @@ namespace DeckSurf.Plugin.Barn.Commands
             {
                 try
                 {
-                    var bitmap = ImageHelper.GetFileIcon(mappedCommand.CommandArguments, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
+                    using var bitmap = ImageHelper.GetFileIcon(mappedCommand.CommandArguments, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
 
                     byte[] byteContent;
                     using (var ms = new MemoryStream())

@@ -32,18 +32,25 @@ namespace DeckSurf.Plugin.Barn.Commands
             _cpuUsageTimer = new System.Timers.Timer(2000);
             _cpuUsageTimer.Elapsed += (s, e) =>
             {
-                var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Bahnschrift", 94), Color.Red, Color.Black);
-
-                byte[] byteContent;
-                using (var ms = new MemoryStream())
+                try
                 {
-                    randomIconFromText.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                    byteContent = ms.ToArray();
+                    using var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Bahnschrift", 94), Color.Red, Color.Black);
+
+                    byte[] byteContent;
+                    using (var ms = new MemoryStream())
+                    {
+                        randomIconFromText.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                        byteContent = ms.ToArray();
+                    }
+
+                    var resizeImage = ImageHelper.ResizeImage(byteContent, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, mappedDevice.ImageRotation, mappedDevice.KeyImageFormat);
+
+                    mappedDevice.SetKey(mappedCommand.ButtonIndex, resizeImage);
                 }
-
-                var resizeImage = ImageHelper.ResizeImage(byteContent, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, mappedDevice.ImageRotation, mappedDevice.KeyImageFormat);
-
-                mappedDevice.SetKey(mappedCommand.ButtonIndex, resizeImage);
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error in CPU usage timer callback: {ex}");
+                }
             };
             _cpuUsageTimer.Start();
         }

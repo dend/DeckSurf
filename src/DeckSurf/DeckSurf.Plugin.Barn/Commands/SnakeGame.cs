@@ -1,6 +1,7 @@
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Timers;
@@ -18,6 +19,9 @@ namespace DeckSurf.Plugin.Barn.Commands
         private SnakeDirection _direction;
         private int _head;
         private Timer _timer;
+        private readonly object _lock = new();
+        private int _columns;
+        private int _rows;
 
         public SnakeGame()
         {
@@ -41,76 +45,107 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
-            var headRow = _head / 8;
-            var pressedButtonRow = activatingButton / 8;
-
-            Debug.WriteLine(headRow);
-            Debug.WriteLine(pressedButtonRow);
-
-            if (headRow != pressedButtonRow)
+            lock (_lock)
             {
-                if (pressedButtonRow > headRow)
+                var headRow = _head / _columns;
+                var pressedButtonRow = activatingButton / _columns;
+
+                Debug.WriteLine(headRow);
+                Debug.WriteLine(pressedButtonRow);
+
+                if (headRow != pressedButtonRow)
                 {
-                    _direction = SnakeDirection.DOWN;
+                    if (pressedButtonRow > headRow)
+                    {
+                        _direction = SnakeDirection.DOWN;
+                    }
+                    else
+                    {
+                        _direction = SnakeDirection.UP;
+                    }
                 }
                 else
                 {
-                    _direction = SnakeDirection.UP;
-                }
-            }
-            else
-            {
-                if (activatingButton >= _head)
-                {
-                    _direction = SnakeDirection.RIGHT;
-                }
-                else
-                {
-                    _direction = SnakeDirection.LEFT;
+                    if (activatingButton >= _head)
+                    {
+                        _direction = SnakeDirection.RIGHT;
+                    }
+                    else
+                    {
+                        _direction = SnakeDirection.LEFT;
+                    }
                 }
             }
         }
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            _columns = mappedDevice.ButtonColumns;
+            _rows = mappedDevice.ButtonRows;
+
             mappedDevice.ClearButtons();
 
             UpdateSnakeRendering(mappedDevice);
             _timer = new Timer(1000);
             _timer.Elapsed += (s, e) =>
             {
-                var clearedIndex = UpdateSnakePosition(_direction);
-                mappedDevice.SetKeyColor(clearedIndex, DeviceColor.Black);
-                UpdateSnakeRendering(mappedDevice);
+                try
+                {
+                    lock (_lock)
+                    {
+                        var clearedIndex = UpdateSnakePosition(_direction);
+                        mappedDevice.SetKeyColor(clearedIndex, DeviceColor.Black);
+                        UpdateSnakeRendering(mappedDevice);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error in snake game timer callback: {ex}");
+                }
             };
             _timer.Start();
         }
 
         private int UpdateSnakePosition(SnakeDirection direction)
         {
+            int col = _head % _columns;
+            int row = _head / _columns;
+
             switch (direction)
             {
                 case SnakeDirection.RIGHT:
                     {
-                        _head++;
+                        if (col == _columns - 1)
+                            _head = row * _columns;
+                        else
+                            _head++;
                         _snake.Enqueue(_head);
                         return _snake.Dequeue();
                     }
                 case SnakeDirection.LEFT:
                     {
-                        _head--;
+                        if (col == 0)
+                            _head = row * _columns + (_columns - 1);
+                        else
+                            _head--;
                         _snake.Enqueue(_head);
                         return _snake.Dequeue();
                     }
                 case SnakeDirection.DOWN:
                     {
-                        _head += 8;
+                        if (row >= _rows - 1)
+                            _head = col;
+                        else
+                            _head += _columns;
                         _snake.Enqueue(_head);
                         return _snake.Dequeue();
                     }
                 case SnakeDirection.UP:
                     {
-                        _head -= 8;
+                        if (row < 1)
+                            _head = (_rows - 1) * _columns + col;
+                        else
+                            _head -= _columns;
                         _snake.Enqueue(_head);
                         return _snake.Dequeue();
                     }
