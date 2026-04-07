@@ -4,27 +4,29 @@ using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
 using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
+    [CompatibleWith(DeviceModel.XL2022)]
+    [CompatibleWith(DeviceModel.Original)]
+    [CompatibleWith(DeviceModel.Original2019)]
+    [CompatibleWith(DeviceModel.MK2)]
+    [CompatibleWith(DeviceModel.Mini)]
+    [CompatibleWith(DeviceModel.Mini2022)]
+    [CompatibleWith(DeviceModel.Plus)]
+    [CompatibleWith(DeviceModel.Neo)]
     class ShowCPUUsage : IDeckSurfCommand
     {
-        private const string CategoryName = "Processor";
-        private const string CounterName = "% Processor Time";
-        private const string InstanceName = "_Total";
-
         private System.Timers.Timer _cpuUsageTimer;
 
         public string Name => "Show CPU Usage";
-        public string Description => "Shows % of the CPU being used.";
+        public string Description => "Displays live CPU usage percentage on a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
-
         }
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
@@ -34,18 +36,17 @@ namespace DeckSurf.Plugin.Barn.Commands
             {
                 try
                 {
-                    using var randomIconFromText = IconGenerator.GenerateTestImageFromText(GetCPUUsage().ToString() + "%", new Font("Bahnschrift", 94), Color.Red, Color.Black);
+                    int cpuUsage = CpuMonitor.GetSystemCpuUsage();
+                    if (cpuUsage < 0) return;
 
-                    byte[] byteContent;
-                    using (var ms = new MemoryStream())
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        randomIconFromText.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                        byteContent = ms.ToArray();
+                        RenderTextButton(cpuUsage, mappedCommand, mappedDevice);
                     }
-
-                    var resizeImage = ImageHelper.ResizeImage(byteContent, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, mappedDevice.ImageRotation, mappedDevice.KeyImageFormat);
-
-                    mappedDevice.SetKey(mappedCommand.ButtonIndex, resizeImage);
+                    else
+                    {
+                        RenderColorButton(cpuUsage, mappedCommand, mappedDevice);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -55,15 +56,59 @@ namespace DeckSurf.Plugin.Barn.Commands
             _cpuUsageTimer.Start();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Intended to work on Windows only at this time.")]
-        private static int GetCPUUsage()
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private static void RenderTextButton(int cpuUsage, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            PerformanceCounter perfCounter = new(categoryName: CategoryName, counterName: CounterName, instanceName: InstanceName);
-            // Dummy call because PerformanceCounter will always start with zero.
-            perfCounter.NextValue();
-            Thread.Sleep(1000);
-            var targetCPUUsage = (int)Math.Round(perfCounter.NextValue());
-            return targetCPUUsage;
+            using var image = IconGenerator.GenerateTestImageFromText(
+                cpuUsage + "%",
+                new System.Drawing.Font("Bahnschrift", 94),
+                System.Drawing.Color.Red,
+                System.Drawing.Color.Black);
+
+            byte[] byteContent;
+            using (var ms = new MemoryStream())
+            {
+                image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                byteContent = ms.ToArray();
+            }
+
+            var resized = ImageHelper.ResizeImage(
+                byteContent,
+                mappedDevice.ButtonResolution,
+                mappedDevice.ButtonResolution,
+                mappedDevice.ImageRotation,
+                mappedDevice.KeyImageFormat);
+
+            mappedDevice.SetKey(mappedCommand.ButtonIndex, resized);
+        }
+
+        private static void RenderColorButton(int cpuUsage, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+        {
+            // Map CPU usage to a green (low) -> yellow (mid) -> red (high) gradient.
+            var color = CpuUsageToColor(cpuUsage);
+            mappedDevice.SetKeyColor(mappedCommand.ButtonIndex, color);
+        }
+
+        private static DeviceColor CpuUsageToColor(int percent)
+        {
+            percent = Math.Clamp(percent, 0, 100);
+
+            // 0% = green (0,180,0), 50% = yellow (255,200,0), 100% = red (255,0,0)
+            byte r, g, b = 0;
+            if (percent <= 50)
+            {
+                double t = percent / 50.0;
+                r = (byte)(t * 255);
+                g = (byte)(180 + t * 20);
+            }
+            else
+            {
+                double t = (percent - 50) / 50.0;
+                r = 255;
+                g = (byte)(200 * (1 - t));
+            }
+
+            return new DeviceColor(r, g, b);
         }
 
         public void Dispose()

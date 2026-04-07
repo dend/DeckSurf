@@ -13,6 +13,40 @@
 	<p><a href="https://github.com/dend/decksurf-sdk">Software Development Kit</a> | <a href="https://docs.deck.surf">Documentation</a></p>
 </div>
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Prerequisites](#prerequisites)
+- [How It Works](#how-it-works)
+- [Available CLI Commands](#available-cli-commands)
+- [Included Plugin: Barn](#included-plugin-barn)
+  - [LaunchApplication](#launchapplication)
+  - [ShowCPUUsage](#showcpuusage)
+  - [SnakeGame](#snakegame)
+- [Building a Plugin](#building-a-plugin)
+  - [Plugin Interface](#plugin-interface)
+  - [Command Interface](#command-interface)
+  - [Key SDK Types](#key-sdk-types)
+  - [Plugin Deployment](#plugin-deployment)
+- [Supported Devices](#supported-devices)
+- [FAQ](#faq)
+
+## Installation
+
+DeckSurf is distributed as a .NET global tool. Install it with:
+
+```bash
+dotnet tool install -g DeckSurf
+```
+
+Once installed, the `deck` command is available from any terminal. To update to the latest version:
+
+```bash
+dotnet tool update -g DeckSurf
+```
+
+The tool includes the Barn plugin out of the box, so you can start using commands like `LaunchApplication`, `ShowCPUUsage`, and `SnakeGame` immediately.
+
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
@@ -30,14 +64,13 @@ Usage:
   deck write [options] 
 
 Options:
-  -d, --device-index <device-index> (REQUIRED)  Index of the connected device, to which a key setting should be
-                                                written. [default: -1]
-  -k, --key-index <key-index> (REQUIRED)        Index of the key that needs to be written. [default: -1]
-  -l, --plugin <plugin> (REQUIRED)              Plugin that contains the relevant command. [default: ]
-  -c, --command <command> (REQUIRED)            Command to be executed. [default: ]
+  -d, --device-index <device-index> (REQUIRED)  Zero-based index of the connected device. [default: -1]
+  -k, --key-index <key-index> (REQUIRED)        Zero-based index of the key to configure. [default: -1]
+  -n, --plugin <plugin> (REQUIRED)              Plugin ID (e.g., DeckSurf.Plugin.Barn). [default: ]
+  -c, --command <command> (REQUIRED)            Command class name within the plugin. [default: ]
   -i, --image-path <image-path> (REQUIRED)      Path to the default image for the button. [default: ]
-  -g, --action-args <action-args> (REQUIRED)    Arguments for the defined action. [default: ]
-  -p, --profile <profile> (REQUIRED)            The profile to which the command should be added. [default: ]
+  -a, --action-args <action-args> (REQUIRED)    Arguments passed to the command. [default: ]
+  -p, --profile <profile> (REQUIRED)            Profile name. Created if it does not exist. [default: ]
   -?, -h, --help                                Show help and usage information
 ```
 
@@ -47,10 +80,10 @@ The following arguments are used, and are required:
 |:-------------------------|:------------|
 | `--device-index` or `-d` | Zero-based index of the connected Stream Deck device. If only one device is connected, the index is `0`. |
 | `--key-index` or `-k`    | Zero-based index of the key that is being written to. Should be within the boundaries of the keys for the connected device. |
-| `--plugin` or `-l`       | The full identifier of the DeckSurf plugin that will be used for command handling. Should match the name of the plugin DLL, without the file extension. |
+| `--plugin` or `-n`       | The full identifier of the DeckSurf plugin that will be used for command handling. Should match the plugin ID (e.g., `DeckSurf.Plugin.Barn`). |
 | `--command` or `-c`      | Command identifier. Should match the name of the command class in the plugin assembly. |
 | `--image-path` or `-i`   | Path to the image that will be used for the button that is being written to. This can be the default image, that will be replaced later on through one of the commands. |
-| `--action-args` or `-g`  | Arguments to pass to the command being executed. This string is specific to each command. |
+| `--action-args` or `-a`  | Arguments to pass to the command being executed. This string is specific to each command. |
 | `--profile` or `-p`      | The name of the profile to be used. If no profile with a given name exists, a new one will be created. |
 
 The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles\{PROFILE_NAME}`. The settings are stored in a `profile.json` file within the profile folder.
@@ -59,10 +92,61 @@ The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles
 
 | Command        | Description |
 |:---------------|:------------|
+| `deck devices list` | List all connected Stream Deck devices. |
+| `deck devices info` | Show detailed information about a connected device. |
+| `deck devices brightness` | Set the brightness level of a connected device. |
+| `deck plugins list` | List all available plugins and their commands. |
+| `deck profiles list` | List all saved profiles. |
+| `deck profiles show <name>` | Show details and button mappings for a profile. |
+| `deck profiles delete <name>` | Delete a saved profile. |
 | `deck write`   | Write a button configuration to a profile. |
-| `deck list`    | List all connected Stream Deck devices. |
-| `deck list-plugins` | List all available plugins and their commands. |
 | `deck listen`  | Start listening for button presses on a configured profile. |
+
+## Included Plugin: Barn
+
+DeckSurf ships with **DeckSurf.Plugin.Barn**, a built-in plugin that demonstrates the plugin system and provides useful commands out of the box. All Barn commands are compatible with every supported Stream Deck model.
+
+| Command | Description |
+|:--------|:------------|
+| `LaunchApplication` | Launch any application from a Stream Deck button. |
+| `ShowCPUUsage` | Display live CPU usage percentage on a button. |
+| `SnakeGame` | Play a game of snake directly on the Stream Deck button grid. |
+
+### LaunchApplication
+
+Launches an application when the mapped button is pressed. On activation, it automatically extracts the file icon from the target executable and displays it on the button (Windows only). If a custom `--image-path` is provided in the profile, that image is used instead.
+
+**Usage example:**
+
+```bash
+deck write -d 0 -k 5 -n DeckSurf.Plugin.Barn -c LaunchApplication -i "" -a "C:\Windows\System32\notepad.exe" -p myprofile
+```
+
+The `--action-args` (`-g`) value is the full path to the executable to launch.
+
+### ShowCPUUsage
+
+Displays a live-updating system-wide CPU usage percentage on the mapped button. The display refreshes every 2 seconds. On Windows, the percentage is rendered as red text on a black background. On macOS and Linux, the button color shifts from green (low usage) through yellow to red (high usage).
+
+**Usage example:**
+
+```bash
+deck write -d 0 -k 10 -n DeckSurf.Plugin.Barn -c ShowCPUUsage -i "" -a "" -p myprofile
+```
+
+No arguments are required for this command.
+
+### SnakeGame
+
+A fully playable game of snake that runs on the Stream Deck button grid. The snake moves automatically once per second, and you steer it by pressing buttons on the device. Press a button above or below the snake's head to change vertical direction, or left/right to change horizontal direction. The snake wraps around the edges of the grid.
+
+**Usage example:**
+
+```bash
+deck write -d 0 -k 0 -n DeckSurf.Plugin.Barn -c SnakeGame -i "" -a "" -p myprofile
+```
+
+The game uses the device's full button grid (e.g., 8x4 on the XL). Snake segments are displayed as white buttons and empty space is black.
 
 ## Building a Plugin
 
@@ -156,7 +240,7 @@ The Stream Deck Plus and Neo also support LCD screen output via `IConnectedDevic
 
 ### Why was this project created?
 
-I was fiddling with the default Stream Deck software, and realized that it [was constantly scanning my registry and process tree](https://twitter.com/DennisCode/status/1401230392527523856). According to Elgato support, this is necessary for [Smart Profiles](https://help.elgato.com/hc/en-us/articles/360053419071-Elgato-Stream-Deck-Smart-Profiles); however, the process monitoring occurs even when Smart Profiles are not configured. While the feature itself is nice, I wasn't too comfortable with some software constantly monitoring what I run without a way to disable that, so I decided to tinker with the device and see if I can figure out how to write my own software that manages the Stream Deck device.
+The Stream Deck is a great piece of hardware, but the official software is closed-source and opaque. I created DeckSurf to build an open, hackable alternative — by reverse engineering the USB HID protocol that the Stream Deck uses, I wanted to give developers and tinkerers full control over their devices without relying on proprietary tooling. The goal is an open ecosystem where anyone can extend, automate, and integrate their Stream Deck however they see fit.
 
 ### Is this official/endorsed by Elgato?
 

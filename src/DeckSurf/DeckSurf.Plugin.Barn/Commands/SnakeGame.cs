@@ -9,29 +9,31 @@ using System.Timers;
 namespace DeckSurf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
+    [CompatibleWith(DeviceModel.XL2022)]
+    [CompatibleWith(DeviceModel.Original)]
+    [CompatibleWith(DeviceModel.Original2019)]
+    [CompatibleWith(DeviceModel.MK2)]
+    [CompatibleWith(DeviceModel.Mini)]
+    [CompatibleWith(DeviceModel.Mini2022)]
+    [CompatibleWith(DeviceModel.Plus)]
+    [CompatibleWith(DeviceModel.Neo)]
     class SnakeGame : IDeckSurfCommand
     {
         public string Name => "Snake Game";
 
-        public string Description => "A simple game of snake that can be played on Stream Deck.";
+        public string Description => "Plays a game of snake on the Stream Deck button grid.";
 
         private Queue<int> _snake;
         private SnakeDirection _direction;
         private int _head;
         private Timer _timer;
         private readonly object _lock = new();
-        private int _columns;
-        private int _rows;
+        private int _columns = 8;
+        private int _rows = 4;
 
         public SnakeGame()
         {
             _snake = new();
-            _snake.Enqueue(0);
-            _snake.Enqueue(1);
-            _snake.Enqueue(2);
-            _snake.Enqueue(3);
-            _head = 3;
-
             _direction = SnakeDirection.RIGHT;
         }
 
@@ -82,6 +84,15 @@ namespace DeckSurf.Plugin.Barn.Commands
         {
             _columns = mappedDevice.ButtonColumns;
             _rows = mappedDevice.ButtonRows;
+
+            // Initialize the snake to fit within the first row of the device.
+            _snake.Clear();
+            var initialLength = Math.Min(3, _columns);
+            for (int i = 0; i < initialLength; i++)
+            {
+                _snake.Enqueue(i);
+            }
+            _head = initialLength - 1;
 
             mappedDevice.ClearButtons();
 

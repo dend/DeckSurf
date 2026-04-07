@@ -8,8 +8,18 @@
     <ApplicationIcon>piglet.ico</ApplicationIcon>
     <Authors>Den Delimarsky</Authors>
     <Version>0.0.2</Version>
-    <Copyright>2021 by Den Delimarsky. All rights reserved.</Copyright>
+    <Copyright>2026 Den Delimarsky. All rights reserved.</Copyright>
     <AssemblyName>deck</AssemblyName>
+
+    <!-- .NET Global Tool configuration -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>deck</ToolCommandName>
+    <PackageId>DeckSurf</PackageId>
+    <Description>Open, hackable CLI for managing Elgato Stream Deck devices.</Description>
+    <PackageProjectUrl>https://github.com/dend/decksurf</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>streamdeck;elgato;hid;cli</PackageTags>
+    <RepositoryUrl>https://github.com/dend/decksurf</RepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -19,10 +29,15 @@
   <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="DeckSurf.SDK" Version="0.0.7" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="System.CommandLine.NamingConventionBinder" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeckSurf.Plugin.Barn\DeckSurf.Plugin.Barn.csproj" />
   </ItemGroup>
 
 </Project>

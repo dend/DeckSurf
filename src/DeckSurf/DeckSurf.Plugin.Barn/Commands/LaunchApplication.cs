@@ -1,52 +1,128 @@
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
+using System;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
+    [CompatibleWith(DeviceModel.XL2022)]
+    [CompatibleWith(DeviceModel.Original)]
+    [CompatibleWith(DeviceModel.Original2019)]
+    [CompatibleWith(DeviceModel.MK2)]
+    [CompatibleWith(DeviceModel.Mini)]
+    [CompatibleWith(DeviceModel.Mini2022)]
+    [CompatibleWith(DeviceModel.Plus)]
+    [CompatibleWith(DeviceModel.Neo)]
     class LaunchApplication : IDeckSurfCommand
     {
         public string Name => "Launch Application";
-        public string Description => "Launches an application on the machine.";
+        public string Description => "Launches an application from a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
-            Process.Start(new ProcessStartInfo
+            if (OperatingSystem.IsMacOS())
             {
-                FileName = mappedCommand.CommandArguments,
-                UseShellExecute = true,
-            });
+                // macOS needs 'open' to launch .app bundles.
+                Process.Start("open", mappedCommand.CommandArguments);
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                // Linux needs 'xdg-open' to handle desktop files and URLs.
+                Process.Start("xdg-open", mappedCommand.CommandArguments);
+            }
+            else
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = mappedCommand.CommandArguments,
+                    UseShellExecute = false,
+                });
+            }
         }
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            if (string.IsNullOrEmpty(mappedCommand.ButtonImagePath))
+            if (!string.IsNullOrEmpty(mappedCommand.ButtonImagePath))
             {
-                try
+                return;
+            }
+
+            try
+            {
+                byte[] imageBytes = null;
+
+                if (OperatingSystem.IsWindows())
                 {
-                    using var bitmap = ImageHelper.GetFileIcon(mappedCommand.CommandArguments, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
-
-                    byte[] byteContent;
-                    using (var ms = new MemoryStream())
-                    {
-                        bitmap.Save(ms, ImageFormat.Png);
-                        byteContent = ms.ToArray();
-                    }
-
-                    var resizedByteContent = ImageHelper.ResizeImage(byteContent, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, mappedDevice.ImageRotation, mappedDevice.KeyImageFormat);
-                    mappedDevice.SetKey(mappedCommand.ButtonIndex, resizedByteContent);
+                    imageBytes = TryGetWindowsFileIcon(mappedCommand.CommandArguments, mappedDevice);
                 }
-                catch
+
+                if (imageBytes == null)
                 {
-                    // Could not set up the right configuration for the button image.
-                    Debug.WriteLine($"Could not set icon for {mappedCommand.CommandArguments}");
+                    // Cross-platform fallback: use a custom image if the command
+                    // argument points to an image file, otherwise set a colored key.
+                    var arg = mappedCommand.CommandArguments;
+                    if (File.Exists(arg) && IsImageFile(arg))
+                    {
+                        imageBytes = File.ReadAllBytes(arg);
+                    }
+                }
+
+                if (imageBytes != null)
+                {
+                    var resized = ImageHelper.ResizeImage(
+                        imageBytes,
+                        mappedDevice.ButtonResolution,
+                        mappedDevice.ButtonResolution,
+                        mappedDevice.ImageRotation,
+                        mappedDevice.KeyImageFormat);
+                    mappedDevice.SetKey(mappedCommand.ButtonIndex, resized);
+                }
+                else
+                {
+                    // No icon available — set a recognizable colored key.
+                    mappedDevice.SetKeyColor(mappedCommand.ButtonIndex, DeviceColor.Cyan);
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Could not set icon for {mappedCommand.CommandArguments}: {ex.Message}");
+                mappedDevice.SetKeyColor(mappedCommand.ButtonIndex, DeviceColor.Cyan);
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static byte[] TryGetWindowsFileIcon(string filePath, IConnectedDevice device)
+        {
+            try
+            {
+                using var bitmap = ImageHelper.GetFileIcon(
+                    filePath,
+                    device.ButtonResolution,
+                    device.ButtonResolution,
+                    SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
+
+                using var ms = new MemoryStream();
+                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                return ms.ToArray();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsImageFile(string path)
+        {
+            var ext = Path.GetExtension(path);
+            return ext.Equals(".png", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".bmp", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".gif", StringComparison.OrdinalIgnoreCase);
         }
 
         public void Dispose()
