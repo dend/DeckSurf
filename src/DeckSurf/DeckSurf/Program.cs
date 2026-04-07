@@ -435,9 +435,17 @@ namespace DeckSurf
 
         private static void HandleProfilesDeleteCommand(string name)
         {
-            var profilesPath = Path.Combine(
+            var profilesRoot = Path.GetFullPath(Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Den.Dev", "DeckSurf", "Profiles", name);
+                "Den.Dev", "DeckSurf", "Profiles"));
+            var profilesPath = Path.GetFullPath(Path.Combine(profilesRoot, name));
+
+            // Prevent path traversal — ensure the resolved path is inside the profiles directory.
+            if (!profilesPath.StartsWith(profilesRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine($"Invalid profile name: {name}");
+                return;
+            }
 
             if (!Directory.Exists(profilesPath))
             {

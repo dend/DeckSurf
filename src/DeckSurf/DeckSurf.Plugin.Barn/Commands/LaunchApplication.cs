@@ -27,7 +27,7 @@ namespace DeckSurf.Plugin.Barn.Commands
             Process.Start(new ProcessStartInfo
             {
                 FileName = mappedCommand.CommandArguments,
-                UseShellExecute = true,
+                UseShellExecute = false,
             });
         }
 

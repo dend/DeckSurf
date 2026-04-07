@@ -12,8 +12,8 @@ namespace DeckSurf.Plugin.Barn
         {
             Author = "Den Delimarsky",
             Id = "DeckSurf.Plugin.Barn",
-            Version = "0.0.1-alpha",
-            Website = "https://github.com/dend/piglet"
+            Version = "0.0.2",
+            Website = "https://github.com/dend/decksurf"
         };
 
         public PluginMetadata Metadata
