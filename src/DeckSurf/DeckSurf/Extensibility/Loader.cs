@@ -1,4 +1,3 @@
-﻿using Autofac;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using System;
@@ -15,24 +14,75 @@ namespace DeckSurf.Extensibility
 
         internal static IEnumerable<T> Load<T>()
         {
-            var builder = new ContainerBuilder();
-
             Regex assemblyPattern = new Regex(@"DeckSurf\.Plugin\..+\.dll");
 
             var pluginPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "plugins");
-            var assemblies = Directory.EnumerateFiles(pluginPath, "*.dll", SearchOption.AllDirectories)
-                .Where(path => assemblyPattern.IsMatch(Path.GetFileName(path)))
-                .Select(Assembly.LoadFrom).ToArray();
 
-            builder.RegisterAssemblyTypes(assemblies).Where(t => t.GetInterfaces().Any(i => i.IsAssignableFrom(typeof(T)))).AsImplementedInterfaces().InstancePerDependency();
+            if (!Directory.Exists(pluginPath))
+            {
+                Console.Error.WriteLine($"[Warning] Plugins directory not found: {pluginPath}");
+                return Enumerable.Empty<T>();
+            }
 
-            var container = builder.Build();
-            return container.Resolve<IEnumerable<T>>();
+            var dllPaths = Directory.EnumerateFiles(pluginPath, "*.dll", SearchOption.AllDirectories)
+                .Where(path => assemblyPattern.IsMatch(Path.GetFileName(path)));
+
+            var assemblies = new List<Assembly>();
+            foreach (var dllPath in dllPaths)
+            {
+                try
+                {
+                    assemblies.Add(Assembly.LoadFrom(dllPath));
+                }
+                catch (BadImageFormatException)
+                {
+                    Console.Error.WriteLine($"[Warning] Failed to load plugin assembly (bad image format): {Path.GetFileName(dllPath)}");
+                }
+                catch (FileLoadException)
+                {
+                    Console.Error.WriteLine($"[Warning] Failed to load plugin assembly (file load error): {Path.GetFileName(dllPath)}");
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[Warning] Failed to load plugin assembly '{Path.GetFileName(dllPath)}': {ex.Message}");
+                }
+            }
+
+            var targetType = typeof(T);
+            var results = new List<T>();
+
+            foreach (var assembly in assemblies)
+            {
+                try
+                {
+                    var matchingTypes = assembly.GetExportedTypes()
+                        .Where(t => !t.IsAbstract && !t.IsInterface && targetType.IsAssignableFrom(t));
+
+                    foreach (var type in matchingTypes)
+                    {
+                        try
+                        {
+                            var instance = (T)Activator.CreateInstance(type);
+                            results.Add(instance);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Error.WriteLine($"[Warning] Failed to instantiate plugin type '{type.FullName}': {ex.Message}");
+                        }
+                    }
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    Console.Error.WriteLine($"[Warning] Failed to enumerate types in assembly '{assembly.GetName().Name}': {ex.Message}");
+                }
+            }
+
+            return results;
         }
 
-        internal static IEnumerable<IDSCommand> LoadCommands(IDSPlugin plugin, DeviceModel model)
+        internal static IEnumerable<IDeckSurfCommand> LoadCommands(IDeckSurfPlugin plugin, DeviceModel model)
         {
-            List<IDSCommand> commandList = new();
+            List<IDeckSurfCommand> commandList = new();
 
             foreach (var command in plugin.GetSupportedCommands())
             {
@@ -41,8 +91,15 @@ namespace DeckSurf.Extensibility
                 var attribute = Attribute.GetCustomAttributes(command, typeof(CompatibleWithAttribute));
                 if (attribute.Any(x => ((CompatibleWithAttribute)x).CompatibleModel == model))
                 {
-                    var commandInstance = (IDSCommand)Activator.CreateInstance(command);
-                    commandList.Add(commandInstance);
+                    try
+                    {
+                        var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
+                        commandList.Add(commandInstance);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"[Warning] Failed to instantiate command '{command.FullName}': {ex.Message}");
+                    }
                 }
             }
 

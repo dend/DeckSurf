@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Company>Den Delimarsky</Company>
+    <Copyright>2021-2026 Den Delimarsky. All rights reserved.</Copyright>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

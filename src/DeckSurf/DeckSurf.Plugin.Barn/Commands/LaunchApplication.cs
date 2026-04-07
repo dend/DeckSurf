@@ -1,42 +1,56 @@
-﻿using DeckSurf.SDK.Core;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
-    class LaunchApplication : IDSCommand
+    class LaunchApplication : IDeckSurfCommand
     {
         public string Name => "Launch Application";
         public string Description => "Launches an application on the machine.";
 
-        public void ExecuteOnAction(CommandMapping mappedCommand, ConnectedDevice mappedDevice, int activatingButton = -1)
+        public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
-            Process.Start(mappedCommand.CommandArguments);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = mappedCommand.CommandArguments,
+                UseShellExecute = true,
+            });
         }
 
-        public void ExecuteOnActivation(CommandMapping mappedCommand, ConnectedDevice mappedDevice)
+        public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
             if (string.IsNullOrEmpty(mappedCommand.ButtonImagePath))
             {
                 try
                 {
-                    var icon = ImageHelpers.GetFileIcon(mappedCommand.CommandArguments, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
-                    var byteContent = ImageHelpers.GetImageBuffer(icon);
+                    using var bitmap = ImageHelper.GetFileIcon(mappedCommand.CommandArguments, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_CROPTOSQUARE);
 
-                    // TODO: Make sure that this works beyond the XL model.
-                    var resizedByteContent = ImageHelpers.ResizeImage(byteContent, DeviceConstants.XLButtonSize, DeviceConstants.XLButtonSize);
+                    byte[] byteContent;
+                    using (var ms = new MemoryStream())
+                    {
+                        bitmap.Save(ms, ImageFormat.Png);
+                        byteContent = ms.ToArray();
+                    }
+
+                    var resizedByteContent = ImageHelper.ResizeImage(byteContent, mappedDevice.ButtonResolution, mappedDevice.ButtonResolution, mappedDevice.ImageRotation, mappedDevice.KeyImageFormat);
                     mappedDevice.SetKey(mappedCommand.ButtonIndex, resizedByteContent);
                 }
                 catch
                 {
                     // Could not set up the right configuration for the button image.
-                    // Should add some logging here for the plugin.
                     Debug.WriteLine($"Could not set icon for {mappedCommand.CommandArguments}");
                 }
             }
+        }
+
+        public void Dispose()
+        {
         }
     }
 }
