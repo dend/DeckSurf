@@ -88,7 +88,7 @@ The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles
 
 ## Included Plugin: Barn
 
-DeckSurf ships with **DeckSurf.Plugin.Barn**, a built-in plugin that demonstrates the plugin system and provides useful commands out of the box. All Barn commands are currently compatible with the Stream Deck XL.
+DeckSurf ships with **DeckSurf.Plugin.Barn**, a built-in plugin that demonstrates the plugin system and provides useful commands out of the box. All Barn commands are compatible with every supported Stream Deck model.
 
 | Command | Description |
 |:--------|:------------|

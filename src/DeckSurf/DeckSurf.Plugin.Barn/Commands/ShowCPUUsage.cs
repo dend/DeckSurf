@@ -11,6 +11,14 @@ using System.Threading;
 namespace DeckSurf.Plugin.Barn.Commands
 {
     [CompatibleWith(DeviceModel.XL)]
+    [CompatibleWith(DeviceModel.XL2022)]
+    [CompatibleWith(DeviceModel.Original)]
+    [CompatibleWith(DeviceModel.Original2019)]
+    [CompatibleWith(DeviceModel.MK2)]
+    [CompatibleWith(DeviceModel.Mini)]
+    [CompatibleWith(DeviceModel.Mini2022)]
+    [CompatibleWith(DeviceModel.Plus)]
+    [CompatibleWith(DeviceModel.Neo)]
     class ShowCPUUsage : IDeckSurfCommand
     {
         private const string CategoryName = "Processor";
