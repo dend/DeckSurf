@@ -18,16 +18,16 @@ namespace DeckSurf.Plugin.Barn.Commands
     [CompatibleWith(DeviceModel.Mini2022)]
     [CompatibleWith(DeviceModel.Plus)]
     [CompatibleWith(DeviceModel.Neo)]
-    class ShowCPUUsage : IDeckSurfCommand
+    class ShowRAMUsage : IDeckSurfCommand
     {
         private const int MaxHistory = 30;
 
-        private System.Timers.Timer _cpuUsageTimer;
+        private System.Timers.Timer _ramUsageTimer;
         private readonly List<int> _history = new();
         private readonly object _historyLock = new();
 
-        public string Name => "Show CPU Usage";
-        public string Description => "Displays live CPU usage percentage on a Stream Deck button.";
+        public string Name => "Show RAM Usage";
+        public string Description => "Displays live RAM usage percentage on a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
@@ -35,32 +35,32 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            _cpuUsageTimer = new System.Timers.Timer(2000);
-            _cpuUsageTimer.Elapsed += (s, e) =>
+            _ramUsageTimer = new System.Timers.Timer(2000);
+            _ramUsageTimer.Elapsed += (s, e) =>
             {
                 try
                 {
-                    int cpuUsage = CpuMonitor.GetSystemCpuUsage();
-                    if (cpuUsage < 0) return;
+                    int ramUsage = MemoryMonitor.GetSystemMemoryUsagePercent();
+                    if (ramUsage < 0) return;
 
                     lock (_historyLock)
                     {
-                        _history.Add(cpuUsage);
+                        _history.Add(ramUsage);
                         if (_history.Count > MaxHistory)
                             _history.RemoveAt(0);
                     }
 
-                    RenderButton(cpuUsage, mappedCommand, mappedDevice);
+                    RenderButton(ramUsage, mappedCommand, mappedDevice);
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error in CPU usage timer callback: {ex}");
+                    Debug.WriteLine($"Error in RAM usage timer callback: {ex}");
                 }
             };
-            _cpuUsageTimer.Start();
+            _ramUsageTimer.Start();
         }
 
-        private void RenderButton(int cpuUsage, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+        private void RenderButton(int ramUsage, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
             var font = IconGenerator.ResolveFont(36, SixLabors.Fonts.FontStyle.Bold);
 
@@ -72,8 +72,8 @@ namespace DeckSurf.Plugin.Barn.Commands
 
             using var image = IconGenerator.GenerateUsageImage(
                 200,
-                "CPU",
-                cpuUsage + "%",
+                "RAM",
+                ramUsage + "%",
                 font,
                 snapshot);
 
@@ -89,8 +89,8 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void Dispose()
         {
-            _cpuUsageTimer?.Stop();
-            _cpuUsageTimer?.Dispose();
+            _ramUsageTimer?.Stop();
+            _ramUsageTimer?.Dispose();
         }
     }
 }

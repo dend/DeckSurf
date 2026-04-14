@@ -30,6 +30,9 @@ namespace DeckSurf.Plugin.Barn
             {
                 typeof(LaunchApplication),
                 typeof(ShowCPUUsage),
+                typeof(ShowNetworkTraffic),
+                typeof(ShowRAMUsage),
+                typeof(ShowTimer),
                 typeof(SnakeGame)
             };
         }
