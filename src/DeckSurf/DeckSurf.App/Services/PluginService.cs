@@ -29,6 +29,8 @@ namespace DeckSurf.App.Services
         public string ParametersText => Parameters.Count == 0
             ? "No settings"
             : "Settings: " + string.Join(", ", Parameters.Select(p => p.DisplayName ?? p.Key));
+
+        public string MetaText => $"{ModelsText} · {ParametersText}";
     }
 
     /// <summary>

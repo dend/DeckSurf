@@ -20,6 +20,7 @@ namespace DeckSurf.App.ViewModels
         private readonly WindowService windowService;
 
         private bool loadingKey;
+        private bool loadingProfile;
         private bool dirty;
 
         public ProfileEditorViewModel(
@@ -53,6 +54,11 @@ namespace DeckSurf.App.ViewModels
 
         public IReadOnlyList<PluginInfo> Plugins => pluginService.Plugins;
 
+        public ObservableCollection<DeviceSummary> ConnectedDevices => deviceService.Devices;
+
+        [ObservableProperty]
+        public partial DeviceSummary? SelectedDevice { get; set; }
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasProfile))]
         public partial string? SelectedProfileName { get; set; }
@@ -72,6 +78,12 @@ namespace DeckSurf.App.ViewModels
 
         [ObservableProperty]
         public partial int GridColumns { get; set; }
+
+        [ObservableProperty]
+        public partial bool ShowScreenStrip { get; set; }
+
+        [ObservableProperty]
+        public partial bool ShowKnobs { get; set; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsNotRunning))]
@@ -125,6 +137,14 @@ namespace DeckSurf.App.ViewModels
         partial void OnSelectedProfileNameChanged(string? value)
         {
             LoadProfile(value);
+        }
+
+        partial void OnSelectedDeviceChanged(DeviceSummary? value)
+        {
+            if (!loadingProfile && value is not null)
+            {
+                ApplyDeviceSelection(value);
+            }
         }
 
         partial void OnSelectedKeyChanged(KeyViewModel? value)
@@ -279,7 +299,21 @@ namespace DeckSurf.App.ViewModels
 
                 if (IsRunning && string.Equals(runtimeService.ActiveProfileName, SelectedProfileName, StringComparison.OrdinalIgnoreCase))
                 {
-                    await Task.Run(runtimeService.HotRestart);
+                    if (string.Equals(runtimeService.ActiveDeviceSerial, profileDeviceSerial, StringComparison.OrdinalIgnoreCase))
+                    {
+                        await Task.Run(runtimeService.HotRestart);
+                    }
+                    else
+                    {
+                        // The profile now targets a different device; the open handle
+                        // cannot be reused, so restart the runtime fully.
+                        var profileName = SelectedProfileName;
+                        await Task.Run(() =>
+                        {
+                            runtimeService.Stop();
+                            runtimeService.Start(profileName);
+                        });
+                    }
                 }
 
                 StatusMessage = null;
@@ -320,92 +354,154 @@ namespace DeckSurf.App.ViewModels
 
         private void LoadProfile(string? name)
         {
-            SelectedKey = null;
-            Keys.Clear();
-            CatchAllMappings.Clear();
-
-            if (name is null)
-            {
-                return;
-            }
-
-            ConfigurationProfile? profile;
+            loadingProfile = true;
             try
             {
-                profile = profileService.GetProfile(name);
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = ex.Message;
-                return;
-            }
+                SelectedKey = null;
+                Keys.Clear();
+                CatchAllMappings.Clear();
+                SelectedDevice = null;
 
-            if (profile is null)
-            {
-                return;
-            }
-
-            profileDeviceModel = profile.DeviceModel;
-            profileDeviceSerial = profile.DeviceSerial;
-            profileDeviceIndex = profile.DeviceIndex;
-
-            // Prefer the connected device's real layout when the profile's device is
-            // present; fall back to the device-index match for profiles written by the
-            // CLI, which does not store model or serial.
-            var connected = deviceService.Devices.FirstOrDefault(d =>
-                !string.IsNullOrEmpty(profile.DeviceSerial)
-                && string.Equals(d.Serial, profile.DeviceSerial, StringComparison.OrdinalIgnoreCase));
-
-            if (connected is null && profile.DeviceIndex >= 0 && profile.DeviceIndex < deviceService.Devices.Count)
-            {
-                connected = deviceService.Devices[profile.DeviceIndex];
-            }
-
-            if (connected is not null)
-            {
-                // Adopt the device identity so saving repairs profiles that lack it.
-                profileDeviceModel = connected.Model;
-                if (string.IsNullOrEmpty(profileDeviceSerial))
+                if (name is null)
                 {
-                    profileDeviceSerial = connected.Serial;
+                    return;
                 }
+
+                ConfigurationProfile? profile;
+                try
+                {
+                    profile = profileService.GetProfile(name);
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = ex.Message;
+                    return;
+                }
+
+                if (profile is null)
+                {
+                    return;
+                }
+
+                profileDeviceModel = profile.DeviceModel;
+                profileDeviceSerial = profile.DeviceSerial;
+                profileDeviceIndex = profile.DeviceIndex;
+
+                // Prefer the connected device's real layout when the profile's device is
+                // present; fall back to the device-index match for profiles written by the
+                // CLI, which does not store model or serial.
+                var connected = deviceService.Devices.FirstOrDefault(d =>
+                    !string.IsNullOrEmpty(profile.DeviceSerial)
+                    && string.Equals(d.Serial, profile.DeviceSerial, StringComparison.OrdinalIgnoreCase));
+
+                if (connected is null && profile.DeviceIndex >= 0 && profile.DeviceIndex < deviceService.Devices.Count)
+                {
+                    connected = deviceService.Devices[profile.DeviceIndex];
+                }
+
+                if (connected is not null)
+                {
+                    // Adopt the device identity so saving repairs profiles that lack it.
+                    profileDeviceModel = connected.Model;
+                    if (string.IsNullOrEmpty(profileDeviceSerial))
+                    {
+                        profileDeviceSerial = connected.Serial;
+                    }
+                }
+
+                SelectedDevice = connected;
+
+                var (columns, rows) = connected is not null
+                    ? (connected.ButtonColumns, connected.ButtonRows)
+                    : DeviceLayouts.GetGrid(profile.DeviceModel);
+
+                ShowScreenStrip = connected?.IsScreenSupported ?? DeviceLayouts.HasScreen(profile.DeviceModel);
+                ShowKnobs = connected?.IsKnobSupported ?? DeviceLayouts.HasKnobs(profile.DeviceModel);
+
+                BuildKeys(columns, rows);
+
+                foreach (var mapping in profile.ButtonMap)
+                {
+                    KeyViewModel target;
+                    if (mapping.ButtonIndex == -1)
+                    {
+                        target = new KeyViewModel(-1);
+                        CatchAllMappings.Add(target);
+                    }
+                    else if (mapping.ButtonIndex >= 0 && mapping.ButtonIndex < Keys.Count)
+                    {
+                        target = Keys[mapping.ButtonIndex];
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    target.PluginId = mapping.Plugin;
+                    target.CommandId = mapping.Command;
+                    target.CommandArguments = mapping.CommandArguments;
+                    target.ImagePath = mapping.ButtonImagePath;
+                }
+
+                dirty = false;
             }
+            finally
+            {
+                loadingProfile = false;
+            }
+        }
 
-            var (columns, rows) = connected is not null
-                ? (connected.ButtonColumns, connected.ButtonRows)
-                : DeviceLayouts.GetGrid(profile.DeviceModel);
-
+        private void BuildKeys(int columns, int rows)
+        {
+            Keys.Clear();
             GridColumns = columns;
 
             for (var i = 0; i < columns * rows; i++)
             {
                 Keys.Add(new KeyViewModel(i));
             }
+        }
 
-            foreach (var mapping in profile.ButtonMap)
+        // Retarget the loaded profile to a different connected device: adopt its
+        // identity and rebuild the grid to its layout, keeping in-range mappings.
+        private void ApplyDeviceSelection(DeviceSummary device)
+        {
+            profileDeviceModel = device.Model;
+            profileDeviceSerial = device.Serial;
+            profileDeviceIndex = Math.Max(0, deviceService.Devices.IndexOf(device));
+
+            ShowScreenStrip = device.IsScreenSupported;
+            ShowKnobs = device.IsKnobSupported;
+
+            var preserved = Keys
+                .Where(k => k.HasMapping)
+                .Select(k => (k.Index, k.PluginId, k.CommandId, k.CommandArguments, k.ImagePath))
+                .ToList();
+
+            SelectedKey = null;
+            BuildKeys(device.ButtonColumns, device.ButtonRows);
+
+            var dropped = 0;
+            foreach (var mapping in preserved)
             {
-                KeyViewModel target;
-                if (mapping.ButtonIndex == -1)
+                if (mapping.Index < Keys.Count)
                 {
-                    target = new KeyViewModel(-1);
-                    CatchAllMappings.Add(target);
-                }
-                else if (mapping.ButtonIndex >= 0 && mapping.ButtonIndex < Keys.Count)
-                {
-                    target = Keys[mapping.ButtonIndex];
+                    var key = Keys[mapping.Index];
+                    key.PluginId = mapping.PluginId;
+                    key.CommandId = mapping.CommandId;
+                    key.CommandArguments = mapping.CommandArguments;
+                    key.ImagePath = mapping.ImagePath;
                 }
                 else
                 {
-                    continue;
+                    dropped++;
                 }
-
-                target.PluginId = mapping.Plugin;
-                target.CommandId = mapping.Command;
-                target.CommandArguments = mapping.CommandArguments;
-                target.ImagePath = mapping.ButtonImagePath;
             }
 
-            dirty = false;
+            StatusMessage = dropped > 0
+                ? $"{dropped} mapping(s) fell outside the {device.ButtonColumns} x {device.ButtonRows} layout and were removed."
+                : null;
+            dirty = true;
         }
 
         private void LoadInspectorFromKey(KeyViewModel? key)

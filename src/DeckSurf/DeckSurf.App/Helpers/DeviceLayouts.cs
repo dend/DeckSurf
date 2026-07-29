@@ -16,5 +16,9 @@ namespace DeckSurf.App.Helpers
             DeviceModel.Original or DeviceModel.Original2019 or DeviceModel.MK2 => (5, 3),
             _ => (5, 3),
         };
+
+        public static bool HasScreen(DeviceModel model) => model is DeviceModel.Plus or DeviceModel.Neo;
+
+        public static bool HasKnobs(DeviceModel model) => model is DeviceModel.Plus;
     }
 }

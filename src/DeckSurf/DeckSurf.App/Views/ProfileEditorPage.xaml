@@ -120,12 +120,23 @@
 
         <CommandBar Grid.Row="0" DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Background="Transparent" IsOpen="False">
             <CommandBar.Content>
-                <ComboBox
-                    MinWidth="220"
-                    VerticalAlignment="Center"
-                    PlaceholderText="Select a profile"
-                    ItemsSource="{x:Bind ViewModel.ProfileNames}"
-                    SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <ComboBox
+                        MinWidth="180"
+                        VerticalAlignment="Center"
+                        PlaceholderText="Select a profile"
+                        ItemsSource="{x:Bind ViewModel.ProfileNames}"
+                        SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
+                    <ComboBox
+                        MinWidth="220"
+                        VerticalAlignment="Center"
+                        PlaceholderText="Device"
+                        ToolTipService.ToolTip="Device this profile targets"
+                        ItemsSource="{x:Bind ViewModel.ConnectedDevices}"
+                        DisplayMemberPath="DisplayText"
+                        SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
+                        IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}" />
+                </StackPanel>
             </CommandBar.Content>
 
             <AppBarButton Label="New" Click="NewProfile_Click">
@@ -217,21 +228,47 @@
                         CornerRadius="12"
                         Padding="14"
                         HorizontalAlignment="Left">
-                        <GridView
-                            x:Name="KeyGrid"
-                            ItemsSource="{x:Bind ViewModel.Keys}"
-                            SelectionMode="Single"
-                            SelectionChanged="KeyGrid_SelectionChanged"
-                            Loaded="KeyGrid_Loaded"
-                            HorizontalAlignment="Left"
-                            ItemTemplate="{StaticResource KeyTileTemplate}"
-                            ItemContainerStyle="{StaticResource KeyTileContainerStyle}">
-                            <GridView.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ItemsWrapGrid Orientation="Horizontal" ItemWidth="96" ItemHeight="96" />
-                                </ItemsPanelTemplate>
-                            </GridView.ItemsPanel>
-                        </GridView>
+                        <StackPanel Spacing="10">
+                            <GridView
+                                x:Name="KeyGrid"
+                                ItemsSource="{x:Bind ViewModel.Keys}"
+                                SelectionMode="Single"
+                                SelectionChanged="KeyGrid_SelectionChanged"
+                                Loaded="KeyGrid_Loaded"
+                                HorizontalAlignment="Left"
+                                ItemTemplate="{StaticResource KeyTileTemplate}"
+                                ItemContainerStyle="{StaticResource KeyTileContainerStyle}">
+                                <GridView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="96" ItemHeight="96" />
+                                    </ItemsPanelTemplate>
+                                </GridView.ItemsPanel>
+                            </GridView>
+
+                            <!-- Display-only hardware extras; mapping support comes later. -->
+                            <Border
+                                x:Name="ScreenStrip"
+                                Height="44"
+                                CornerRadius="6"
+                                Background="#FF141414"
+                                BorderBrush="#FF333333"
+                                BorderThickness="1"
+                                Visibility="{x:Bind ViewModel.ShowScreenStrip, Mode=OneWay}"
+                                ToolTipService.ToolTip="Touch screen — mapping support coming soon">
+                                <TextBlock Text="Touch screen" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Spacing="48"
+                                Visibility="{x:Bind ViewModel.ShowKnobs, Mode=OneWay}"
+                                ToolTipService.ToolTip="Knobs — mapping support coming soon">
+                                <Ellipse Width="38" Height="38" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" />
+                                <Ellipse Width="38" Height="38" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" />
+                                <Ellipse Width="38" Height="38" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" />
+                                <Ellipse Width="38" Height="38" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" />
+                            </StackPanel>
+                        </StackPanel>
                     </Border>
 
                     <!-- Any-key mappings live in the same visual language: tiles that run

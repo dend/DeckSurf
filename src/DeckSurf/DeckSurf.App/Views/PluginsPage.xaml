@@ -11,21 +11,22 @@
     NavigationCacheMode="Required">
 
     <ScrollViewer Padding="28,20,28,0">
-        <StackPanel Spacing="16" MaxWidth="840" HorizontalAlignment="Left" Margin="0,0,0,24">
-            <Grid>
-                <TextBlock Text="Plugins" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
-                <Button HorizontalAlignment="Right" VerticalAlignment="Center" Command="{x:Bind ViewModel.OpenPluginsFolderCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE838;" FontSize="14" />
-                        <TextBlock Text="Open plugins folder" />
-                    </StackPanel>
-                </Button>
-            </Grid>
+        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,0,0,24">
+            <CommandBar DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Background="Transparent" IsOpen="False" Margin="0,0,0,8">
+                <CommandBar.Content>
+                    <TextBlock Text="Plugins" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
+                </CommandBar.Content>
+                <AppBarButton Label="Plugins folder" Command="{x:Bind ViewModel.OpenPluginsFolderCommand}" ToolTipService.ToolTip="Open the plugins folder">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE838;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </CommandBar>
 
             <StackPanel
                 Spacing="8"
                 HorizontalAlignment="Center"
-                Margin="0,48,0,0"
+                Margin="0,64,0,0"
                 MaxWidth="420"
                 Visibility="{x:Bind ViewModel.HasNoPlugins}">
                 <FontIcon Glyph="&#xEA86;" FontSize="44" Opacity="0.35" HorizontalAlignment="Center" />
@@ -48,43 +49,24 @@
             <ItemsControl ItemsSource="{x:Bind ViewModel.Plugins}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="services:PluginInfo">
-                        <StackPanel Spacing="4" Margin="0,0,0,20">
-                            <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource SubtitleTextBlockStyle}" />
-                            <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" Margin="0,0,0,8" />
-
-                            <ItemsControl ItemsSource="{x:Bind Commands}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="services:CommandInfo">
-                                        <tk:SettingsCard
-                                            Header="{x:Bind DisplayName}"
-                                            Description="{x:Bind Description}"
-                                            ContentAlignment="Vertical"
-                                            Margin="0,0,0,4">
-                                            <tk:SettingsCard.HeaderIcon>
-                                                <FontIcon Glyph="&#xE945;" />
-                                            </tk:SettingsCard.HeaderIcon>
-                                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" Margin="0,8,0,0">
-                                                <ItemsControl ItemsSource="{x:Bind ModelChips}">
-                                                    <ItemsControl.ItemsPanel>
-                                                        <ItemsPanelTemplate>
-                                                            <StackPanel Orientation="Horizontal" Spacing="4" />
-                                                        </ItemsPanelTemplate>
-                                                    </ItemsControl.ItemsPanel>
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="x:String">
-                                                            <Border Background="{ThemeResource ControlFillColorSecondaryBrush}" CornerRadius="10" Padding="8,2">
-                                                                <TextBlock Text="{x:Bind}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.9" />
-                                                            </Border>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                                <TextBlock Text="{x:Bind ParametersText}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" VerticalAlignment="Center" />
-                                            </StackPanel>
-                                        </tk:SettingsCard>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                        <tk:SettingsExpander
+                            Header="{x:Bind DisplayName}"
+                            Description="{x:Bind Subtitle}"
+                            IsExpanded="True"
+                            HorizontalAlignment="Stretch"
+                            ItemsSource="{x:Bind Commands}"
+                            Margin="0,0,0,8">
+                            <tk:SettingsExpander.HeaderIcon>
+                                <FontIcon Glyph="&#xEA86;" />
+                            </tk:SettingsExpander.HeaderIcon>
+                            <tk:SettingsExpander.ItemTemplate>
+                                <DataTemplate x:DataType="services:CommandInfo">
+                                    <tk:SettingsCard Header="{x:Bind DisplayName}" Description="{x:Bind Description}">
+                                        <TextBlock Text="{x:Bind MetaText}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
+                                    </tk:SettingsCard>
+                                </DataTemplate>
+                            </tk:SettingsExpander.ItemTemplate>
+                        </tk:SettingsExpander>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

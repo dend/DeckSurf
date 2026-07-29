@@ -19,7 +19,10 @@ namespace DeckSurf.App.Services
         int ButtonResolution,
         bool IsScreenSupported,
         bool IsKnobSupported,
-        int TouchButtonCount);
+        int TouchButtonCount)
+    {
+        public string DisplayText => $"{Name} · {Serial}";
+    }
 
     /// <summary>
     /// Enumerates connected Stream Deck devices and tracks hotplug changes,

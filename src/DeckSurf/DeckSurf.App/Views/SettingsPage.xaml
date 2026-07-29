@@ -10,8 +10,12 @@
     NavigationCacheMode="Required">
 
     <ScrollViewer Padding="28,20,28,0">
-        <StackPanel Spacing="4" MaxWidth="840" HorizontalAlignment="Left" Margin="0,0,0,24">
-            <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,16" />
+        <StackPanel Spacing="4" HorizontalAlignment="Stretch" Margin="0,0,0,24">
+            <CommandBar DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Background="Transparent" IsOpen="False" Margin="0,0,0,8">
+                <CommandBar.Content>
+                    <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
+                </CommandBar.Content>
+            </CommandBar>
 
             <TextBlock Text="Appearance" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,0,0,8" />
             <tk:SettingsCard Header="App theme" Description="Restart is not required.">

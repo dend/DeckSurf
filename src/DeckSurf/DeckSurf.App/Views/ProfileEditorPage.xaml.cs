@@ -61,6 +61,11 @@ namespace DeckSurf.App.Views
 
             KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
 
+            // The screen strip and any-key strip share the deck card's width so the
+            // whole stage reads as one device (grid width + card padding + border).
+            ScreenStrip.Width = KeyGrid.Width;
+            AnyKeyCard.Width = KeyGrid.Width + 30;
+
             Ioc.Default.GetRequiredService<WindowService>().SetMinimumSize(
                 (ViewModel.GridColumns * TileSlotWidth) + NonGridWidth,
                 560);
