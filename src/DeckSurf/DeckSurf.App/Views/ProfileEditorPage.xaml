@@ -211,7 +211,31 @@
             IsClosable="False"
             Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
 
-        <Grid Grid.Row="2" ColumnSpacing="16" Margin="0,8,0,0">
+        <!-- First-run empty state -->
+        <StackPanel
+            Grid.Row="2"
+            Spacing="12"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            MaxWidth="440"
+            Visibility="{x:Bind ViewModel.HasNoProfiles, Mode=OneWay}">
+            <FontIcon Glyph="&#xF0E2;" FontSize="44" Opacity="0.35" HorizontalAlignment="Center" />
+            <TextBlock Text="Set up your Stream Deck" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+            <TextBlock
+                Text="A profile maps plugin commands to your device's keys. Create one, click a key on the grid, and pick what it should do."
+                Style="{StaticResource BodyTextBlockStyle}"
+                Opacity="0.7"
+                TextWrapping="Wrap"
+                TextAlignment="Center" />
+            <Button Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Center" Click="NewProfile_Click" Margin="0,8,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE710;" FontSize="13" />
+                    <TextBlock Text="Create your first profile" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
+        <Grid Grid.Row="2" ColumnSpacing="16" Margin="0,8,0,0" Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition x:Name="InspectorColumn" Width="380" />
@@ -330,7 +354,8 @@
                                     BorderThickness="1"
                                     CornerRadius="8"
                                     Command="{x:Bind ViewModel.AddCatchAllCommand}"
-                                    ToolTipService.ToolTip="Add an any-key mapping">
+                                    ToolTipService.ToolTip="Add an any-key mapping"
+                                    AutomationProperties.Name="Add an any-key mapping">
                                     <FontIcon Glyph="&#xE710;" FontSize="16" Foreground="#99FFFFFF" />
                                 </Button>
                             </StackPanel>
@@ -363,7 +388,8 @@
                             BorderThickness="0"
                             Padding="6"
                             Click="ToggleInspector_Click"
-                            ToolTipService.ToolTip="Collapse panel">
+                            ToolTipService.ToolTip="Collapse panel"
+                            AutomationProperties.Name="Collapse key configuration panel">
                             <FontIcon x:Name="InspectorToggleGlyph" Glyph="&#xE76C;" FontSize="12" />
                         </Button>
                     </Grid>
@@ -380,7 +406,7 @@
                                 <ComboBox
                                     Header="Plugin"
                                     HorizontalAlignment="Stretch"
-                                    ItemsSource="{x:Bind ViewModel.Plugins}"
+                                    ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}"
                                     DisplayMemberPath="DisplayName"
                                     SelectedItem="{Binding SelectedPlugin, Mode=TwoWay}" />
 
@@ -405,7 +431,7 @@
                                         </Border>
                                         <TextBox Grid.Column="1" IsReadOnly="True" Text="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}" VerticalAlignment="Center" />
                                         <Button Grid.Column="2" Content="Browse" Click="BrowseKeyImage_Click" VerticalAlignment="Center" />
-                                        <Button Grid.Column="3" Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}" VerticalAlignment="Center" ToolTipService.ToolTip="Remove image">
+                                        <Button Grid.Column="3" Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}" VerticalAlignment="Center" ToolTipService.ToolTip="Remove image" AutomationProperties.Name="Remove button image">
                                             <FontIcon Glyph="&#xE711;" FontSize="12" />
                                         </Button>
                                     </Grid>

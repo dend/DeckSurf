@@ -38,6 +38,7 @@ namespace DeckSurf.App.ViewModels
 
             runtimeService.StateChanged += OnRuntimeStateChanged;
             runtimeService.ButtonEventLogged += OnRuntimeLog;
+            pluginService.PluginsChanged += (_, _) => windowService.RunOnUIThread(() => OnPropertyChanged(nameof(Plugins)));
 
             RefreshProfiles();
         }
@@ -101,6 +102,8 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasProfile => !string.IsNullOrEmpty(SelectedProfileName);
 
+        public bool HasNoProfiles => ProfileNames.Count == 0;
+
         public bool HasSelectedKey => SelectedKey is not null;
 
         public bool HasNoSelectedKey => SelectedKey is null;
@@ -136,6 +139,8 @@ namespace DeckSurf.App.ViewModels
             {
                 SelectedProfileName = ProfileNames.FirstOrDefault();
             }
+
+            OnPropertyChanged(nameof(HasNoProfiles));
         }
 
         partial void OnSelectedProfileNameChanged(string? value)

@@ -34,6 +34,33 @@ namespace DeckSurf.App.Views
                 }
             };
             ViewModel.RefreshProfiles();
+
+            RegisterAccelerator(Windows.System.VirtualKey.S, Windows.System.VirtualKeyModifiers.Control, () =>
+            {
+                if (ViewModel.SaveCommand.CanExecute(null))
+                {
+                    ViewModel.SaveCommand.Execute(null);
+                }
+            });
+            RegisterAccelerator(Windows.System.VirtualKey.N, Windows.System.VirtualKeyModifiers.Control, () => NewProfile_Click(this, new RoutedEventArgs()));
+            RegisterAccelerator(Windows.System.VirtualKey.F5, Windows.System.VirtualKeyModifiers.None, () =>
+            {
+                if (ViewModel.ToggleRuntimeCommand.CanExecute(null))
+                {
+                    ViewModel.ToggleRuntimeCommand.Execute(null);
+                }
+            });
+        }
+
+        private void RegisterAccelerator(Windows.System.VirtualKey key, Windows.System.VirtualKeyModifiers modifiers, Action action)
+        {
+            var accelerator = new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = key, Modifiers = modifiers };
+            accelerator.Invoked += (_, e) =>
+            {
+                e.Handled = true;
+                action();
+            };
+            KeyboardAccelerators.Add(accelerator);
         }
 
         public ProfileEditorViewModel ViewModel { get; } = Ioc.Default.GetRequiredService<ProfileEditorViewModel>();

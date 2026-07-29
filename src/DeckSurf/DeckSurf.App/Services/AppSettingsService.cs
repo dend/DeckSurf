@@ -1,11 +1,12 @@
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using Microsoft.UI.Xaml;
 
 namespace DeckSurf.App.Services
 {
     /// <summary>
-    /// Persists small app-level preferences (currently the theme) to a JSON file
-    /// alongside the DeckSurf profile storage.
+    /// Persists small app-level preferences (theme, custom plugin folders) to a JSON
+    /// file alongside the DeckSurf profile storage.
     /// </summary>
     public sealed class AppSettingsService
     {
@@ -22,6 +23,12 @@ namespace DeckSurf.App.Services
         }
 
         public ElementTheme Theme { get; private set; } = ElementTheme.Default;
+
+        /// <summary>
+        /// Gets the user-configured plugin lookup folders, scanned in addition to the
+        /// built-in locations next to the application.
+        /// </summary>
+        public ObservableCollection<string> PluginDirectories { get; } = [];
 
         public void ApplyTheme(ElementTheme theme)
         {
@@ -47,6 +54,32 @@ namespace DeckSurf.App.Services
             }
         }
 
+        /// <summary>
+        /// Adds a plugin lookup folder. Returns false when it is already configured.
+        /// </summary>
+        public bool AddPluginDirectory(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)
+                || PluginDirectories.Any(d => string.Equals(d, path, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            PluginDirectories.Add(path);
+            Save();
+            return true;
+        }
+
+        public void RemovePluginDirectory(string path)
+        {
+            var existing = PluginDirectories.FirstOrDefault(d => string.Equals(d, path, StringComparison.OrdinalIgnoreCase));
+            if (existing is not null)
+            {
+                PluginDirectories.Remove(existing);
+                Save();
+            }
+        }
+
         private void Load()
         {
             try
@@ -54,9 +87,22 @@ namespace DeckSurf.App.Services
                 if (File.Exists(SettingsPath))
                 {
                     var settings = JsonSerializer.Deserialize<PersistedSettings>(File.ReadAllText(SettingsPath));
-                    if (settings is not null && Enum.TryParse<ElementTheme>(settings.Theme, out var theme))
+                    if (settings is null)
+                    {
+                        return;
+                    }
+
+                    if (Enum.TryParse<ElementTheme>(settings.Theme, out var theme))
                     {
                         Theme = theme;
+                    }
+
+                    foreach (var directory in settings.PluginDirectories ?? [])
+                    {
+                        if (!string.IsNullOrWhiteSpace(directory))
+                        {
+                            PluginDirectories.Add(directory);
+                        }
                     }
                 }
             }
@@ -71,7 +117,11 @@ namespace DeckSurf.App.Services
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-                File.WriteAllText(SettingsPath, JsonSerializer.Serialize(new PersistedSettings { Theme = Theme.ToString() }));
+                File.WriteAllText(SettingsPath, JsonSerializer.Serialize(new PersistedSettings
+                {
+                    Theme = Theme.ToString(),
+                    PluginDirectories = [.. PluginDirectories],
+                }));
             }
             catch (Exception)
             {
@@ -82,6 +132,8 @@ namespace DeckSurf.App.Services
         private sealed class PersistedSettings
         {
             public string? Theme { get; set; }
+
+            public List<string>? PluginDirectories { get; set; }
         }
     }
 }

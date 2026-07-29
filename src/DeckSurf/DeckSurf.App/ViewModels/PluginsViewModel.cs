@@ -12,6 +12,7 @@ namespace DeckSurf.App.ViewModels
         public PluginsViewModel(PluginService pluginService)
         {
             this.pluginService = pluginService;
+            pluginService.PluginsChanged += (_, _) => NotifyPluginsChanged();
         }
 
         public IReadOnlyList<PluginInfo> Plugins => pluginService.Plugins;
@@ -23,12 +24,15 @@ namespace DeckSurf.App.ViewModels
         public string DiagnosticsText => string.Join(Environment.NewLine, pluginService.Diagnostics);
 
         [RelayCommand]
+        private void Rescan() => pluginService.Reload();
+
+        [RelayCommand]
         private void OpenPluginsFolder()
         {
-            var pluginsPath = Path.Combine(pluginService.ProbeDirectories[0], "plugins");
+            var pluginsPath = Path.Combine(pluginService.BuiltInDirectories[0], "plugins");
             var target = Directory.Exists(pluginsPath)
                 ? pluginsPath
-                : pluginService.ProbeDirectories.Select(d => Path.Combine(d, "plugins")).FirstOrDefault(Directory.Exists)
+                : pluginService.BuiltInDirectories.Select(d => Path.Combine(d, "plugins")).FirstOrDefault(Directory.Exists)
                     ?? pluginsPath;
 
             Directory.CreateDirectory(target);
@@ -37,6 +41,14 @@ namespace DeckSurf.App.ViewModels
                 FileName = target,
                 UseShellExecute = true,
             });
+        }
+
+        private void NotifyPluginsChanged()
+        {
+            OnPropertyChanged(nameof(Plugins));
+            OnPropertyChanged(nameof(HasNoPlugins));
+            OnPropertyChanged(nameof(HasDiagnostics));
+            OnPropertyChanged(nameof(DiagnosticsText));
         }
     }
 }

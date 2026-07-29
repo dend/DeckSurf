@@ -42,6 +42,7 @@ namespace DeckSurf.App.Services
         string DisplayName,
         string Version,
         string Author,
+        string SourcePath,
         IReadOnlyList<CommandInfo> Commands)
     {
         // Avoid repeating the id when no distinct display name is set.
@@ -51,20 +52,37 @@ namespace DeckSurf.App.Services
     }
 
     /// <summary>
-    /// Discovers plugins next to the application (release layout) or next to the
-    /// sibling CLI output (dev layout) and caches their command metadata.
+    /// Discovers plugins from the built-in locations (next to the application and the
+    /// sibling CLI output) and any user-configured folders, and caches their command
+    /// metadata. Rescans pick up newly added plugin assemblies; assemblies already
+    /// loaded stay in memory until the app restarts.
     /// </summary>
     public sealed class PluginService
     {
+        private readonly AppSettingsService appSettings;
+        private readonly object loadLock = new();
         private readonly List<string> diagnostics = [];
-        private readonly Lazy<IReadOnlyList<PluginInfo>> plugins;
 
-        public PluginService()
+        private List<PluginInfo>? plugins;
+
+        public PluginService(AppSettingsService appSettings)
         {
-            plugins = new Lazy<IReadOnlyList<PluginInfo>>(LoadAllPlugins);
+            this.appSettings = appSettings;
         }
 
-        public IReadOnlyList<PluginInfo> Plugins => plugins.Value;
+        /// <summary>
+        /// Raised after a rescan changes the plugin list. Raised on the calling thread.
+        /// </summary>
+        public event EventHandler? PluginsChanged;
+
+        public IReadOnlyList<PluginInfo> Plugins
+        {
+            get
+            {
+                EnsureLoaded();
+                return plugins!;
+            }
+        }
 
         /// <summary>
         /// Gets non-fatal plugin load warnings collected during discovery.
@@ -73,15 +91,15 @@ namespace DeckSurf.App.Services
         {
             get
             {
-                _ = plugins.Value;
+                EnsureLoaded();
                 return diagnostics;
             }
         }
 
         /// <summary>
-        /// Gets the directories probed for plugins, in priority order.
+        /// Gets the built-in directories probed for plugins, in priority order.
         /// </summary>
-        public IReadOnlyList<string> ProbeDirectories
+        public IReadOnlyList<string> BuiltInDirectories
         {
             get
             {
@@ -90,6 +108,11 @@ namespace DeckSurf.App.Services
                 return parentDirectory is null ? [baseDirectory] : [baseDirectory, parentDirectory];
             }
         }
+
+        /// <summary>
+        /// Gets the user-configured plugin folders.
+        /// </summary>
+        public IReadOnlyList<string> CustomDirectories => [.. appSettings.PluginDirectories];
 
         public PluginInfo? GetPlugin(string pluginId)
         {
@@ -102,26 +125,84 @@ namespace DeckSurf.App.Services
                 .FirstOrDefault(c => string.Equals(c.Id, commandId, StringComparison.OrdinalIgnoreCase));
         }
 
-        private IReadOnlyList<PluginInfo> LoadAllPlugins()
+        /// <summary>
+        /// Rescans all plugin locations and notifies listeners.
+        /// </summary>
+        public void Reload()
         {
-            IReadOnlyList<IDeckSurfPlugin> loaded = [];
-
-            // Probe the app's own directory first (plugins\ shipped next to the exe),
-            // then fall back to the parent directory so the dev layout finds the Barn
-            // plugin in src\bin\plugins produced by the CLI build.
-            foreach (var directory in ProbeDirectories)
+            lock (loadLock)
             {
-                loaded = PluginLoader.LoadPlugins(directory, diagnostics.Add);
+                plugins = LoadAllPlugins();
+            }
+
+            PluginsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void EnsureLoaded()
+        {
+            lock (loadLock)
+            {
+                plugins ??= LoadAllPlugins();
+            }
+        }
+
+        private List<PluginInfo> LoadAllPlugins()
+        {
+            diagnostics.Clear();
+
+            var loaded = new List<(IDeckSurfPlugin Plugin, string Source)>();
+
+            // Built-in locations: the app's own directory first (plugins\ shipped next
+            // to the exe), then the parent directory so the dev layout finds the Barn
+            // plugin in src\bin\plugins produced by the CLI build.
+            foreach (var directory in BuiltInDirectories)
+            {
+                foreach (var plugin in PluginLoader.LoadPlugins(directory, diagnostics.Add))
+                {
+                    loaded.Add((plugin, directory));
+                }
+
                 if (loaded.Count > 0)
                 {
                     break;
                 }
             }
 
-            return [.. loaded.Select(CreatePluginInfo)];
+            // User-configured folders are scanned recursively so a folder-per-plugin
+            // layout works without a literal "plugins" directory name.
+            foreach (var directory in appSettings.PluginDirectories)
+            {
+                if (!Directory.Exists(directory))
+                {
+                    diagnostics.Add($"Plugin folder not found: {directory}");
+                    continue;
+                }
+
+                foreach (var plugin in PluginLoader.LoadPlugins(directory, diagnostics.Add, scanBaseRecursively: true))
+                {
+                    loaded.Add((plugin, directory));
+                }
+            }
+
+            // First occurrence of a plugin id wins so built-in copies take priority
+            // over duplicates in user folders.
+            var result = new List<PluginInfo>();
+            var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (plugin, source) in loaded)
+            {
+                var id = plugin.Metadata?.Id;
+                if (string.IsNullOrEmpty(id) || !seenIds.Add(id))
+                {
+                    continue;
+                }
+
+                result.Add(CreatePluginInfo(plugin, source));
+            }
+
+            return result;
         }
 
-        private PluginInfo CreatePluginInfo(IDeckSurfPlugin plugin)
+        private PluginInfo CreatePluginInfo(IDeckSurfPlugin plugin, string sourcePath)
         {
             var commands = new List<CommandInfo>();
 
@@ -165,6 +246,7 @@ namespace DeckSurf.App.Services
                 string.IsNullOrEmpty(plugin.Metadata.Name) ? plugin.Metadata.Id : plugin.Metadata.Name,
                 plugin.Metadata.Version,
                 plugin.Metadata.Author,
+                sourcePath,
                 commands);
         }
     }

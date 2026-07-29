@@ -16,6 +16,11 @@
                 <CommandBar.Content>
                     <TextBlock Text="Plugins" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
                 </CommandBar.Content>
+                <AppBarButton Label="Rescan" Command="{x:Bind ViewModel.RescanCommand}" ToolTipService.ToolTip="Rescan all plugin folders">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE72C;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
                 <AppBarButton Label="Plugins folder" Command="{x:Bind ViewModel.OpenPluginsFolderCommand}" ToolTipService.ToolTip="Open the plugins folder">
                     <AppBarButton.Icon>
                         <FontIcon Glyph="&#xE838;" />
@@ -28,7 +33,7 @@
                 HorizontalAlignment="Center"
                 Margin="0,64,0,0"
                 MaxWidth="420"
-                Visibility="{x:Bind ViewModel.HasNoPlugins}">
+                Visibility="{x:Bind ViewModel.HasNoPlugins, Mode=OneWay}">
                 <FontIcon Glyph="&#xEA86;" FontSize="44" Opacity="0.35" HorizontalAlignment="Center" />
                 <TextBlock Text="No plugins found" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
                 <TextBlock
@@ -40,13 +45,13 @@
             </StackPanel>
 
             <InfoBar
-                IsOpen="{x:Bind ViewModel.HasDiagnostics}"
+                IsOpen="{x:Bind ViewModel.HasDiagnostics, Mode=OneWay}"
                 Severity="Error"
                 IsClosable="False"
                 Title="Some plugins failed to load"
-                Message="{x:Bind ViewModel.DiagnosticsText}" />
+                Message="{x:Bind ViewModel.DiagnosticsText, Mode=OneWay}" />
 
-            <ItemsControl ItemsSource="{x:Bind ViewModel.Plugins}">
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="services:PluginInfo">
                         <tk:SettingsExpander
