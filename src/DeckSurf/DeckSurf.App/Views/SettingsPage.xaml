@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DeckSurf.App.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="24">
+        <StackPanel Spacing="16" MaxWidth="700" HorizontalAlignment="Left">
+            <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
+
+            <TextBlock Text="Storage" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <StackPanel Spacing="4">
+                <TextBlock Text="Profiles folder" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{x:Bind ProfilesPath}" VerticalAlignment="Center" IsTextSelectionEnabled="True" />
+                    <Button Content="Open" Click="OpenProfilesFolder_Click" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Plugin search locations" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                <TextBlock Text="{x:Bind ProbePathsText}" IsTextSelectionEnabled="True" />
+            </StackPanel>
+
+            <TextBlock Text="About" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+            <TextBlock Text="{x:Bind AboutText}" IsTextSelectionEnabled="True" Opacity="0.85" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

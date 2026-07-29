@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="DeckSurf.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="DeckSurf">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="TitleBarArea" Grid.Row="0" Height="36">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="16,0,0,0">
+                <Image Source="Assets/piglet.ico" Width="16" Height="16" />
+                <TextBlock Text="DeckSurf" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <NavigationView
+            x:Name="RootNavigation"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            PaneDisplayMode="Left"
+            OpenPaneLength="220"
+            SelectionChanged="RootNavigation_SelectionChanged">
+            <NavigationView.Resources>
+                <!-- Let Mica show through the shell; pages render on the rounded layer below. -->
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+                <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+            </NavigationView.Resources>
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="DevicesItem" Content="Devices" Tag="devices">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE772;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="EditorItem" Content="Editor" Tag="editor">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE790;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="PluginsItem" Content="Plugins" Tag="plugins">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEA86;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="SettingsItem" Content="Settings" Tag="settings">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <Border
+                Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1,1,0,0"
+                CornerRadius="8,0,0,0">
+                <Frame x:Name="ContentFrame" />
+            </Border>
+        </NavigationView>
+    </Grid>
+</Window>

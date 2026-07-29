@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DeckSurf.App.Views.PluginsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:services="using:DeckSurf.App.Services"
+    xmlns:vm="using:DeckSurf.App.ViewModels"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="24">
+        <StackPanel Spacing="12" MaxWidth="900" HorizontalAlignment="Left">
+            <Grid>
+                <TextBlock Text="Plugins" Style="{StaticResource TitleTextBlockStyle}" />
+                <Button HorizontalAlignment="Right" Content="Open plugins folder" Command="{x:Bind ViewModel.OpenPluginsFolderCommand}" />
+            </Grid>
+
+            <InfoBar
+                IsOpen="{x:Bind ViewModel.HasNoPlugins}"
+                Severity="Warning"
+                IsClosable="False"
+                Title="No plugins found"
+                Message="Place plugin folders inside the plugins directory next to the application (DeckSurf.Plugin.*.dll)." />
+
+            <InfoBar
+                IsOpen="{x:Bind ViewModel.HasDiagnostics}"
+                Severity="Error"
+                IsClosable="False"
+                Title="Some plugins failed to load"
+                Message="{x:Bind ViewModel.DiagnosticsText}" />
+
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Plugins}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="services:PluginInfo">
+                        <StackPanel Spacing="8" Margin="0,0,0,24">
+                            <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                            <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+
+                            <ItemsControl ItemsSource="{x:Bind Commands}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="services:CommandInfo">
+                                        <Border
+                                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="16"
+                                            Margin="0,4,0,4">
+                                            <StackPanel Spacing="4">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                                    <TextBlock Text="{x:Bind Id}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <TextBlock Text="{x:Bind Description}" TextWrapping="Wrap" Opacity="0.85" />
+                                                <StackPanel Orientation="Horizontal" Spacing="16">
+                                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7">
+                                                        <Run Text="Devices:" /> <Run Text="{x:Bind ModelsText}" />
+                                                    </TextBlock>
+                                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7">
+                                                        <Run Text="Settings:" /> <Run Text="{x:Bind ParametersText}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

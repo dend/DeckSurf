@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>DeckSurf.App</RootNamespace>
+    <AssemblyName>DeckSurf.App</AssemblyName>
+    <Version>0.0.1</Version>
+    <Authors>Den Delimarsky</Authors>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\piglet.ico</ApplicationIcon>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <!-- Deliberate deviation from Directory.Build.props: WinUI XAML codegen and the
+         MVVM Toolkit source generators are written against nullable + implicit usings. -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <!-- Anchored to the project directory (not $(SolutionDir)) so direct
+         csproj builds land in the same place as solution builds. -->
+    <OutputPath>$(MSBuildProjectDirectory)\..\..\bin\app</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+    <Content Include="Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.4.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Temporarily a ProjectReference to the local SDK source while the parameter
+         schema APIs are unreleased; switch back to the DeckSurf.SDK PackageReference
+         once 0.0.11 is published. -->
+    <ProjectReference Include="..\..\..\..\decksurf-sdk\src\DeckSurf.SDK\DeckSurf.SDK.csproj" />
+  </ItemGroup>
+
+</Project>
