@@ -7,49 +7,56 @@
     xmlns:vm="using:DeckSurf.App.ViewModels"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    NavigationCacheMode="Required">
 
     <Page.Resources>
         <DataTemplate x:Key="ParameterTextTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <TextBox
-                Header="{x:Bind DisplayName}"
-                PlaceholderText="{x:Bind Description}"
-                Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                Margin="0,0,0,12" />
+            <StackPanel Margin="0,0,0,14" Spacing="4">
+                <TextBox
+                    Header="{x:Bind HeaderText}"
+                    Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+            </StackPanel>
         </DataTemplate>
 
         <DataTemplate x:Key="ParameterNumberTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <NumberBox
-                Header="{x:Bind DisplayName}"
-                PlaceholderText="{x:Bind Description}"
-                Minimum="{x:Bind Minimum}"
-                Maximum="{x:Bind Maximum}"
-                SpinButtonPlacementMode="Inline"
-                SmallChange="1"
-                Value="{Binding NumberValue, Mode=TwoWay}"
-                Margin="0,0,0,12" />
+            <StackPanel Margin="0,0,0,14" Spacing="4">
+                <NumberBox
+                    Header="{x:Bind HeaderText}"
+                    Minimum="{x:Bind Minimum}"
+                    Maximum="{x:Bind Maximum}"
+                    SpinButtonPlacementMode="Inline"
+                    SmallChange="1"
+                    Value="{Binding NumberValue, Mode=TwoWay}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+            </StackPanel>
         </DataTemplate>
 
         <DataTemplate x:Key="ParameterBooleanTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <ToggleSwitch
-                Header="{x:Bind DisplayName}"
-                IsOn="{Binding BoolValue, Mode=TwoWay}"
-                Margin="0,0,0,12" />
+            <StackPanel Margin="0,0,0,14" Spacing="4">
+                <ToggleSwitch
+                    Header="{x:Bind HeaderText}"
+                    IsOn="{Binding BoolValue, Mode=TwoWay}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+            </StackPanel>
         </DataTemplate>
 
         <DataTemplate x:Key="ParameterChoiceTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <ComboBox
-                Header="{x:Bind DisplayName}"
-                PlaceholderText="{x:Bind Description}"
-                ItemsSource="{x:Bind Choices}"
-                SelectedItem="{Binding Value, Mode=TwoWay}"
-                HorizontalAlignment="Stretch"
-                Margin="0,0,0,12" />
+            <StackPanel Margin="0,0,0,14" Spacing="4">
+                <ComboBox
+                    Header="{x:Bind HeaderText}"
+                    PlaceholderText="Select…"
+                    ItemsSource="{x:Bind Choices}"
+                    SelectedItem="{Binding Value, Mode=TwoWay}"
+                    HorizontalAlignment="Stretch" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+            </StackPanel>
         </DataTemplate>
 
         <DataTemplate x:Key="ParameterFileTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <StackPanel Margin="0,0,0,12" Spacing="4">
-                <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource BodyTextBlockStyle}" />
+            <StackPanel Margin="0,0,0,14" Spacing="4">
+                <TextBlock Text="{x:Bind HeaderText}" Style="{StaticResource BodyTextBlockStyle}" />
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -57,10 +64,10 @@
                     </Grid.ColumnDefinitions>
                     <TextBox
                         Grid.Column="0"
-                        PlaceholderText="{x:Bind Description}"
                         Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <Button Grid.Column="1" Content="Browse" Click="BrowseParameterFile_Click" />
                 </Grid>
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
             </StackPanel>
         </DataTemplate>
 
@@ -74,40 +81,57 @@
             ImageTemplate="{StaticResource ParameterFileTemplate}" />
     </Page.Resources>
 
-    <Grid Padding="24" RowSpacing="12">
+    <Grid Padding="24,16,24,24" RowSpacing="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" ColumnSpacing="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+        <CommandBar Grid.Row="0" DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" IsOpen="False">
+            <CommandBar.Content>
+                <ComboBox
+                    MinWidth="220"
+                    Margin="0,6,0,0"
+                    PlaceholderText="Select a profile"
+                    ItemsSource="{x:Bind ViewModel.ProfileNames}"
+                    SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
+            </CommandBar.Content>
 
-            <ComboBox
-                Grid.Column="0"
-                MinWidth="200"
-                PlaceholderText="Select a profile"
-                ItemsSource="{x:Bind ViewModel.ProfileNames}"
-                SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
-
-            <Button Grid.Column="1" Content="New" Click="NewProfile_Click" />
-            <Button Grid.Column="2" Content="Delete" Click="DeleteProfile_Click" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}" />
-            <Button Grid.Column="3" Content="Save" Command="{x:Bind ViewModel.SaveCommand}" Style="{StaticResource AccentButtonStyle}" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}" />
-
-            <Button
-                Grid.Column="5"
-                Content="{x:Bind FormatToggleLabel(ViewModel.IsRunning), Mode=OneWay}"
+            <AppBarButton Label="New" Click="NewProfile_Click">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE710;" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton Label="Delete" Click="DeleteProfile_Click" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE74D;" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton Label="Save" Command="{x:Bind ViewModel.SaveCommand}" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE74E;" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarSeparator />
+            <AppBarButton
+                Label="Start"
                 Command="{x:Bind ViewModel.ToggleRuntimeCommand}"
-                IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}" />
-        </Grid>
+                IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.IsNotRunning, Mode=OneWay}">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE768;" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton
+                Label="Stop"
+                Command="{x:Bind ViewModel.ToggleRuntimeCommand}"
+                Visibility="{x:Bind ViewModel.IsRunning, Mode=OneWay}">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE71A;" Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+        </CommandBar>
 
         <InfoBar
             Grid.Row="1"
@@ -116,56 +140,69 @@
             IsClosable="False"
             Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
 
-        <Grid Grid.Row="2" ColumnSpacing="24">
+        <Grid Grid.Row="2" ColumnSpacing="16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="380" />
+                <ColumnDefinition x:Name="InspectorColumn" Width="380" />
             </Grid.ColumnDefinitions>
 
             <ScrollViewer Grid.Column="0">
-                <StackPanel Spacing="12">
-                    <GridView
-                        x:Name="KeyGrid"
-                        ItemsSource="{x:Bind ViewModel.Keys}"
-                        SelectionMode="Single"
-                        SelectionChanged="KeyGrid_SelectionChanged"
-                        Loaded="KeyGrid_Loaded"
+                <StackPanel Spacing="16">
+                    <!-- Deck face: the key grid sits on a dark rounded card that mirrors
+                         the physical device. -->
+                    <Border
+                        Background="#FF1C1C1C"
+                        BorderBrush="#26FFFFFF"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="14"
                         HorizontalAlignment="Left">
-                        <GridView.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <ItemsWrapGrid Orientation="Horizontal" ItemWidth="96" ItemHeight="96" />
-                            </ItemsPanelTemplate>
-                        </GridView.ItemsPanel>
-                        <GridView.ItemContainerStyle>
-                            <Style TargetType="GridViewItem">
-                                <Setter Property="Margin" Value="0" />
-                                <Setter Property="Padding" Value="0" />
-                                <Setter Property="MinWidth" Value="0" />
-                                <Setter Property="MinHeight" Value="0" />
-                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                            </Style>
-                        </GridView.ItemContainerStyle>
-                        <GridView.ItemTemplate>
-                            <DataTemplate x:DataType="vm:KeyViewModel">
-                                <Grid Width="88" Height="88" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                                    <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Width="88" Height="88" Stretch="UniformToFill" />
-                                    <TextBlock
-                                        Text="{x:Bind Label, Mode=OneWay}"
-                                        Style="{StaticResource CaptionTextBlockStyle}"
-                                        TextWrapping="Wrap"
-                                        TextTrimming="CharacterEllipsis"
-                                        Margin="6"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        TextAlignment="Center" />
-                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="4" Padding="4,1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="4">
-                                        <TextBlock Text="{x:Bind IndexLabel}" Style="{StaticResource CaptionTextBlockStyle}" FontSize="10" Opacity="0.8" />
-                                    </Border>
-                                </Grid>
-                            </DataTemplate>
-                        </GridView.ItemTemplate>
-                    </GridView>
+                        <GridView
+                            x:Name="KeyGrid"
+                            ItemsSource="{x:Bind ViewModel.Keys}"
+                            SelectionMode="Single"
+                            SelectionChanged="KeyGrid_SelectionChanged"
+                            Loaded="KeyGrid_Loaded"
+                            HorizontalAlignment="Left">
+                            <GridView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsWrapGrid Orientation="Horizontal" ItemWidth="96" ItemHeight="96" />
+                                </ItemsPanelTemplate>
+                            </GridView.ItemsPanel>
+                            <GridView.ItemContainerStyle>
+                                <Style TargetType="GridViewItem">
+                                    <Setter Property="Margin" Value="0" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="MinWidth" Value="0" />
+                                    <Setter Property="MinHeight" Value="0" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                </Style>
+                            </GridView.ItemContainerStyle>
+                            <GridView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:KeyViewModel">
+                                    <Grid Width="86" Height="86" CornerRadius="8" Background="#FF2B2B2B" BorderBrush="#FF3D3D3D" BorderThickness="1">
+                                        <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Width="86" Height="86" Stretch="UniformToFill" />
+                                        <TextBlock
+                                            Text="{x:Bind Label, Mode=OneWay}"
+                                            Foreground="#FFE8E8E8"
+                                            FontSize="11"
+                                            FontWeight="SemiBold"
+                                            TextWrapping="Wrap"
+                                            TextTrimming="CharacterEllipsis"
+                                            Margin="6,16,6,6"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Center"
+                                            TextAlignment="Center"
+                                            Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                        <Border Background="#66000000" CornerRadius="4" Padding="5,1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="4">
+                                            <TextBlock Text="{x:Bind IndexLabel}" FontSize="10" Foreground="#B3FFFFFF" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </GridView.ItemTemplate>
+                        </GridView>
+                    </Border>
 
                     <Expander Header="Catch-all mappings (run on every button press)" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                         <StackPanel Spacing="8">
@@ -182,82 +219,132 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="{x:Bind Label, Mode=OneWay}" VerticalAlignment="Center" />
-                                            <Button Grid.Column="1" Content="Remove" Click="RemoveCatchAll_Click" />
+                                            <Button Grid.Column="1" Click="RemoveCatchAll_Click" ToolTipService.ToolTip="Remove mapping">
+                                                <FontIcon Glyph="&#xE74D;" FontSize="13" />
+                                            </Button>
                                         </Grid>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                             </ListView>
-                            <Button Content="Add catch-all mapping" Command="{x:Bind ViewModel.AddCatchAllCommand}" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}" />
+                            <Button Command="{x:Bind ViewModel.AddCatchAllCommand}" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE710;" FontSize="13" />
+                                    <TextBlock Text="Add catch-all mapping" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Expander>
 
                     <Expander Header="Runtime log" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                        <ListView ItemsSource="{x:Bind ViewModel.RuntimeLog}" MaxHeight="220" SelectionMode="None" />
+                        <ListView ItemsSource="{x:Bind ViewModel.RuntimeLog}" MaxHeight="220" SelectionMode="None">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{x:Bind}" FontFamily="Consolas" FontSize="12" Opacity="0.85" />
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="MinHeight" Value="26" />
+                                    <Setter Property="Padding" Value="8,2" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
                     </Expander>
                 </StackPanel>
             </ScrollViewer>
 
-            <Expander
+            <!-- Key inspector: fixed-width side panel with a collapse-to-rail toggle so
+                 the layout never reflows with selection state. -->
+            <Border
                 Grid.Column="1"
-                Header="Key configuration"
-                IsExpanded="True"
-                ExpandDirection="Down"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Stretch">
-                <ScrollViewer MaxHeight="720" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="12">
-                <TextBlock
-                    Text="Select a key on the grid to configure it."
-                    Opacity="0.7"
-                    TextWrapping="Wrap"
-                    Visibility="{x:Bind ViewModel.HasNoSelectedKey, Mode=OneWay}" />
-                <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}">
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-                    <ComboBox
-                        Header="Plugin"
-                        HorizontalAlignment="Stretch"
-                        ItemsSource="{x:Bind ViewModel.Plugins}"
-                        DisplayMemberPath="DisplayName"
-                        SelectedItem="{Binding SelectedPlugin, Mode=TwoWay}" />
+                    <Grid Grid.Row="0">
+                        <TextBlock x:Name="InspectorTitle" Text="Key configuration" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" Margin="4,0,0,0" />
+                        <Button
+                            x:Name="InspectorToggle"
+                            HorizontalAlignment="Right"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="6"
+                            Click="ToggleInspector_Click"
+                            ToolTipService.ToolTip="Collapse panel">
+                            <FontIcon x:Name="InspectorToggleGlyph" Glyph="&#xE76C;" FontSize="12" />
+                        </Button>
+                    </Grid>
 
-                    <ComboBox
-                        Header="Command"
-                        HorizontalAlignment="Stretch"
-                        ItemsSource="{x:Bind ViewModel.AvailableCommands, Mode=OneWay}"
-                        DisplayMemberPath="DisplayName"
-                        SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" />
+                    <ScrollViewer x:Name="InspectorBody" Grid.Row="1">
+                        <StackPanel Spacing="12" Margin="4,4,12,4">
+                            <TextBlock
+                                Text="Select a key on the grid to configure it."
+                                Opacity="0.7"
+                                TextWrapping="Wrap"
+                                Visibility="{x:Bind ViewModel.HasNoSelectedKey, Mode=OneWay}" />
 
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Button image (optional)" Style="{StaticResource BodyTextBlockStyle}" />
-                        <Grid ColumnSpacing="8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Width="48" Height="48" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                                <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
-                            </Border>
-                            <TextBox Grid.Column="1" IsReadOnly="True" Text="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}" VerticalAlignment="Center" />
-                            <Button Grid.Column="2" Content="Browse" Click="BrowseKeyImage_Click" VerticalAlignment="Center" />
-                        </Grid>
-                    </StackPanel>
+                            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}">
+                                <ComboBox
+                                    Header="Plugin"
+                                    HorizontalAlignment="Stretch"
+                                    ItemsSource="{x:Bind ViewModel.Plugins}"
+                                    DisplayMemberPath="DisplayName"
+                                    SelectedItem="{Binding SelectedPlugin, Mode=TwoWay}" />
 
-                    <TextBlock Text="Command settings" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
-                    <TextBlock
-                        Text="This command has no settings."
-                        Opacity="0.7"
-                        Visibility="{x:Bind ViewModel.HasNoParameters, Mode=OneWay}" />
-                    <ItemsControl
-                        ItemsSource="{x:Bind ViewModel.ParameterFields}"
-                        ItemTemplateSelector="{StaticResource ParameterTemplates}" />
+                                <ComboBox
+                                    Header="Command"
+                                    HorizontalAlignment="Stretch"
+                                    ItemsSource="{x:Bind ViewModel.AvailableCommands, Mode=OneWay}"
+                                    DisplayMemberPath="DisplayName"
+                                    SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" />
 
-                    <Button Content="Clear key" Command="{x:Bind ViewModel.ClearSelectedKeyCommand}" Margin="0,8,0,0" />
-                </StackPanel>
-                </StackPanel>
-                </ScrollViewer>
-            </Expander>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Button image (optional)" Style="{StaticResource BodyTextBlockStyle}" />
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="48" Height="48" CornerRadius="6" Background="{ThemeResource ControlFillColorSecondaryBrush}">
+                                            <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="48" Height="48" Stretch="UniformToFill" />
+                                        </Border>
+                                        <TextBox Grid.Column="1" IsReadOnly="True" Text="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}" VerticalAlignment="Center" />
+                                        <Button Grid.Column="2" Content="Browse" Click="BrowseKeyImage_Click" VerticalAlignment="Center" />
+                                        <Button Grid.Column="3" Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}" VerticalAlignment="Center" ToolTipService.ToolTip="Remove image">
+                                            <FontIcon Glyph="&#xE711;" FontSize="12" />
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+
+                                <TextBlock Text="Command settings" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                                <TextBlock
+                                    Text="This command has no settings."
+                                    Opacity="0.7"
+                                    Visibility="{x:Bind ViewModel.HasNoParameters, Mode=OneWay}" />
+                                <ItemsControl
+                                    ItemsSource="{x:Bind ViewModel.ParameterFields}"
+                                    ItemTemplateSelector="{StaticResource ParameterTemplates}" />
+
+                                <Button Command="{x:Bind ViewModel.ClearSelectedKeyCommand}" Margin="0,8,0,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="13" />
+                                        <TextBlock Text="Clear key" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Page>

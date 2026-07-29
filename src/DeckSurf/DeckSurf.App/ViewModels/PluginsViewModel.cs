@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using DeckSurf.App.Services;
 
@@ -9,11 +8,6 @@ namespace DeckSurf.App.ViewModels
     public partial class PluginsViewModel : ObservableObject
     {
         private readonly PluginService pluginService;
-
-        public PluginsViewModel()
-            : this(Ioc.Default.GetRequiredService<PluginService>())
-        {
-        }
 
         public PluginsViewModel(PluginService pluginService)
         {

@@ -26,7 +26,11 @@ namespace DeckSurf.App.ViewModels
 
         public string DisplayName => Definition.DisplayName ?? Definition.Key;
 
+        public string HeaderText => Definition.Required ? $"{DisplayName} (required)" : DisplayName;
+
         public string Description => Definition.Description ?? string.Empty;
+
+        public bool HasDescription => !string.IsNullOrEmpty(Definition.Description);
 
         public CommandParameterType Kind => Definition.ParameterType;
 

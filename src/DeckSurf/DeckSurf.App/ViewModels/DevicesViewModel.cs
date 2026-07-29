@@ -11,6 +11,7 @@ namespace DeckSurf.App.ViewModels
     {
         private readonly DeviceService deviceService;
         private bool applyingBrightness;
+        private int? pendingBrightness;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasSelection))]
@@ -22,11 +23,6 @@ namespace DeckSurf.App.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasStatus))]
         public partial string? StatusMessage { get; set; }
-
-        public DevicesViewModel()
-            : this(CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<DeviceService>())
-        {
-        }
 
         public DevicesViewModel(DeviceService deviceService)
         {
@@ -116,7 +112,15 @@ namespace DeckSurf.App.ViewModels
         private async Task ApplyBrightnessAsync()
         {
             var serial = SelectedDevice?.Serial;
-            if (serial is null || applyingBrightness)
+            if (serial is null)
+            {
+                return;
+            }
+
+            // Coalesce rapid slider changes: while a write is in flight, only remember
+            // the latest requested level and apply it once the current write finishes.
+            pendingBrightness = (int)Brightness;
+            if (applyingBrightness)
             {
                 return;
             }
@@ -124,12 +128,17 @@ namespace DeckSurf.App.ViewModels
             applyingBrightness = true;
             try
             {
-                var level = (int)Brightness;
-                await Task.Run(() => deviceService.SetBrightness(serial, level));
+                while (pendingBrightness is int level)
+                {
+                    pendingBrightness = null;
+                    await Task.Run(() => deviceService.SetBrightness(serial, level));
+                }
+
                 StatusMessage = null;
             }
             catch (Exception ex)
             {
+                pendingBrightness = null;
                 StatusMessage = ex.Message;
             }
             finally

@@ -22,9 +22,13 @@ namespace DeckSurf.App.Services
             ? "All models"
             : string.Join(", ", CompatibleModels);
 
+        public IReadOnlyList<string> ModelChips => CompatibleModels.Count is 0 or >= AllKnownModelCount
+            ? ["All models"]
+            : [.. CompatibleModels.Select(m => m.ToString())];
+
         public string ParametersText => Parameters.Count == 0
             ? "No settings"
-            : string.Join(", ", Parameters.Select(p => p.DisplayName ?? p.Key));
+            : "Settings: " + string.Join(", ", Parameters.Select(p => p.DisplayName ?? p.Key));
     }
 
     /// <summary>

@@ -1,3 +1,5 @@
+using CommunityToolkit.Mvvm.DependencyInjection;
+using DeckSurf.App.Services;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -28,26 +30,50 @@ namespace DeckSurf.App
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(TitleBarArea);
 
+            var runtimeService = Ioc.Default.GetRequiredService<RuntimeService>();
+            runtimeService.StateChanged += (_, _) => DispatcherQueue.TryEnqueue(() => UpdateRuntimeStatus(runtimeService));
+
             RootNavigation.SelectedItem = DevicesItem;
         }
 
         private void RootNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            if (args.SelectedItem is NavigationViewItem item && item.Tag is string tag)
+            Type pageType;
+            if (args.IsSettingsSelected)
             {
-                var pageType = tag switch
+                pageType = typeof(Views.SettingsPage);
+            }
+            else if (args.SelectedItem is NavigationViewItem { Tag: string tag })
+            {
+                pageType = tag switch
                 {
-                    "devices" => typeof(Views.DevicesPage),
                     "editor" => typeof(Views.ProfileEditorPage),
                     "plugins" => typeof(Views.PluginsPage),
-                    "settings" => typeof(Views.SettingsPage),
                     _ => typeof(Views.DevicesPage),
                 };
+            }
+            else
+            {
+                return;
+            }
 
-                if (ContentFrame.CurrentSourcePageType != pageType)
-                {
-                    ContentFrame.Navigate(pageType);
-                }
+            if (ContentFrame.CurrentSourcePageType != pageType)
+            {
+                ContentFrame.Navigate(pageType);
+            }
+        }
+
+        private void UpdateRuntimeStatus(RuntimeService runtimeService)
+        {
+            if (runtimeService.IsRunning)
+            {
+                RuntimeStatusDot.Fill = (Brush)Application.Current.Resources["SystemFillColorSuccessBrush"];
+                RuntimeStatusText.Text = $"Running: {runtimeService.ActiveProfileName}";
+            }
+            else
+            {
+                RuntimeStatusDot.Fill = (Brush)Application.Current.Resources["SystemFillColorNeutralBrush"];
+                RuntimeStatusText.Text = "Stopped";
             }
         }
     }

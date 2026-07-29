@@ -5,98 +5,124 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:services="using:DeckSurf.App.Services"
     xmlns:vm="using:DeckSurf.App.ViewModels"
+    xmlns:tk="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    NavigationCacheMode="Required">
 
-    <Grid Padding="24" ColumnSpacing="24">
+    <Grid Padding="24" ColumnSpacing="24" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="360" />
+            <ColumnDefinition Width="320" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Column="0" Spacing="12">
-            <Grid>
-                <TextBlock Text="Devices" Style="{StaticResource TitleTextBlockStyle}" />
-                <Button HorizontalAlignment="Right" Command="{x:Bind ViewModel.RefreshCommand}" ToolTipService.ToolTip="Refresh device list">
-                    <FontIcon Glyph="&#xE72C;" FontSize="14" />
-                </Button>
-            </Grid>
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+            <TextBlock Text="Devices" Style="{StaticResource TitleTextBlockStyle}" />
+            <Button HorizontalAlignment="Right" Command="{x:Bind ViewModel.RefreshCommand}" ToolTipService.ToolTip="Refresh device list">
+                <FontIcon Glyph="&#xE72C;" FontSize="14" />
+            </Button>
+        </Grid>
 
-            <InfoBar
-                IsOpen="{x:Bind ViewModel.HasNoDevices, Mode=OneWay}"
-                Severity="Warning"
-                IsClosable="False"
-                Title="No Stream Deck devices found"
-                Message="Connect a device and make sure the Elgato Stream Deck software is closed — it holds exclusive USB access." />
-
-            <ListView
-                ItemsSource="{x:Bind ViewModel.Devices}"
-                SelectedItem="{x:Bind ViewModel.SelectedDevice, Mode=TwoWay}"
-                SelectionMode="Single">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="services:DeviceSummary">
-                        <Grid Padding="8" ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <FontIcon Grid.Column="0" Glyph="&#xE772;" FontSize="24" VerticalAlignment="Center" />
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                <TextBlock Text="{x:Bind vm:DevicesViewModel.FormatIdentity(Model, Serial)}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
-                            </StackPanel>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+        <!-- Empty state -->
+        <StackPanel
+            Grid.Row="1"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Spacing="8"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            MaxWidth="420"
+            Visibility="{x:Bind ViewModel.HasNoDevices, Mode=OneWay}">
+            <FontIcon Glyph="&#xE772;" FontSize="44" Opacity="0.35" HorizontalAlignment="Center" />
+            <TextBlock Text="No Stream Deck found" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+            <TextBlock
+                Text="Connect a device over USB. If one is already connected, close the Elgato Stream Deck software — it holds exclusive access."
+                Style="{StaticResource BodyTextBlockStyle}"
+                Opacity="0.7"
+                TextWrapping="Wrap"
+                TextAlignment="Center" />
         </StackPanel>
 
-        <StackPanel Grid.Column="1" Spacing="16" Visibility="{x:Bind ViewModel.HasSelection, Mode=OneWay}">
-            <TextBlock Text="{x:Bind ViewModel.SelectedDevice.Name, Mode=OneWay, FallbackValue=''}" Style="{StaticResource SubtitleTextBlockStyle}" />
+        <ListView
+            Grid.Row="1"
+            Grid.Column="0"
+            ItemsSource="{x:Bind ViewModel.Devices}"
+            SelectedItem="{x:Bind ViewModel.SelectedDevice, Mode=TwoWay}"
+            SelectionMode="Single"
+            Margin="-12,0,0,0">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="services:DeviceSummary">
+                    <Grid Padding="4,10" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="{ThemeResource ControlFillColorSecondaryBrush}">
+                            <FontIcon Glyph="&#xE772;" FontSize="18" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock Text="{x:Bind vm:DevicesViewModel.FormatIdentity(Model, Serial)}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
 
-            <InfoBar
-                IsOpen="{x:Bind ViewModel.HasStatus, Mode=OneWay}"
-                Severity="Error"
-                IsClosable="False"
-                Title="Device operation failed"
-                Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+        <ScrollViewer Grid.Row="1" Grid.Column="1" Visibility="{x:Bind ViewModel.HasSelection, Mode=OneWay}">
+            <StackPanel Spacing="4" MaxWidth="640" HorizontalAlignment="Left">
+                <TextBlock Text="{x:Bind ViewModel.SelectedDevice.Name, Mode=OneWay, FallbackValue=''}" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,0,0,8" />
 
-            <Grid ColumnSpacing="24" RowSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition />
-                    <RowDefinition />
-                    <RowDefinition />
-                    <RowDefinition />
-                </Grid.RowDefinitions>
+                <InfoBar
+                    IsOpen="{x:Bind ViewModel.HasStatus, Mode=OneWay}"
+                    Severity="Error"
+                    IsClosable="False"
+                    Title="Device operation failed"
+                    Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                    Margin="0,0,0,8" />
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Model" Opacity="0.7" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{x:Bind vm:DevicesViewModel.FormatModel(ViewModel.SelectedDevice), Mode=OneWay}" />
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Serial" Opacity="0.7" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind ViewModel.SelectedDevice.Serial, Mode=OneWay, FallbackValue=''}" />
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Keys" Opacity="0.7" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{x:Bind vm:DevicesViewModel.FormatLayout(ViewModel.SelectedDevice), Mode=OneWay}" />
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Extras" Opacity="0.7" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="{x:Bind vm:DevicesViewModel.FormatExtras(ViewModel.SelectedDevice), Mode=OneWay}" />
-            </Grid>
+                <tk:SettingsCard Header="Model" Description="{x:Bind ViewModel.SelectedDevice.Serial, Mode=OneWay, FallbackValue=''}">
+                    <tk:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE772;" />
+                    </tk:SettingsCard.HeaderIcon>
+                    <TextBlock Text="{x:Bind vm:DevicesViewModel.FormatModel(ViewModel.SelectedDevice), Mode=OneWay}" Opacity="0.85" />
+                </tk:SettingsCard>
 
-            <TextBlock Text="Brightness" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
-            <StackPanel Orientation="Horizontal" Spacing="12">
-                <Slider
-                    Width="280"
-                    Minimum="0"
-                    Maximum="100"
-                    StepFrequency="5"
-                    Value="{x:Bind ViewModel.Brightness, Mode=TwoWay}"
-                    ValueChanged="BrightnessSlider_ValueChanged" />
-                <TextBlock Text="{x:Bind vm:DevicesViewModel.FormatBrightness(ViewModel.Brightness), Mode=OneWay}" VerticalAlignment="Center" MinWidth="32" />
+                <tk:SettingsCard Header="Layout" Description="{x:Bind vm:DevicesViewModel.FormatExtras(ViewModel.SelectedDevice), Mode=OneWay}">
+                    <tk:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xF0E2;" />
+                    </tk:SettingsCard.HeaderIcon>
+                    <TextBlock Text="{x:Bind vm:DevicesViewModel.FormatLayout(ViewModel.SelectedDevice), Mode=OneWay}" Opacity="0.85" />
+                </tk:SettingsCard>
+
+                <tk:SettingsCard Header="Brightness" Description="Applies immediately to the device backlight.">
+                    <tk:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE706;" />
+                    </tk:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Slider
+                            Width="220"
+                            Minimum="0"
+                            Maximum="100"
+                            StepFrequency="5"
+                            Value="{x:Bind ViewModel.Brightness, Mode=TwoWay}"
+                            ValueChanged="BrightnessSlider_ValueChanged" />
+                        <TextBlock Text="{x:Bind vm:DevicesViewModel.FormatBrightness(ViewModel.Brightness), Mode=OneWay}" VerticalAlignment="Center" MinWidth="40" />
+                    </StackPanel>
+                </tk:SettingsCard>
+
+                <tk:SettingsCard Header="Identify" Description="Flashes all keys white so you can tell devices apart.">
+                    <tk:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE945;" />
+                    </tk:SettingsCard.HeaderIcon>
+                    <Button Content="Flash keys" Command="{x:Bind ViewModel.IdentifyCommand}" />
+                </tk:SettingsCard>
             </StackPanel>
-
-            <Button Content="Identify device" Command="{x:Bind ViewModel.IdentifyCommand}" Margin="0,8,0,0" />
-        </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>

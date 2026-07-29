@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using DeckSurf.App.Helpers;
 using DeckSurf.App.Services;
@@ -22,16 +21,6 @@ namespace DeckSurf.App.ViewModels
 
         private bool loadingKey;
         private bool dirty;
-
-        public ProfileEditorViewModel()
-            : this(
-                Ioc.Default.GetRequiredService<ProfileService>(),
-                Ioc.Default.GetRequiredService<PluginService>(),
-                Ioc.Default.GetRequiredService<RuntimeService>(),
-                Ioc.Default.GetRequiredService<DeviceService>(),
-                Ioc.Default.GetRequiredService<WindowService>())
-        {
-        }
 
         public ProfileEditorViewModel(
             ProfileService profileService,
@@ -85,11 +74,14 @@ namespace DeckSurf.App.ViewModels
         public partial int GridColumns { get; set; }
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsNotRunning))]
         public partial bool IsRunning { get; set; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasStatus))]
         public partial string? StatusMessage { get; set; }
+
+        public bool IsNotRunning => !IsRunning;
 
         public bool HasProfile => !string.IsNullOrEmpty(SelectedProfileName);
 
@@ -203,6 +195,16 @@ namespace DeckSurf.App.ViewModels
             if (SelectedKey is not null)
             {
                 SelectedKey.ImagePath = path;
+                dirty = true;
+            }
+        }
+
+        [RelayCommand]
+        private void ClearSelectedKeyImage()
+        {
+            if (SelectedKey is not null)
+            {
+                SelectedKey.ImagePath = null;
                 dirty = true;
             }
         }

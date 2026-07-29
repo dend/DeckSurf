@@ -27,6 +27,13 @@ namespace DeckSurf.App
                     .AddSingleton<RuntimeService>()
                     .AddSingleton<DeviceService>()
                     .AddSingleton<TrayService>()
+                    .AddSingleton<AppSettingsService>()
+
+                    // ViewModels are singletons: they subscribe to service events, and
+                    // per-navigation instances would leak through those subscriptions.
+                    .AddSingleton<ViewModels.DevicesViewModel>()
+                    .AddSingleton<ViewModels.PluginsViewModel>()
+                    .AddSingleton<ViewModels.ProfileEditorViewModel>()
                     .BuildServiceProvider());
         }
 
@@ -44,6 +51,7 @@ namespace DeckSurf.App
             Ioc.Default.GetRequiredService<WindowService>().Initialize(mainWindow);
             Ioc.Default.GetRequiredService<DeviceService>().Initialize(mainWindow.DispatcherQueue);
             Ioc.Default.GetRequiredService<TrayService>().Initialize(mainWindow);
+            Ioc.Default.GetRequiredService<AppSettingsService>().ApplySavedTheme();
             mainWindow.Activate();
         }
     }

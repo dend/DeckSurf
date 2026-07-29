@@ -20,11 +20,13 @@ namespace DeckSurf.App.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasMapping))]
         [NotifyPropertyChangedFor(nameof(Label))]
+        [NotifyPropertyChangedFor(nameof(ShowLabel))]
         public partial string? PluginId { get; set; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasMapping))]
         [NotifyPropertyChangedFor(nameof(Label))]
+        [NotifyPropertyChangedFor(nameof(ShowLabel))]
         public partial string? CommandId { get; set; }
 
         [ObservableProperty]
@@ -33,6 +35,7 @@ namespace DeckSurf.App.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(PreviewImage))]
         [NotifyPropertyChangedFor(nameof(HasPreviewImage))]
+        [NotifyPropertyChangedFor(nameof(ShowLabel))]
         public partial string? ImagePath { get; set; }
 
         public string IndexLabel => Index == -1 ? "Any" : Index.ToString();
@@ -40,6 +43,12 @@ namespace DeckSurf.App.ViewModels
         public bool HasMapping => !string.IsNullOrEmpty(PluginId) && !string.IsNullOrEmpty(CommandId);
 
         public string Label => CommandId ?? string.Empty;
+
+        /// <summary>
+        /// Gets a value indicating whether the tile shows its text label. Hidden when a
+        /// custom image occupies the key face.
+        /// </summary>
+        public bool ShowLabel => HasMapping && !HasPreviewImage;
 
         public bool HasPreviewImage => !string.IsNullOrEmpty(ImagePath) && File.Exists(ImagePath);
 

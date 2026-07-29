@@ -25,7 +25,7 @@
             x:Name="RootNavigation"
             Grid.Row="1"
             IsBackButtonVisible="Collapsed"
-            IsSettingsVisible="False"
+            IsSettingsVisible="True"
             PaneDisplayMode="Left"
             OpenPaneLength="220"
             SelectionChanged="RootNavigation_SelectionChanged">
@@ -42,7 +42,7 @@
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="EditorItem" Content="Editor" Tag="editor">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE790;" />
+                        <FontIcon Glyph="&#xF0E2;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="PluginsItem" Content="Plugins" Tag="plugins">
@@ -50,12 +50,14 @@
                         <FontIcon Glyph="&#xEA86;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="SettingsItem" Content="Settings" Tag="settings">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE713;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
             </NavigationView.MenuItems>
+
+            <NavigationView.PaneFooter>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="16,0,0,12" VerticalAlignment="Center">
+                    <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
+                    <TextBlock x:Name="RuntimeStatusText" Text="Stopped" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" VerticalAlignment="Center" />
+                </StackPanel>
+            </NavigationView.PaneFooter>
 
             <Border
                 Background="{ThemeResource LayerFillColorDefaultBrush}"

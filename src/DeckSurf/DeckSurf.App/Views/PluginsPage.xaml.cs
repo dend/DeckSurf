@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.DependencyInjection;
 using DeckSurf.App.ViewModels;
 using Microsoft.UI.Xaml.Controls;
 
@@ -10,6 +11,6 @@ namespace DeckSurf.App.Views
             InitializeComponent();
         }
 
-        public PluginsViewModel ViewModel { get; } = new();
+        public PluginsViewModel ViewModel { get; } = Ioc.Default.GetRequiredService<PluginsViewModel>();
     }
 }

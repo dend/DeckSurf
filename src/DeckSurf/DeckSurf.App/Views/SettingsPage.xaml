@@ -3,30 +3,48 @@
     x:Class="DeckSurf.App.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:tk="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    NavigationCacheMode="Required">
 
-    <ScrollViewer Padding="24">
-        <StackPanel Spacing="16" MaxWidth="700" HorizontalAlignment="Left">
-            <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
+    <ScrollViewer Padding="24,24,24,0">
+        <StackPanel Spacing="4" MaxWidth="740" HorizontalAlignment="Left" Margin="0,0,0,24">
+            <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,16" />
 
-            <TextBlock Text="Storage" Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <StackPanel Spacing="4">
-                <TextBlock Text="Profiles folder" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="{x:Bind ProfilesPath}" VerticalAlignment="Center" IsTextSelectionEnabled="True" />
-                    <Button Content="Open" Click="OpenProfilesFolder_Click" />
-                </StackPanel>
-            </StackPanel>
+            <TextBlock Text="Appearance" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,0,0,8" />
+            <tk:SettingsCard Header="App theme" Description="Restart is not required.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE790;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="ThemeSelector" MinWidth="140" SelectionChanged="ThemeSelector_SelectionChanged">
+                    <ComboBoxItem Content="Use system setting" Tag="Default" />
+                    <ComboBoxItem Content="Light" Tag="Light" />
+                    <ComboBoxItem Content="Dark" Tag="Dark" />
+                </ComboBox>
+            </tk:SettingsCard>
 
-            <StackPanel Spacing="4">
-                <TextBlock Text="Plugin search locations" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
-                <TextBlock Text="{x:Bind ProbePathsText}" IsTextSelectionEnabled="True" />
-            </StackPanel>
+            <TextBlock Text="Storage" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,8" />
+            <tk:SettingsCard Header="Profiles folder" Description="{x:Bind ProfilesPath}">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8B7;" />
+                </tk:SettingsCard.HeaderIcon>
+                <Button Content="Open" Click="OpenProfilesFolder_Click" />
+            </tk:SettingsCard>
+            <tk:SettingsCard Header="Plugin search locations" Description="{x:Bind ProbePathsText}">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEA86;" />
+                </tk:SettingsCard.HeaderIcon>
+            </tk:SettingsCard>
 
-            <TextBlock Text="About" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
-            <TextBlock Text="{x:Bind AboutText}" IsTextSelectionEnabled="True" Opacity="0.85" />
+            <TextBlock Text="About" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,8" />
+            <tk:SettingsCard Header="DeckSurf" Description="{x:Bind AboutText}">
+                <tk:SettingsCard.HeaderIcon>
+                    <ImageIcon Source="Assets/piglet.ico" />
+                </tk:SettingsCard.HeaderIcon>
+                <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/dend/decksurf" />
+            </tk:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

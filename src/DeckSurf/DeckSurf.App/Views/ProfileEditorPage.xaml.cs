@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using DeckSurf.App.Services;
 using DeckSurf.App.ViewModels;
 using DeckSurf.SDK.Models;
@@ -10,6 +10,18 @@ namespace DeckSurf.App.Views
 {
     public sealed partial class ProfileEditorPage : Page
     {
+        // Logical width of one key tile slot; matches ItemsWrapGrid.ItemWidth.
+        private const int TileSlotWidth = 96;
+
+        // Chrome around the grid: nav pane (220), page padding (48), deck card padding,
+        // column gap, and the key-configuration inspector in its expanded state.
+        private const int NonGridWidth = 760;
+
+        private const double InspectorExpandedWidth = 380;
+        private const double InspectorCollapsedWidth = 52;
+
+        private bool inspectorCollapsed;
+
         public ProfileEditorPage()
         {
             InitializeComponent();
@@ -24,22 +36,12 @@ namespace DeckSurf.App.Views
             ViewModel.RefreshProfiles();
         }
 
-        public ProfileEditorViewModel ViewModel { get; } = new();
-
-        public string FormatToggleLabel(bool isRunning) => isRunning ? "Stop" : "Start";
+        public ProfileEditorViewModel ViewModel { get; } = Ioc.Default.GetRequiredService<ProfileEditorViewModel>();
 
         private void KeyGrid_Loaded(object sender, RoutedEventArgs e)
         {
             ApplyGridColumns();
         }
-
-        // Logical width of one key tile slot; matches ItemsWrapGrid.ItemWidth.
-        private const int TileSlotWidth = 96;
-
-        // Chrome around the grid: nav pane (220), page padding (48), column gap (24),
-        // the key-configuration inspector in its expanded state (~380), and slack for
-        // scrollbars.
-        private const int NonGridWidth = 720;
 
         // The editor grid must always show exactly the device's column count so the
         // on-screen arrangement matches the physical key layout. The grid gets a hard
@@ -62,6 +64,17 @@ namespace DeckSurf.App.Views
             Ioc.Default.GetRequiredService<WindowService>().SetMinimumSize(
                 (ViewModel.GridColumns * TileSlotWidth) + NonGridWidth,
                 560);
+        }
+
+        private void ToggleInspector_Click(object sender, RoutedEventArgs e)
+        {
+            inspectorCollapsed = !inspectorCollapsed;
+
+            InspectorColumn.Width = new GridLength(inspectorCollapsed ? InspectorCollapsedWidth : InspectorExpandedWidth);
+            InspectorBody.Visibility = inspectorCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            InspectorTitle.Visibility = inspectorCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            InspectorToggleGlyph.Glyph = inspectorCollapsed ? "\uE76B" : "\uE76C";
+            ToolTipService.SetToolTip(InspectorToggle, inspectorCollapsed ? "Expand panel" : "Collapse panel");
         }
 
         private void KeyGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
