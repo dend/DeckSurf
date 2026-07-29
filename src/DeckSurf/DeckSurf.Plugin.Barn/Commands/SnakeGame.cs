@@ -30,6 +30,8 @@ namespace DeckSurf.Plugin.Barn.Commands
         private readonly object _lock = new();
         private int _columns = 8;
         private int _rows = 4;
+        private byte[] _snakeImage;
+        private byte[] _emptyImage;
 
         public SnakeGame()
         {
@@ -85,6 +87,11 @@ namespace DeckSurf.Plugin.Barn.Commands
             _columns = mappedDevice.ButtonColumns;
             _rows = mappedDevice.ButtonRows;
 
+            // SetKeyColor only works on the Stream Deck Neo, so the snake is
+            // rendered with full key images, which work on every model.
+            _snakeImage = ImageHelper.CreateBlankImage(mappedDevice.ButtonResolution, DeviceColor.White);
+            _emptyImage = ImageHelper.CreateBlankImage(mappedDevice.ButtonResolution, DeviceColor.Black);
+
             // Initialize the snake to fit within the first row of the device.
             _snake.Clear();
             var initialLength = Math.Min(3, _columns);
@@ -105,7 +112,7 @@ namespace DeckSurf.Plugin.Barn.Commands
                     lock (_lock)
                     {
                         var clearedIndex = UpdateSnakePosition(_direction);
-                        mappedDevice.SetKeyColor(clearedIndex, DeviceColor.Black);
+                        mappedDevice.SetKey(clearedIndex, _emptyImage);
                         UpdateSnakeRendering(mappedDevice);
                     }
                 }
@@ -169,7 +176,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         {
             foreach (var snakeNode in _snake)
             {
-                mappedDevice.SetKeyColor(snakeNode, DeviceColor.White);
+                mappedDevice.SetKey(snakeNode, _snakeImage);
             }
         }
 
