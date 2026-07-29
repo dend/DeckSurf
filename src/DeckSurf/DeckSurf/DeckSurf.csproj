@@ -31,7 +31,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DeckSurf.SDK" Version="0.0.10" />
+    <!-- Temporarily a ProjectReference to the local SDK source while the parameter
+         schema APIs are unreleased; switch back to the DeckSurf.SDK PackageReference
+         once 0.0.11 is published. -->
+    <ProjectReference Include="..\..\..\..\decksurf-sdk\src\DeckSurf.SDK\DeckSurf.SDK.csproj" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     <PackageReference Include="System.CommandLine.NamingConventionBinder" Version="2.0.0-beta4.22272.1" />
   </ItemGroup>

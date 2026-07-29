@@ -1,4 +1,3 @@
-using DeckSurf.Extensibility;
 using DeckSurf.SDK.Core;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
@@ -199,9 +198,16 @@ namespace DeckSurf
             return rootCommand.InvokeAsync(args);
         }
 
+        private static IReadOnlyList<IDeckSurfPlugin> LoadPlugins()
+        {
+            return PluginLoader.LoadPlugins(
+                AppContext.BaseDirectory,
+                message => Console.Error.WriteLine($"[Warning] {message}"));
+        }
+
         private static void HandleListPluginsCommand()
         {
-            var plugins = Loader.Load<IDeckSurfPlugin>();
+            var plugins = LoadPlugins();
 
             if (!plugins.Any())
             {
@@ -217,8 +223,25 @@ namespace DeckSurf
                 Console.WriteLine($"{plugin.Metadata.Id,-25} {plugin.Metadata.Version,-12} {plugin.Metadata.Author,-15}");
                 foreach (var command in plugin.GetSupportedCommands())
                 {
-                    var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
-                    Console.WriteLine($"  -> {commandInstance.Name,-20} {commandInstance.Description}");
+                    using var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
+                    Console.WriteLine($"  -> {command.Name,-20} {commandInstance.Description}");
+
+                    foreach (var parameter in CommandSchemaReader.GetParameters(command))
+                    {
+                        var details = parameter.ParameterType.ToString();
+                        if (parameter.Choices is { Length: > 0 })
+                        {
+                            details += $": {string.Join("|", parameter.Choices)}";
+                        }
+
+                        if (!string.IsNullOrEmpty(parameter.DefaultValue))
+                        {
+                            details += $" (default: {parameter.DefaultValue})";
+                        }
+
+                        var requiredMarker = parameter.Required ? " [required]" : string.Empty;
+                        Console.WriteLine($"       * {parameter.Key,-16} {details}{requiredMarker}");
+                    }
                 }
             }
         }
@@ -233,7 +256,7 @@ namespace DeckSurf
                 return;
             }
 
-            var plugins = Loader.Load<IDeckSurfPlugin>();
+            var plugins = LoadPlugins();
             var commands = new Dictionary<string, IEnumerable<IDeckSurfCommand>>();
 
             var device = DeviceManager.SetupDevice(workingProfile);
@@ -273,7 +296,9 @@ namespace DeckSurf
 
                 foreach (var plugin in plugins)
                 {
-                    commands.Add(plugin.Metadata.Id.ToLower(), Loader.LoadCommands(plugin, device.Model));
+                    commands.Add(
+                        plugin.Metadata.Id.ToLower(),
+                        PluginLoader.LoadCompatibleCommands(plugin, device.Model, message => Console.Error.WriteLine($"[Warning] {message}")));
                 }
 
                 device.StartListening();
@@ -355,7 +380,7 @@ namespace DeckSurf
                 return;
             }
 
-            var plugins = Loader.Load<IDeckSurfPlugin>();
+            var plugins = LoadPlugins();
 
             var targetPlugin = (from c in plugins where string.Equals(c.Metadata.Id, plugin, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
 
@@ -392,18 +417,8 @@ namespace DeckSurf
 
         private static void HandleProfilesListCommand()
         {
-            var profilesPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Den.Dev", "DeckSurf", "Profiles");
-
-            if (!Directory.Exists(profilesPath))
-            {
-                Console.WriteLine("No profiles found. Use 'deck write' to create one.");
-                return;
-            }
-
-            var directories = Directory.GetDirectories(profilesPath);
-            if (directories.Length == 0)
+            var profiles = ConfigurationHelper.ListProfiles();
+            if (profiles.Count == 0)
             {
                 Console.WriteLine("No profiles found. Use 'deck write' to create one.");
                 return;
@@ -411,9 +426,9 @@ namespace DeckSurf
 
             Console.WriteLine("Available profiles:");
             Console.WriteLine(new string('-', 30));
-            foreach (var dir in directories)
+            foreach (var profile in profiles)
             {
-                Console.WriteLine($"  {Path.GetFileName(dir)}");
+                Console.WriteLine($"  {profile}");
             }
         }
 
@@ -456,25 +471,23 @@ namespace DeckSurf
 
         private static void HandleProfilesDeleteCommand(string name)
         {
-            var profilesRoot = Path.GetFullPath(Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Den.Dev", "DeckSurf", "Profiles"));
-            var profilesPath = Path.GetFullPath(Path.Combine(profilesRoot, name));
-
-            if (!profilesPath.StartsWith(profilesRoot, StringComparison.OrdinalIgnoreCase))
+            bool deleted;
+            try
+            {
+                deleted = ConfigurationHelper.DeleteProfile(name);
+            }
+            catch (ArgumentException)
             {
                 Console.WriteLine($"Invalid profile name: {name}");
                 return;
             }
 
-            if (!Directory.Exists(profilesPath))
+            if (!deleted)
             {
                 Console.WriteLine($"Profile not found: {name}");
                 return;
             }
 
-            Console.WriteLine($"Deleting profile: {name}");
-            Directory.Delete(profilesPath, true);
             Console.WriteLine($"Profile '{name}' deleted successfully.");
         }
 
