@@ -1,32 +1,38 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using DeckSurf.SDK.Models;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace DeckSurf.App.ViewModels
 {
     /// <summary>
-    /// One key tile in the profile editor grid. Index -1 represents a catch-all
-    /// mapping that fires for every button press.
+    /// One mappable target tile in the profile editor: a key on the grid (index -1
+    /// is the any-key catch-all), a knob, or the touch screen.
     /// </summary>
     public partial class KeyViewModel : ObservableObject
     {
-        public KeyViewModel(int index)
+        public KeyViewModel(int index, MappingTarget target = MappingTarget.Key)
         {
             Index = index;
+            Target = target;
         }
 
         public int Index { get; }
+
+        public MappingTarget Target { get; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasMapping))]
         [NotifyPropertyChangedFor(nameof(Label))]
         [NotifyPropertyChangedFor(nameof(ShowLabel))]
+        [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
         public partial string? PluginId { get; set; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasMapping))]
         [NotifyPropertyChangedFor(nameof(Label))]
         [NotifyPropertyChangedFor(nameof(ShowLabel))]
+        [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
         public partial string? CommandId { get; set; }
 
         [ObservableProperty]
@@ -36,9 +42,15 @@ namespace DeckSurf.App.ViewModels
         [NotifyPropertyChangedFor(nameof(PreviewImage))]
         [NotifyPropertyChangedFor(nameof(HasPreviewImage))]
         [NotifyPropertyChangedFor(nameof(ShowLabel))]
+        [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
         public partial string? ImagePath { get; set; }
 
-        public string IndexLabel => Index == -1 ? "Any" : Index.ToString();
+        public string IndexLabel => Target switch
+        {
+            MappingTarget.Knob => $"Knob {Index + 1}",
+            MappingTarget.Screen => "Screen",
+            _ => Index == -1 ? "Any" : Index.ToString(),
+        };
 
         public bool HasMapping => !string.IsNullOrEmpty(PluginId) && !string.IsNullOrEmpty(CommandId);
 
@@ -49,6 +61,11 @@ namespace DeckSurf.App.ViewModels
         /// custom image occupies the key face.
         /// </summary>
         public bool ShowLabel => HasMapping && !HasPreviewImage;
+
+        /// <summary>
+        /// Gets a value indicating whether the tile shows its unmapped placeholder.
+        /// </summary>
+        public bool ShowPlaceholder => !HasMapping && !HasPreviewImage;
 
         public bool HasPreviewImage => !string.IsNullOrEmpty(ImagePath) && File.Exists(ImagePath);
 

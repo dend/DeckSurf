@@ -273,24 +273,41 @@ namespace DeckSurf
 
                 device.ButtonPressed += (s, e) =>
                 {
-                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.EventKind}");
+                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.EventKind} ({e.ButtonKind})");
 
-                    if (e.EventKind == ButtonEventKind.Down)
+                    switch (e.ButtonKind)
                     {
-                        var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.ButtonIndex == e.Id);
-                        if (buttonEntry != null)
-                        {
-                            ExecuteButtonAction(buttonEntry, device, commands);
-                        }
-
-                        var anyButtonCatchers = workingProfile.ButtonMap.Where(x => x.ButtonIndex == -1);
-                        if (anyButtonCatchers.Any())
-                        {
-                            foreach (var button in anyButtonCatchers)
+                        case ButtonKind.Knob:
+                            foreach (var knobEntry in workingProfile.ButtonMap.Where(x => x.Target == MappingTarget.Knob && x.ButtonIndex == e.Id))
                             {
-                                ExecuteButtonAction(button, device, commands, e.Id);
+                                ExecuteEventAction(knobEntry, device, commands, e);
                             }
-                        }
+
+                            break;
+                        case ButtonKind.Screen:
+                            foreach (var screenEntry in workingProfile.ButtonMap.Where(x => x.Target == MappingTarget.Screen))
+                            {
+                                ExecuteEventAction(screenEntry, device, commands, e);
+                            }
+
+                            break;
+                        default:
+                            if (e.EventKind == ButtonEventKind.Down)
+                            {
+                                var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.Target == MappingTarget.Key && x.ButtonIndex == e.Id);
+                                if (buttonEntry != null)
+                                {
+                                    ExecuteButtonAction(buttonEntry, device, commands);
+                                }
+
+                                var anyButtonCatchers = workingProfile.ButtonMap.Where(x => x.Target == MappingTarget.Key && x.ButtonIndex == -1);
+                                foreach (var button in anyButtonCatchers)
+                                {
+                                    ExecuteButtonAction(button, device, commands, e.Id);
+                                }
+                            }
+
+                            break;
                     }
                 };
 
@@ -342,16 +359,31 @@ namespace DeckSurf
 
         private static void ExecuteButtonAction(CommandMapping buttonEntry, IConnectedDevice device, IDictionary<string, IEnumerable<IDeckSurfCommand>> commands, int activatingButton = -1)
         {
-            var targetPluginName = buttonEntry.Plugin.ToLower();
-            if (commands.ContainsKey(targetPluginName))
+            var targetCommand = FindMappedCommand(buttonEntry, commands);
+            targetCommand?.ExecuteOnAction(buttonEntry, device, activatingButton);
+        }
+
+        private static void ExecuteEventAction(CommandMapping mappingEntry, IConnectedDevice device, IDictionary<string, IEnumerable<IDeckSurfCommand>> commands, ButtonPressEventArgs eventArgs)
+        {
+            var targetCommand = FindMappedCommand(mappingEntry, commands);
+            targetCommand?.ExecuteOnEvent(mappingEntry, device, eventArgs);
+        }
+
+        private static IDeckSurfCommand FindMappedCommand(CommandMapping mappingEntry, IDictionary<string, IEnumerable<IDeckSurfCommand>> commands)
+        {
+            if (mappingEntry.Plugin == null || mappingEntry.Command == null)
             {
-                var targetPlugin = commands[targetPluginName];
-                var targetCommand = (from c in targetPlugin where string.Equals(c.GetType().Name, buttonEntry.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
-                if (targetCommand != null)
-                {
-                    targetCommand.ExecuteOnAction(buttonEntry, device, activatingButton);
-                }
+                return null;
             }
+
+            var targetPluginName = mappingEntry.Plugin.ToLower();
+            if (!commands.ContainsKey(targetPluginName))
+            {
+                return null;
+            }
+
+            var targetPlugin = commands[targetPluginName];
+            return (from c in targetPlugin where string.Equals(c.GetType().Name, mappingEntry.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
         }
 
         private static void HandleListCommand()

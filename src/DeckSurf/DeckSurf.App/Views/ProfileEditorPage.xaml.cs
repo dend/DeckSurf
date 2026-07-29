@@ -61,9 +61,8 @@ namespace DeckSurf.App.Views
 
             KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
 
-            // The screen strip and any-key strip share the deck card's width so the
-            // whole stage reads as one device (grid width + card padding + border).
-            ScreenStrip.Width = KeyGrid.Width;
+            // The any-key strip shares the deck card's width so the two read as one
+            // cohesive stage (grid width + card padding + border).
             AnyKeyCard.Width = KeyGrid.Width + 30;
 
             Ioc.Default.GetRequiredService<WindowService>().SetMinimumSize(
@@ -82,25 +81,32 @@ namespace DeckSurf.App.Views
             ToolTipService.SetToolTip(InspectorToggle, inspectorCollapsed ? "Expand panel" : "Collapse panel");
         }
 
-        private void KeyGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // All target lists (keys, catch-alls, knobs, screen) share single-selection:
+        // selecting in one clears the others and drives the inspector.
+        private void TargetList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (KeyGrid.SelectedItem is KeyViewModel key)
+            if (sender is not GridView active)
             {
-                CatchAllList.SelectedItem = null;
+                return;
+            }
+
+            GridView[] allLists = [KeyGrid, CatchAllList, KnobList, ScreenList];
+
+            if (active.SelectedItem is KeyViewModel key)
+            {
+                foreach (var list in allLists)
+                {
+                    if (!ReferenceEquals(list, active))
+                    {
+                        list.SelectedItem = null;
+                    }
+                }
+
                 ViewModel.SelectedKey = key;
             }
-            else if (CatchAllList.SelectedItem is null)
+            else if (allLists.All(list => list.SelectedItem is null))
             {
                 ViewModel.SelectedKey = null;
-            }
-        }
-
-        private void CatchAllList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CatchAllList.SelectedItem is KeyViewModel key)
-            {
-                KeyGrid.SelectedItem = null;
-                ViewModel.SelectedKey = key;
             }
         }
 

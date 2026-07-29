@@ -28,6 +28,7 @@ namespace DeckSurf.Plugin.Barn
         {
             return new List<Type>()
             {
+                typeof(KnobBrightness),
                 typeof(LaunchApplication),
                 typeof(ShowCPUUsage),
                 typeof(ShowNetworkTraffic),

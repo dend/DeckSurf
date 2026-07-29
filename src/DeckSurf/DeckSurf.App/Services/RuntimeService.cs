@@ -261,6 +261,11 @@ namespace DeckSurf.App.Services
 
             foreach (var mapping in activeProfile.ButtonMap)
             {
+                if (mapping.Target == MappingTarget.Screen)
+                {
+                    RenderScreenImage(mapping);
+                }
+
                 var command = FindCommand(mapping);
                 if (command is not null)
                 {
@@ -273,6 +278,32 @@ namespace DeckSurf.App.Services
                         Log($"Activation of '{mapping.Command}' failed: {ex.Message}");
                     }
                 }
+            }
+        }
+
+        private void RenderScreenImage(CommandMapping mapping)
+        {
+            if (device is null
+                || !device.IsScreenSupported
+                || string.IsNullOrEmpty(mapping.ButtonImagePath)
+                || !File.Exists(mapping.ButtonImagePath))
+            {
+                return;
+            }
+
+            try
+            {
+                var resized = ImageHelper.ResizeImage(
+                    File.ReadAllBytes(mapping.ButtonImagePath),
+                    device.ScreenWidth,
+                    device.ScreenHeight,
+                    DeviceRotation.None,
+                    DeviceImageFormat.Jpeg);
+                device.SetScreen(resized, 0, device.ScreenWidth, device.ScreenHeight);
+            }
+            catch (Exception ex)
+            {
+                Log($"Screen image render failed: {ex.Message}");
             }
         }
 
@@ -292,11 +323,6 @@ namespace DeckSurf.App.Services
         {
             Log($"Button {e.Id} {e.EventKind} ({e.ButtonKind}).");
 
-            if (e.EventKind != ButtonEventKind.Down)
-            {
-                return;
-            }
-
             ConfigurationProfile? profile;
             ConnectedDevice? currentDevice;
             lock (stateLock)
@@ -310,15 +336,58 @@ namespace DeckSurf.App.Services
                 return;
             }
 
-            var exactMatch = profile.ButtonMap.FirstOrDefault(m => m.ButtonIndex == e.Id);
-            if (exactMatch is not null)
+            switch (e.ButtonKind)
             {
-                ExecuteAction(exactMatch, currentDevice);
+                case ButtonKind.Knob:
+                    foreach (var knobMapping in profile.ButtonMap.Where(m => m.Target == MappingTarget.Knob && m.ButtonIndex == e.Id))
+                    {
+                        ExecuteEvent(knobMapping, currentDevice, e);
+                    }
+
+                    break;
+                case ButtonKind.Screen:
+                    foreach (var screenMapping in profile.ButtonMap.Where(m => m.Target == MappingTarget.Screen))
+                    {
+                        ExecuteEvent(screenMapping, currentDevice, e);
+                    }
+
+                    break;
+                default:
+                    if (e.EventKind != ButtonEventKind.Down)
+                    {
+                        return;
+                    }
+
+                    var exactMatch = profile.ButtonMap.FirstOrDefault(m => m.Target == MappingTarget.Key && m.ButtonIndex == e.Id);
+                    if (exactMatch is not null)
+                    {
+                        ExecuteAction(exactMatch, currentDevice);
+                    }
+
+                    foreach (var catchAll in profile.ButtonMap.Where(m => m.Target == MappingTarget.Key && m.ButtonIndex == -1))
+                    {
+                        ExecuteAction(catchAll, currentDevice, e.Id);
+                    }
+
+                    break;
+            }
+        }
+
+        private void ExecuteEvent(CommandMapping mapping, ConnectedDevice targetDevice, ButtonPressEventArgs e)
+        {
+            var command = FindCommand(mapping);
+            if (command is null)
+            {
+                return;
             }
 
-            foreach (var catchAll in profile.ButtonMap.Where(m => m.ButtonIndex == -1))
+            try
             {
-                ExecuteAction(catchAll, currentDevice, e.Id);
+                command.ExecuteOnEvent(mapping, targetDevice, e);
+            }
+            catch (Exception ex)
+            {
+                Log($"Event handler '{mapping.Command}' failed: {ex.Message}");
             }
         }
 

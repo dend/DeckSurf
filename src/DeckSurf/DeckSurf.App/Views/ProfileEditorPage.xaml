@@ -233,7 +233,7 @@
                                 x:Name="KeyGrid"
                                 ItemsSource="{x:Bind ViewModel.Keys}"
                                 SelectionMode="Single"
-                                SelectionChanged="KeyGrid_SelectionChanged"
+                                SelectionChanged="TargetList_SelectionChanged"
                                 Loaded="KeyGrid_Loaded"
                                 HorizontalAlignment="Left"
                                 ItemTemplate="{StaticResource KeyTileTemplate}"
@@ -245,29 +245,52 @@
                                 </GridView.ItemsPanel>
                             </GridView>
 
-                            <!-- Display-only hardware extras; mapping support comes later. -->
-                            <Border
-                                x:Name="ScreenStrip"
-                                Height="44"
-                                CornerRadius="6"
-                                Background="#FF141414"
-                                BorderBrush="#FF333333"
-                                BorderThickness="1"
+                            <!-- Touch screen: a mappable target that can carry a background
+                                 image and a command receiving tap events. -->
+                            <GridView
+                                x:Name="ScreenList"
+                                ItemsSource="{x:Bind ViewModel.ScreenTargets}"
+                                SelectionMode="Single"
+                                SelectionChanged="TargetList_SelectionChanged"
+                                ItemContainerStyle="{StaticResource KeyTileContainerStyle}"
                                 Visibility="{x:Bind ViewModel.ShowScreenStrip, Mode=OneWay}"
-                                ToolTipService.ToolTip="Touch screen — mapping support coming soon">
-                                <TextBlock Text="Touch screen" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
-                            <StackPanel
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                Spacing="48"
+                                HorizontalAlignment="Left">
+                                <GridView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:KeyViewModel">
+                                        <Grid Width="376" Height="44" CornerRadius="6" Background="#FF141414" BorderBrush="#FF333333" BorderThickness="1">
+                                            <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Width="376" Height="44" Stretch="UniformToFill" />
+                                            <TextBlock Text="Touch screen — select to configure" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
+                                            <TextBlock Text="{x:Bind Label, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#FFE8E8E8" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </GridView.ItemTemplate>
+                            </GridView>
+
+                            <!-- Knobs: mappable targets; rotation and press events route to
+                                 the mapped command. -->
+                            <GridView
+                                x:Name="KnobList"
+                                ItemsSource="{x:Bind ViewModel.KnobTargets}"
+                                SelectionMode="Single"
+                                SelectionChanged="TargetList_SelectionChanged"
+                                ItemContainerStyle="{StaticResource KeyTileContainerStyle}"
                                 Visibility="{x:Bind ViewModel.ShowKnobs, Mode=OneWay}"
-                                ToolTipService.ToolTip="Knobs — mapping support coming soon">
-                                <Ellipse Width="38" Height="38" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" />
-                                <Ellipse Width="38" Height="38" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" />
-                                <Ellipse Width="38" Height="38" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" />
-                                <Ellipse Width="38" Height="38" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" />
-                            </StackPanel>
+                                HorizontalAlignment="Center">
+                                <GridView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <ItemsStackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </GridView.ItemsPanel>
+                                <GridView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:KeyViewModel">
+                                        <StackPanel Width="94" Spacing="4" HorizontalAlignment="Center" Padding="0,4">
+                                            <Ellipse Width="40" Height="40" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" HorizontalAlignment="Center" />
+                                            <TextBlock Text="{x:Bind IndexLabel}" FontSize="10" Foreground="#99FFFFFF" HorizontalAlignment="Center" />
+                                            <TextBlock Text="{x:Bind Label, Mode=OneWay}" FontSize="10" Foreground="#FFE8E8E8" TextTrimming="CharacterEllipsis" TextAlignment="Center" MaxWidth="90" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridView.ItemTemplate>
+                            </GridView>
                         </StackPanel>
                     </Border>
 
@@ -289,7 +312,7 @@
                                     x:Name="CatchAllList"
                                     ItemsSource="{x:Bind ViewModel.CatchAllMappings}"
                                     SelectionMode="Single"
-                                    SelectionChanged="CatchAllList_SelectionChanged"
+                                    SelectionChanged="TargetList_SelectionChanged"
                                     ItemTemplate="{StaticResource KeyTileTemplate}"
                                     ItemContainerStyle="{StaticResource KeyTileContainerStyle}"
                                     VerticalAlignment="Center">

@@ -48,6 +48,10 @@ namespace DeckSurf.App.ViewModels
 
         public ObservableCollection<KeyViewModel> CatchAllMappings { get; } = [];
 
+        public ObservableCollection<KeyViewModel> KnobTargets { get; } = [];
+
+        public ObservableCollection<KeyViewModel> ScreenTargets { get; } = [];
+
         public ObservableCollection<ParameterFieldViewModel> ParameterFields { get; } = [];
 
         public ObservableCollection<string> RuntimeLog { get; } = [];
@@ -280,11 +284,15 @@ namespace DeckSurf.App.ViewModels
                 DeviceSerial = profileDeviceSerial,
             };
 
-            foreach (var key in Keys.Concat(CatchAllMappings).Where(k => k.HasMapping))
+            // Screen tiles are saved with just an image too — a background without a
+            // mapped command is still meaningful.
+            foreach (var key in Keys.Concat(CatchAllMappings).Concat(KnobTargets).Concat(ScreenTargets)
+                .Where(k => k.HasMapping || (k.Target == MappingTarget.Screen && !string.IsNullOrEmpty(k.ImagePath))))
             {
                 profile.ButtonMap.Add(new CommandMapping
                 {
                     ButtonIndex = key.Index,
+                    Target = key.Target,
                     Plugin = key.PluginId,
                     Command = key.CommandId,
                     CommandArguments = key.CommandArguments ?? string.Empty,
@@ -352,6 +360,13 @@ namespace DeckSurf.App.ViewModels
             }
         }
 
+        private KeyViewModel AddCatchAllTile()
+        {
+            var tile = new KeyViewModel(-1);
+            CatchAllMappings.Add(tile);
+            return tile;
+        }
+
         private void LoadProfile(string? name)
         {
             loadingProfile = true;
@@ -360,6 +375,8 @@ namespace DeckSurf.App.ViewModels
                 SelectedKey = null;
                 Keys.Clear();
                 CatchAllMappings.Clear();
+                KnobTargets.Clear();
+                ScreenTargets.Clear();
                 SelectedDevice = null;
 
                 if (name is null)
@@ -419,20 +436,20 @@ namespace DeckSurf.App.ViewModels
                 ShowKnobs = connected?.IsKnobSupported ?? DeviceLayouts.HasKnobs(profile.DeviceModel);
 
                 BuildKeys(columns, rows);
+                BuildHardwareTargets();
 
                 foreach (var mapping in profile.ButtonMap)
                 {
-                    KeyViewModel target;
-                    if (mapping.ButtonIndex == -1)
+                    KeyViewModel? target = mapping.Target switch
                     {
-                        target = new KeyViewModel(-1);
-                        CatchAllMappings.Add(target);
-                    }
-                    else if (mapping.ButtonIndex >= 0 && mapping.ButtonIndex < Keys.Count)
-                    {
-                        target = Keys[mapping.ButtonIndex];
-                    }
-                    else
+                        MappingTarget.Knob when mapping.ButtonIndex >= 0 && mapping.ButtonIndex < KnobTargets.Count => KnobTargets[mapping.ButtonIndex],
+                        MappingTarget.Screen when ScreenTargets.Count > 0 => ScreenTargets[0],
+                        MappingTarget.Key when mapping.ButtonIndex >= 0 && mapping.ButtonIndex < Keys.Count => Keys[mapping.ButtonIndex],
+                        MappingTarget.Key when mapping.ButtonIndex == -1 => AddCatchAllTile(),
+                        _ => null,
+                    };
+
+                    if (target is null)
                     {
                         continue;
                     }
@@ -451,6 +468,8 @@ namespace DeckSurf.App.ViewModels
             }
         }
 
+        private const int PlusKnobCount = 4;
+
         private void BuildKeys(int columns, int rows)
         {
             Keys.Clear();
@@ -459,6 +478,25 @@ namespace DeckSurf.App.ViewModels
             for (var i = 0; i < columns * rows; i++)
             {
                 Keys.Add(new KeyViewModel(i));
+            }
+        }
+
+        private void BuildHardwareTargets()
+        {
+            KnobTargets.Clear();
+            ScreenTargets.Clear();
+
+            if (ShowKnobs)
+            {
+                for (var i = 0; i < PlusKnobCount; i++)
+                {
+                    KnobTargets.Add(new KeyViewModel(i, MappingTarget.Knob));
+                }
+            }
+
+            if (ShowScreenStrip)
+            {
+                ScreenTargets.Add(new KeyViewModel(0, MappingTarget.Screen));
             }
         }
 
@@ -477,9 +515,14 @@ namespace DeckSurf.App.ViewModels
                 .Where(k => k.HasMapping)
                 .Select(k => (k.Index, k.PluginId, k.CommandId, k.CommandArguments, k.ImagePath))
                 .ToList();
+            var preservedHardware = KnobTargets.Concat(ScreenTargets)
+                .Where(k => k.HasMapping || !string.IsNullOrEmpty(k.ImagePath))
+                .Select(k => (k.Target, k.Index, k.PluginId, k.CommandId, k.CommandArguments, k.ImagePath))
+                .ToList();
 
             SelectedKey = null;
             BuildKeys(device.ButtonColumns, device.ButtonRows);
+            BuildHardwareTargets();
 
             var dropped = 0;
             foreach (var mapping in preserved)
@@ -496,6 +539,27 @@ namespace DeckSurf.App.ViewModels
                 {
                     dropped++;
                 }
+            }
+
+            foreach (var mapping in preservedHardware)
+            {
+                var target = mapping.Target switch
+                {
+                    MappingTarget.Knob when mapping.Index < KnobTargets.Count => KnobTargets[mapping.Index],
+                    MappingTarget.Screen when ScreenTargets.Count > 0 => ScreenTargets[0],
+                    _ => null,
+                };
+
+                if (target is null)
+                {
+                    dropped++;
+                    continue;
+                }
+
+                target.PluginId = mapping.PluginId;
+                target.CommandId = mapping.CommandId;
+                target.CommandArguments = mapping.CommandArguments;
+                target.ImagePath = mapping.ImagePath;
             }
 
             StatusMessage = dropped > 0
