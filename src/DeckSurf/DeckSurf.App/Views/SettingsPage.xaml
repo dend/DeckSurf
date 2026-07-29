@@ -9,8 +9,8 @@
     mc:Ignorable="d"
     NavigationCacheMode="Required">
 
-    <ScrollViewer Padding="24,24,24,0">
-        <StackPanel Spacing="4" MaxWidth="740" HorizontalAlignment="Left" Margin="0,0,0,24">
+    <ScrollViewer Padding="28,20,28,0">
+        <StackPanel Spacing="4" MaxWidth="840" HorizontalAlignment="Left" Margin="0,0,0,24">
             <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,16" />
 
             <TextBlock Text="Appearance" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,0,0,8" />
@@ -41,7 +41,7 @@
             <TextBlock Text="About" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,8" />
             <tk:SettingsCard Header="DeckSurf" Description="{x:Bind AboutText}">
                 <tk:SettingsCard.HeaderIcon>
-                    <ImageIcon Source="Assets/piglet.ico" />
+                    <FontIcon Glyph="&#xE946;" />
                 </tk:SettingsCard.HeaderIcon>
                 <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/dend/decksurf" />
             </tk:SettingsCard>

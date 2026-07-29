@@ -42,7 +42,10 @@ namespace DeckSurf.App.Services
         string Author,
         IReadOnlyList<CommandInfo> Commands)
     {
-        public string Subtitle => $"{Id} · v{Version} · {Author}";
+        // Avoid repeating the id when no distinct display name is set.
+        public string Subtitle => string.Equals(DisplayName, Id, StringComparison.Ordinal)
+            ? $"v{Version} · {Author}"
+            : $"{Id} · v{Version} · {Author}";
     }
 
     /// <summary>

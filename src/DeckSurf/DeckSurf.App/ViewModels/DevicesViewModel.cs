@@ -29,6 +29,7 @@ namespace DeckSurf.App.ViewModels
             this.deviceService = deviceService;
             Brightness = 60;
             Devices.CollectionChanged += OnDevicesChanged;
+            SelectedDevice = Devices.FirstOrDefault();
         }
 
         public ObservableCollection<DeviceSummary> Devices => deviceService.Devices;
@@ -52,6 +53,17 @@ namespace DeckSurf.App.ViewModels
         public static string FormatBrightness(double brightness)
         {
             return $"{(int)brightness}%";
+        }
+
+        public static string FormatLayoutDescription(DeviceSummary? device)
+        {
+            if (device is null)
+            {
+                return string.Empty;
+            }
+
+            var extras = FormatExtras(device);
+            return extras == "none" ? FormatLayout(device) : $"{FormatLayout(device)} · {extras}";
         }
 
         public static string FormatLayout(DeviceSummary? device)
@@ -150,9 +162,9 @@ namespace DeckSurf.App.ViewModels
         private void OnDevicesChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             OnPropertyChanged(nameof(HasNoDevices));
-            if (SelectedDevice is not null && !Devices.Contains(SelectedDevice))
+            if (SelectedDevice is null || !Devices.Contains(SelectedDevice))
             {
-                SelectedDevice = null;
+                SelectedDevice = Devices.FirstOrDefault();
             }
         }
     }

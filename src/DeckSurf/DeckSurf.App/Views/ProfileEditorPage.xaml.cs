@@ -99,14 +99,6 @@ namespace DeckSurf.App.Views
             }
         }
 
-        private void RemoveCatchAll_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is FrameworkElement { DataContext: KeyViewModel key })
-            {
-                ViewModel.RemoveCatchAllCommand.Execute(key);
-            }
-        }
-
         private async void NewProfile_Click(object sender, RoutedEventArgs e)
         {
             var nameBox = new TextBox

@@ -95,6 +95,8 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasStatus => !string.IsNullOrEmpty(StatusMessage);
 
+        public bool HasNoRuntimeLog => RuntimeLog.Count == 0;
+
         public IReadOnlyList<CommandInfo> AvailableCommands => SelectedPlugin?.Commands ?? [];
 
         private DeviceModel profileDeviceModel = DeviceModel.XL;
@@ -217,6 +219,16 @@ namespace DeckSurf.App.ViewModels
                 return;
             }
 
+            // Clearing an any-key tile removes it entirely; an unmapped catch-all
+            // has no meaning and would be dropped on save anyway.
+            if (SelectedKey.Index == -1)
+            {
+                CatchAllMappings.Remove(SelectedKey);
+                SelectedKey = null;
+                dirty = true;
+                return;
+            }
+
             SelectedKey.Clear();
             dirty = true;
             LoadInspectorFromKey(SelectedKey);
@@ -228,18 +240,6 @@ namespace DeckSurf.App.ViewModels
             var catchAll = new KeyViewModel(-1);
             CatchAllMappings.Add(catchAll);
             SelectedKey = catchAll;
-            dirty = true;
-        }
-
-        [RelayCommand]
-        private void RemoveCatchAll(KeyViewModel key)
-        {
-            CatchAllMappings.Remove(key);
-            if (SelectedKey == key)
-            {
-                SelectedKey = null;
-            }
-
             dirty = true;
         }
 
@@ -526,6 +526,8 @@ namespace DeckSurf.App.ViewModels
                 {
                     RuntimeLog.RemoveAt(RuntimeLog.Count - 1);
                 }
+
+                OnPropertyChanged(nameof(HasNoRuntimeLog));
             });
         }
     }
