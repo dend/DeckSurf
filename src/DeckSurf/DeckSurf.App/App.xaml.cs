@@ -19,6 +19,26 @@ namespace DeckSurf.App
         {
             InitializeComponent();
 
+            // Last-chance diagnostics: XAML failures surface as opaque stowed
+            // exceptions (0xc000027b) in Event Viewer unless captured here.
+            UnhandledException += (_, e) =>
+            {
+                try
+                {
+                    var logPath = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "Den.Dev", "DeckSurf", "app-crash.log");
+                    Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+                    File.AppendAllText(
+                        logPath,
+                        $"[{DateTimeOffset.Now:O}] {e.Message}{Environment.NewLine}{e.Exception}{Environment.NewLine}{Environment.NewLine}");
+                }
+                catch
+                {
+                    // Never mask the original failure with a logging failure.
+                }
+            };
+
             Ioc.Default.ConfigureServices(
                 new ServiceCollection()
                     .AddSingleton<WindowService>()

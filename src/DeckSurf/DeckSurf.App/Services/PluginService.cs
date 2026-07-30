@@ -17,58 +17,122 @@ namespace DeckSurf.App.Services
         IReadOnlyList<DeviceModel> CompatibleModels)
     {
         private const int AllKnownModelCount = 9;
+        private const int MaxTileChips = 2;
+
+        /// <summary>
+        /// Gets structured rows for the settings flyout. Built once per CommandInfo;
+        /// x:Bind reads the property repeatedly, so it must not re-project per access.
+        /// </summary>
+        public IReadOnlyList<ParameterRow> ParameterRows { get; } = BuildParameterRows(Parameters);
 
         public IReadOnlyList<string> ModelChips => CompatibleModels.Count is 0 or >= AllKnownModelCount
             ? ["All models"]
             : [.. CompatibleModels.Select(m => m.ToString())];
 
+        /// <summary>
+        /// Gets at most two chips for the tile footer; more collapse into a "+N"
+        /// overflow chip. The tooltip and the flyout carry the full list.
+        /// </summary>
+        public IReadOnlyList<string> TileChips
+        {
+            get
+            {
+                var chips = ModelChips;
+                return chips.Count <= MaxTileChips ? chips : [chips[0], $"+{chips.Count - 1}"];
+            }
+        }
+
+        public string DevicesToolTip => $"Supported devices: {string.Join(", ", ModelChips)}";
+
         public bool HasParameters => Parameters.Count > 0;
 
         public bool HasNoParameters => Parameters.Count == 0;
 
+        public bool HasDescription => !string.IsNullOrEmpty(Description);
+
         /// <summary>
-        /// Gets structured parameter rows for the details flyout.
+        /// Gets null (never empty) so no blank tooltip appears when command
+        /// metadata could not be read (Description defaults to string.Empty).
         /// </summary>
-        public IReadOnlyList<ParameterRow> ParameterRows => [.. Parameters.Select(p =>
-        {
-            var meta = p.ParameterType switch
-            {
-                CommandParameterType.String => "Text",
-                CommandParameterType.Integer => "Number",
-                CommandParameterType.Boolean => "On/off",
-                CommandParameterType.Choice => "Choice",
-                CommandParameterType.FilePath => "File path",
-                CommandParameterType.FolderPath => "Folder path",
-                CommandParameterType.ImagePath => "Image file",
-                CommandParameterType.DurationSeconds => "Duration in seconds",
-                _ => p.ParameterType.ToString(),
-            };
+        public string? DescriptionToolTip => string.IsNullOrEmpty(Description) ? null : Description;
 
-            if (p.Choices is { Length: > 0 })
-            {
-                meta += $": {string.Join(" | ", p.Choices)}";
-            }
+        public string SettingsSummary => Parameters.Count == 1 ? "1 setting" : $"{Parameters.Count} settings";
 
-            if (!string.IsNullOrEmpty(p.DefaultValue))
-            {
-                meta += $" (default {p.DefaultValue})";
-            }
+        /// <summary>
+        /// Gets the Narrator name: distinguishes tiles from their visible label and
+        /// tells the user what invoking will reveal.
+        /// </summary>
+        public string AccessibleName => HasParameters
+            ? $"{DisplayName}, {SettingsSummary}"
+            : $"{DisplayName}, no settings";
 
-            if (p.Required)
+        private static IReadOnlyList<ParameterRow> BuildParameterRows(IReadOnlyList<CommandParameterAttribute> parameters) =>
+            [.. parameters.Select(p =>
             {
-                meta += " (required)";
-            }
+                var typeLabel = p.ParameterType switch
+                {
+                    CommandParameterType.String => "Text",
+                    CommandParameterType.Integer => "Number",
+                    CommandParameterType.Boolean => "On/off",
+                    CommandParameterType.Choice => "Choice",
+                    CommandParameterType.FilePath => "File path",
+                    CommandParameterType.FolderPath => "Folder path",
+                    CommandParameterType.ImagePath => "Image file",
+                    CommandParameterType.DurationSeconds => "Duration in seconds",
+                    _ => p.ParameterType.ToString(),
+                };
 
-            return new ParameterRow(p.DisplayName ?? p.Key, meta, string.IsNullOrEmpty(p.Description) ? null : p.Description);
-        })];
+                // Choices is null unless declared on the attribute; guard it.
+                IReadOnlyList<ChoiceChip> choiceChips = p.Choices is { Length: > 0 }
+                    ? [.. p.Choices.Select(c => new ChoiceChip(
+                        c, string.Equals(c, p.DefaultValue, StringComparison.OrdinalIgnoreCase)))]
+                    : [];
+
+                // The default renders as the accent chip when it matches a declared
+                // choice; otherwise (free-form default, or a default naming no choice)
+                // it falls back to a caption badge so the value is never dropped.
+                var defaultBadge = !string.IsNullOrEmpty(p.DefaultValue) && !choiceChips.Any(c => c.IsDefault)
+                    ? $"Default: {p.DefaultValue}"
+                    : null;
+
+                return new ParameterRow(
+                    p.DisplayName ?? p.Key,
+                    typeLabel,
+                    p.Required,
+                    choiceChips,
+                    defaultBadge,
+                    string.IsNullOrEmpty(p.Description) ? null : p.Description);
+            })];
     }
 
     /// <summary>
-    /// One declared command parameter, shaped for display. Description must stay null
-    /// (not empty) when there is no help text so SettingsCard collapses its
-    /// description presenter.
+    /// One choice value; the default choice renders as an accent pill.
+    /// IsNotDefault exists because x:Bind has no inline negation.
     /// </summary>
-    public sealed record ParameterRow(string Name, string Meta, string? Description);
+    public sealed record ChoiceChip(string Label, bool IsDefault)
+    {
+        public bool IsNotDefault => !IsDefault;
+    }
+
+    /// <summary>
+    /// One declared command parameter, shaped for the spec-sheet flyout.
+    /// Description stays null (not empty) when there is no help text so the help
+    /// TextBlock collapses via bool-to-Visibility x:Bind.
+    /// </summary>
+    public sealed record ParameterRow(
+        string Name,
+        string TypeLabel,
+        bool IsRequired,
+        IReadOnlyList<ChoiceChip> ChoiceChips,
+        string? DefaultBadge,
+        string? Description)
+    {
+        public bool HasChoices => ChoiceChips.Count > 0;
+
+        public bool HasStandaloneDefault => DefaultBadge is not null;
+
+        public bool HasDescription => Description is not null;
+    }
 
     /// <summary>
     /// Metadata for a loaded plugin and its commands.
