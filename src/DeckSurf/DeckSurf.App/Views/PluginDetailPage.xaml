@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DeckSurf.App.Views.PluginDetailPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:services="using:DeckSurf.App.Services"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+
+        <!-- =====================================================================
+             Command tile: the Gallery tile anatomy with the key cap as the
+             identity container. Known WinUI limitation, accepted: ThemeResource
+             values inside VSM setters do not re-resolve during a live theme
+             switch while the state is active; only transient states are affected.
+             ===================================================================== -->
+        <Style x:Key="CommandTileStyle" TargetType="Button">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Height" Value="92" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="IsTabStop" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorSecondaryBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorTertiaryBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorDisabledBrush}" />
+                                            <Setter Target="Presenter.Opacity" Value="0.5" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter
+                                x:Name="Presenter"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                ContentTransitions="{TemplateBinding ContentTransitions}"
+                                Foreground="{TemplateBinding Foreground}"
+                                Padding="{TemplateBinding Padding}"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- A metadata pill: neutral fill with a hairline stroke so it reads as a
+             pill on light surfaces too, caption secondary text, fully rounded. -->
+        <DataTemplate x:Key="PillTemplate" x:DataType="x:String">
+            <Border Background="{ThemeResource ControlFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3">
+                <TextBlock Text="{x:Bind}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Border>
+        </DataTemplate>
+
+        <!-- Command tile: cap centered against the title-and-description stack;
+             compatibility and settings live in the flyout. -->
+        <DataTemplate x:Key="CommandTileTemplate" x:DataType="services:CommandInfo">
+            <Button
+                Style="{StaticResource CommandTileStyle}"
+                AutomationProperties.Name="{x:Bind AccessibleName}"
+                ToolTipService.ToolTip="{x:Bind DescriptionToolTip}">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- The command's key cap: declared artwork when the plugin ships
+                         an icon, otherwise a clean blank key. -->
+                    <Grid Width="44" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}" VerticalAlignment="Center">
+                        <Image Width="28" Height="28" Stretch="Uniform" Visibility="{x:Bind HasIcon}">
+                            <Image.Source>
+                                <BitmapImage UriSource="{x:Bind IconUri}" DecodePixelWidth="56" />
+                            </Image.Source>
+                        </Image>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock
+                            Text="{x:Bind DisplayName}"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            Text="{x:Bind Description}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap"
+                            MaxLines="2"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Grid>
+                <Button.Flyout>
+                    <Flyout Placement="Bottom">
+                        <Flyout.FlyoutPresenterStyle>
+                            <Style TargetType="FlyoutPresenter">
+                                <Setter Property="Padding" Value="16" />
+                                <Setter Property="MinWidth" Value="360" />
+                                <Setter Property="MaxWidth" Value="420" />
+                                <!-- Long lines wrap; the presenter's ScrollViewer must
+                                     never pan sideways. -->
+                                <Setter Property="ScrollViewer.HorizontalScrollMode" Value="Disabled" />
+                                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+                            </Style>
+                        </Flyout.FlyoutPresenterStyle>
+                        <StackPanel>
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid Width="44" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
+                                    <Image Width="28" Height="28" Stretch="Uniform" Visibility="{x:Bind HasIcon}">
+                                        <Image.Source>
+                                            <BitmapImage UriSource="{x:Bind IconUri}" DecodePixelWidth="56" />
+                                        </Image.Source>
+                                    </Image>
+                                </Grid>
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind PluginName}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock
+                                Text="{x:Bind Description}"
+                                Visibility="{x:Bind HasDescription}"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                TextWrapping="Wrap"
+                                Margin="0,16,0,0" />
+
+                            <StackPanel Spacing="6" Margin="0,16,0,0">
+                                <TextBlock Text="Works with" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <!-- Plain ItemsControl, deliberately: repeater layouts
+                                     float items in when the flyout opens, and static
+                                     pills have no business animating. -->
+                                <ItemsControl ItemsSource="{x:Bind CompatibilityPills}" ItemTemplate="{StaticResource PillTemplate}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Margin="0,16,0,0">
+                                <TextBlock Text="Settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock
+                                    Text="No settings. This command runs as-is."
+                                    Visibility="{x:Bind HasNoParameters}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Margin="0,8,0,0" />
+                                <ItemsControl ItemsSource="{x:Bind ParameterRows}" Visibility="{x:Bind HasParameters}" Margin="0,8,0,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="16" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="services:ParameterRow">
+                                            <!-- Name anchors the row; type and required read as
+                                                 pills, options as a pill row, so the schema scans
+                                                 instead of reading like prose. -->
+                                            <StackPanel Spacing="6">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
+                                                        <TextBlock Text="{x:Bind TypeLabel}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    </Border>
+                                                    <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3" VerticalAlignment="Center" Visibility="{x:Bind IsRequired}">
+                                                        <TextBlock Text="Required" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                                    </Border>
+                                                </StackPanel>
+                                                <ItemsControl ItemsSource="{x:Bind Options}" ItemTemplate="{StaticResource PillTemplate}" Visibility="{x:Bind HasOptions}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                </ItemsControl>
+                                                <TextBlock Text="{x:Bind DefaultLine}" Visibility="{x:Bind HasDefault}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                                <TextBlock Text="{x:Bind Description}" Visibility="{x:Bind HasDescription}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Padding="28,20,28,0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Breadcrumb in place of the page title: Plugins > {plugin}. -->
+            <BreadcrumbBar
+                x:Name="Breadcrumb"
+                Grid.Row="0"
+                Margin="0,0,0,24"
+                ItemClicked="Breadcrumb_ItemClicked">
+                <BreadcrumbBar.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <TextBlock Text="{x:Bind}" Style="{StaticResource TitleTextBlockStyle}" />
+                    </DataTemplate>
+                </BreadcrumbBar.ItemTemplate>
+            </BreadcrumbBar>
+
+            <!-- Plugin facts: the metadata's proper home, in the same
+                 label-over-value grammar as the device cards. -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="24" Margin="0,0,0,24">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Author" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="{x:Bind Plugin.Author, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" />
+                </StackPanel>
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Version" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="{x:Bind Plugin.Version, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" />
+                </StackPanel>
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Assembly" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="{x:Bind Plugin.Id, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" IsTextSelectionEnabled="True" />
+                </StackPanel>
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="2">
+                <ItemsRepeater
+                    ItemsSource="{x:Bind Plugin.Commands, Mode=OneWay}"
+                    ItemTemplate="{StaticResource CommandTileTemplate}"
+                    Margin="0,0,0,24">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout
+                            Orientation="Horizontal"
+                            MinItemWidth="236"
+                            MinItemHeight="92"
+                            MinColumnSpacing="8"
+                            MinRowSpacing="8"
+                            ItemsStretch="Fill" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Page>

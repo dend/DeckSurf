@@ -190,6 +190,8 @@ namespace DeckSurf.App.Services
         /// the header itself carries only the name.
         /// </summary>
         public string HeaderToolTip => $"{Author}{Environment.NewLine}Version {Version}{Environment.NewLine}{Id}";
+
+        public string CommandCountText => Commands.Count == 1 ? "1 command" : $"{Commands.Count} commands";
     }
 
     /// <summary>
