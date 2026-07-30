@@ -24,7 +24,7 @@ namespace DeckSurf.App.ViewModels
         private bool loadingKey;
         private bool loadingProfile;
         private bool refreshingProfiles;
-        private bool dirty;
+        private CancellationTokenSource? autoSaveCts;
 
         public ProfileEditorViewModel(
             ProfileService profileService,
@@ -386,7 +386,7 @@ namespace DeckSurf.App.ViewModels
             if (SelectedKey is not null)
             {
                 SelectedKey.ImagePath = path;
-                dirty = true;
+                ScheduleAutoSave();
             }
         }
 
@@ -396,7 +396,7 @@ namespace DeckSurf.App.ViewModels
             if (SelectedKey is not null)
             {
                 SelectedKey.ImagePath = null;
-                dirty = true;
+                ScheduleAutoSave();
             }
         }
 
@@ -414,16 +414,49 @@ namespace DeckSurf.App.ViewModels
             {
                 CatchAllMappings.Remove(SelectedKey);
                 SelectedKey = null;
-                dirty = true;
+                ScheduleAutoSave();
                 return;
             }
 
             SelectedKey.Clear();
-            dirty = true;
+            ScheduleAutoSave();
             LoadInspectorFromKey(SelectedKey);
         }
 
-        [RelayCommand]
+        /// <summary>
+        /// Persists and applies edits shortly after the last change. Debounced so
+        /// typing in a parameter field saves once per pause instead of per
+        /// keystroke, since every save also hot-applies to the running device.
+        /// </summary>
+        private void ScheduleAutoSave()
+        {
+            if (loadingProfile || SelectedProfileName is null)
+            {
+                return;
+            }
+
+            autoSaveCts?.Cancel();
+            var cts = autoSaveCts = new CancellationTokenSource();
+            _ = AutoSaveAfterDelayAsync(cts.Token);
+        }
+
+        private async Task AutoSaveAfterDelayAsync(CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(600, token);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+
+            if (!token.IsCancellationRequested)
+            {
+                await SaveAsync();
+            }
+        }
+
         private async Task SaveAsync()
         {
             if (SelectedProfileName is null)
@@ -431,7 +464,8 @@ namespace DeckSurf.App.ViewModels
                 return;
             }
 
-            ApplyInspectorToKey();
+            // Not rescheduled from here, or every save would beget another.
+            ApplyInspectorToKey(scheduleAutoSave: false);
 
             var profile = new ConfigurationProfile
             {
@@ -459,7 +493,6 @@ namespace DeckSurf.App.ViewModels
             try
             {
                 profileService.SaveProfile(SelectedProfileName, profile);
-                dirty = false;
 
                 // The runtime is always on: saving applies the changes to the
                 // device running this profile immediately.
@@ -579,7 +612,9 @@ namespace DeckSurf.App.ViewModels
                     CatchAllMappings.Add(new KeyViewModel(-1));
                 }
 
-                dirty = false;
+                // A pending auto-save from the previous profile must not fire
+                // against the newly loaded one.
+                autoSaveCts?.Cancel();
             }
             finally
             {
@@ -693,7 +728,7 @@ namespace DeckSurf.App.ViewModels
             }
         }
 
-        private void ApplyInspectorToKey()
+        private void ApplyInspectorToKey(bool scheduleAutoSave = true)
         {
             if (loadingKey || SelectedKey is null)
             {
@@ -721,7 +756,10 @@ namespace DeckSurf.App.ViewModels
                 }
             }
 
-            dirty = true;
+            if (scheduleAutoSave)
+            {
+                ScheduleAutoSave();
+            }
         }
 
         private void OnLiveKeyFrame(object? sender, LiveKeyFrame frame)

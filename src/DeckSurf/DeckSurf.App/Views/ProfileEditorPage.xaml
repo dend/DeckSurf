@@ -212,22 +212,16 @@
                         <TextBlock Text="New" />
                     </StackPanel>
                 </Button>
-                <Button Click="DeleteProfile_Click" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE74D;" FontSize="16" />
-                        <TextBlock Text="Delete" />
-                    </StackPanel>
-                </Button>
-                <!-- The runtime is automatic; Save is the page's primary action and
-                     applies changes to the running device immediately. -->
+                <!-- Destructive action: critical-red content on a standard button
+                     so the danger reads before the click. Edits save themselves;
+                     there is no Save button. -->
                 <Button
-                    Style="{StaticResource AccentButtonStyle}"
-                    Command="{x:Bind ViewModel.SaveCommand}"
+                    Click="DeleteProfile_Click"
                     IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}"
-                    ToolTipService.ToolTip="Save the profile and apply it to the device">
+                    ToolTipService.ToolTip="Delete this profile permanently">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE74E;" FontSize="16" />
-                        <TextBlock Text="Save" />
+                        <FontIcon Glyph="&#xE74D;" FontSize="16" Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
+                        <TextBlock Text="Delete" Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -245,8 +239,9 @@
 
         <!-- Scope row: which device is being edited, and which of its profiles. -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,24,0,24" Visibility="{x:Bind ViewModel.HasProfiles, Mode=OneWay}">
+            <!-- Fixed widths: the row must not resize as selections change. -->
             <ComboBox
-                MinWidth="240"
+                Width="300"
                 Header="Device"
                 PlaceholderText="No devices connected"
                 IsEnabled="{x:Bind ViewModel.HasDevices, Mode=OneWay}"
@@ -254,7 +249,7 @@
                 DisplayMemberPath="DisplayText"
                 SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" />
             <ComboBox
-                MinWidth="200"
+                Width="220"
                 Header="Profile"
                 PlaceholderText="Select a profile"
                 ItemsSource="{x:Bind ViewModel.ProfileNames}"

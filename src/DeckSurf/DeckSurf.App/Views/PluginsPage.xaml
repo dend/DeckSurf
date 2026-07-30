@@ -180,11 +180,16 @@
 
                             <StackPanel Spacing="6" Margin="0,16,0,0">
                                 <TextBlock Text="Works with" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                <ItemsRepeater ItemsSource="{x:Bind CompatibilityPills}" ItemTemplate="{StaticResource PillTemplate}">
-                                    <ItemsRepeater.Layout>
-                                        <LinedFlowLayout ItemsStretch="None" ItemsJustification="Start" MinItemSpacing="6" LineSpacing="6" />
-                                    </ItemsRepeater.Layout>
-                                </ItemsRepeater>
+                                <!-- Plain ItemsControl, deliberately: repeater layouts
+                                     float items in when the flyout opens, and static
+                                     pills have no business animating. -->
+                                <ItemsControl ItemsSource="{x:Bind CompatibilityPills}" ItemTemplate="{StaticResource PillTemplate}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
                             </StackPanel>
 
                             <StackPanel Margin="0,16,0,0">
@@ -216,11 +221,13 @@
                                                         <TextBlock Text="Required" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                                                     </Border>
                                                 </StackPanel>
-                                                <ItemsRepeater ItemsSource="{x:Bind Options}" ItemTemplate="{StaticResource PillTemplate}" Visibility="{x:Bind HasOptions}">
-                                                    <ItemsRepeater.Layout>
-                                                        <LinedFlowLayout ItemsStretch="None" ItemsJustification="Start" MinItemSpacing="6" LineSpacing="6" />
-                                                    </ItemsRepeater.Layout>
-                                                </ItemsRepeater>
+                                                <ItemsControl ItemsSource="{x:Bind Options}" ItemTemplate="{StaticResource PillTemplate}" Visibility="{x:Bind HasOptions}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                </ItemsControl>
                                                 <TextBlock Text="{x:Bind DefaultLine}" Visibility="{x:Bind HasDefault}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                                 <TextBlock Text="{x:Bind Description}" Visibility="{x:Bind HasDescription}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                             </StackPanel>

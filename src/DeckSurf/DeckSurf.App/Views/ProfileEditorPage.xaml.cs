@@ -26,13 +26,7 @@ namespace DeckSurf.App.Views
             };
             ViewModel.RefreshProfiles();
 
-            RegisterAccelerator(Windows.System.VirtualKey.S, Windows.System.VirtualKeyModifiers.Control, () =>
-            {
-                if (ViewModel.SaveCommand.CanExecute(null))
-                {
-                    ViewModel.SaveCommand.Execute(null);
-                }
-            });
+            // Edits save themselves; Ctrl+S has nothing left to do.
             RegisterAccelerator(Windows.System.VirtualKey.N, Windows.System.VirtualKeyModifiers.Control, () => NewProfile_Click(this, new RoutedEventArgs()));
         }
 

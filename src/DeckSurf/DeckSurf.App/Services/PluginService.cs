@@ -46,11 +46,12 @@ namespace DeckSurf.App.Services
         /// <summary>
         /// Gets the compatibility pills for the detail flyout, the only surface
         /// that states compatibility visually. Always populated: universal
-        /// commands carry one "All devices" pill.
+        /// commands carry one "All devices" pill. Short model names keep the
+        /// row compact under the "Works with" label.
         /// </summary>
         public IReadOnlyList<string> CompatibilityPills => RestrictedModels.Count == 0
             ? ["All devices"]
-            : [.. RestrictedModels.Select(FullName)];
+            : [.. RestrictedModels.Select(ShortName)];
 
         public bool HasParameters => Parameters.Count > 0;
 
