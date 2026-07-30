@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.DependencyInjection;
 using DeckSurf.App.Services;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace DeckSurf.App.Views
@@ -30,7 +31,7 @@ namespace DeckSurf.App.Views
                 // The plugin vanished (rescan while navigating); nothing to show.
                 if (Frame.CanGoBack)
                 {
-                    Frame.GoBack();
+                    Frame.GoBack(new SuppressNavigationTransitionInfo());
                 }
 
                 return;
@@ -44,7 +45,7 @@ namespace DeckSurf.App.Views
         {
             if (args.Index == 0 && Frame.CanGoBack)
             {
-                Frame.GoBack();
+                Frame.GoBack(new SuppressNavigationTransitionInfo());
             }
         }
     }

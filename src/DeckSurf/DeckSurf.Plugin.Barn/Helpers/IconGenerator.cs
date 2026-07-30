@@ -189,6 +189,63 @@ namespace DeckSurf.Plugin.Barn.Helpers
             return image;
         }
 
+        /// <summary>
+        /// Renders the network readout for a wide touch-strip surface: the history
+        /// graph runs the full width behind a left-anchored title and side-by-side
+        /// upload and download labels.
+        /// </summary>
+        internal static Image GenerateNetworkStripImage(int width, int height, string title, string upLabel, string downLabel, Font font, IReadOnlyList<int> history)
+        {
+            var image = new Image<Rgba32>(width, height);
+            var titleFont = ResolveFont(font.Size * 0.55f);
+
+            image.Mutate(ctx =>
+            {
+                ctx.Fill(Color.Black);
+
+                if (history.Count > 1)
+                {
+                    int count = history.Count;
+                    float barWidth = (float)width / count;
+                    float graphHeight = height * 0.85f;
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        int value = Math.Clamp(history[i], 0, 100);
+                        float barHeight = (value / 100f) * graphHeight;
+                        var rect = new RectangularPolygon(i * barWidth, height - barHeight, barWidth + 0.5f, barHeight);
+                        ctx.Fill(ValueToColor(value), rect);
+                    }
+                }
+
+                var titleOptions = new RichTextOptions(titleFont)
+                {
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Origin = new PointF(width * 0.04f, height / 2f),
+                };
+                ctx.DrawText(titleOptions, title, Color.White);
+
+                var upOptions = new RichTextOptions(font)
+                {
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Origin = new PointF(width * 0.42f, height / 2f),
+                };
+                ctx.DrawText(upOptions, upLabel, Color.White);
+
+                var downOptions = new RichTextOptions(font)
+                {
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Origin = new PointF(width * 0.75f, height / 2f),
+                };
+                ctx.DrawText(downOptions, downLabel, Color.White);
+            });
+
+            return image;
+        }
+
         internal static Font ResolveFont(float size, FontStyle style = FontStyle.Regular)
         {
             string[] candidates = ["DejaVu Sans", "Liberation Sans", "Arial", "Segoe UI"];

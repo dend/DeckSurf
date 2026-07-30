@@ -10,6 +10,12 @@
 
     <Page.Resources>
 
+        <!-- Scale the breadcrumb chevron to the title-sized labels and center it
+             on their line; the default metrics are tuned for body text and read
+             cramped and low beside 28px items. -->
+        <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
+        <Thickness x:Key="BreadcrumbBarChevronPadding">8,12,8,0</Thickness>
+
         <!-- =====================================================================
              Command tile: the Gallery tile anatomy with the key cap as the
              identity container. Known WinUI limitation, accepted: ThemeResource

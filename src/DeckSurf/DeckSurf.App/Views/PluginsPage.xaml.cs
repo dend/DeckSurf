@@ -20,7 +20,8 @@ namespace DeckSurf.App.Views
         {
             if (sender is FrameworkElement { DataContext: PluginInfo plugin })
             {
-                Frame.Navigate(typeof(PluginDetailPage), plugin.Id, new DrillInNavigationTransitionInfo());
+                // Subdued by design: page changes are instant, like Windows Settings.
+                Frame.Navigate(typeof(PluginDetailPage), plugin.Id, new SuppressNavigationTransitionInfo());
             }
         }
     }

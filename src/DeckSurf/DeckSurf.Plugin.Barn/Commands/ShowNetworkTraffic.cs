@@ -79,6 +79,32 @@ namespace DeckSurf.Plugin.Barn.Commands
             string upLabel = "\u25b2 " + NetworkMonitor.FormatBytes(up);
             string downLabel = "\u25bc " + NetworkMonitor.FormatBytes(down);
 
+            // Render to whatever the mapping actually targets: a screen mapping
+            // paints the touch strip, everything else paints its key. Without the
+            // branch, a screen-assigned instance painted key ButtonIndex instead,
+            // fighting that key's own content.
+            if (mappedCommand.Target == MappingTarget.Screen && mappedDevice.IsScreenSupported)
+            {
+                using var strip = IconGenerator.GenerateNetworkStripImage(
+                    mappedDevice.ScreenWidth,
+                    mappedDevice.ScreenHeight,
+                    "NET",
+                    upLabel,
+                    downLabel,
+                    font,
+                    normalized);
+
+                byte[] stripContent;
+                using (var ms = new MemoryStream())
+                {
+                    strip.SaveAsJpeg(ms);
+                    stripContent = ms.ToArray();
+                }
+
+                mappedDevice.SetScreen(stripContent, 0, mappedDevice.ScreenWidth, mappedDevice.ScreenHeight);
+                return;
+            }
+
             using var image = IconGenerator.GenerateNetworkImage(
                 200,
                 "NET",

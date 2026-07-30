@@ -18,13 +18,15 @@ namespace DeckSurf.App
 
             Title = "DeckSurf";
 
-            if (MicaController.IsSupported())
-            {
-                SystemBackdrop = new MicaBackdrop();
-            }
-            else if (DesktopAcrylicController.IsSupported())
+            // Acrylic first: the transparent navigation pane then reads as frosted
+            // glass over the desktop, while pages stay on their opaque layer.
+            if (DesktopAcrylicController.IsSupported())
             {
                 SystemBackdrop = new DesktopAcrylicBackdrop();
+            }
+            else if (MicaController.IsSupported())
+            {
+                SystemBackdrop = new MicaBackdrop();
             }
 
             ExtendsContentIntoTitleBar = true;
@@ -58,7 +60,8 @@ namespace DeckSurf.App
 
             if (ContentFrame.CurrentSourcePageType != pageType)
             {
-                ContentFrame.Navigate(pageType, null, new Microsoft.UI.Xaml.Media.Animation.EntranceNavigationTransitionInfo());
+                // Subdued by design: switching pages is instant, like Windows Settings.
+                ContentFrame.Navigate(pageType, null, new Microsoft.UI.Xaml.Media.Animation.SuppressNavigationTransitionInfo());
             }
         }
 
