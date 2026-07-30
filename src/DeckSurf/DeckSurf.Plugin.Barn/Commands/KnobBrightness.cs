@@ -1,6 +1,5 @@
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
-using DeckSurf.SDK.Util;
 using System;
 
 namespace DeckSurf.Plugin.Barn.Commands
@@ -41,7 +40,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         {
             if (eventArgs.IsKnobRotating == true)
             {
-                var step = int.TryParse(CommandArgumentParser.GetValueOrDefault(mappedCommand.CommandArguments, "step", "5"), out var parsed) ? parsed : 5;
+                var step = mappedCommand.CommandArguments.GetInt32("step", 5);
                 var delta = eventArgs.KnobRotationDirection == KnobRotationDirection.Right ? step : -step;
                 _level = Math.Clamp(_level + delta, 0, 100);
                 mappedDevice.SetBrightness((byte)_level);

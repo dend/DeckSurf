@@ -114,18 +114,9 @@ namespace DeckSurf.App.Services
         private static IReadOnlyList<ParameterRow> BuildParameterRows(IReadOnlyList<CommandParameterAttribute> parameters) =>
             [.. parameters.Select(p =>
             {
-                var typeLabel = p.ParameterType switch
-                {
-                    CommandParameterType.String => "Text",
-                    CommandParameterType.Integer => "Number",
-                    CommandParameterType.Boolean => "On/off",
-                    CommandParameterType.Choice => "Choice",
-                    CommandParameterType.FilePath => "File path",
-                    CommandParameterType.FolderPath => "Folder path",
-                    CommandParameterType.ImagePath => "Image file",
-                    CommandParameterType.DurationSeconds => "Duration in seconds",
-                    _ => p.ParameterType.ToString(),
-                };
+                // The pill is the declared type, verbatim. The SDK enum is the
+                // single vocabulary; the app does not maintain a translation.
+                var typeLabel = p.ParameterType.ToString();
 
                 // Every token comes straight from the declared attribute data;
                 // nothing is inferred or embellished. A default matching a declared

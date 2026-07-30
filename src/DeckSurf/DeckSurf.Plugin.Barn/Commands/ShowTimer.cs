@@ -1,4 +1,4 @@
-using DeckSurf.Plugin.Barn.Helpers;
+﻿using DeckSurf.Plugin.Barn.Helpers;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using SixLabors.ImageSharp;
@@ -10,7 +10,7 @@ namespace DeckSurf.Plugin.Barn.Commands
 {
     [CommandDynamicDisplay]
     [CommandParameter("mode", CommandParameterType.Choice, DisplayName = "Mode", Description = "Clock shows the current time; stopwatch counts up; timer counts down.", Choices = new[] { "clock", "stopwatch", "timer" }, DefaultValue = "clock", Order = 0)]
-    [CommandParameter("duration", CommandParameterType.DurationSeconds, DisplayName = "Duration (seconds)", Description = "Countdown length. Only used in timer mode.", DefaultValue = "300", MinValue = 1, Order = 1)]
+    [CommandParameter("duration", CommandParameterType.Integer, DisplayName = "Duration (seconds)", Description = "Countdown length. Only used in timer mode.", DefaultValue = "300", MinValue = 1, Order = 1)]
     class ShowTimer : IDeckSurfCommand
     {
         private enum TimerMode { Clock, Stopwatch, Timer }
@@ -101,34 +101,18 @@ namespace DeckSurf.Plugin.Barn.Commands
             _renderTimer.Start();
         }
 
-        private void ParseArguments(string args)
+        private void ParseArguments(CommandArguments args)
         {
-            if (string.IsNullOrWhiteSpace(args)) return;
-
-            foreach (var part in args.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            _mode = args.GetString("mode").ToLowerInvariant() switch
             {
-                var kv = part.Split('=', 2);
-                if (kv.Length != 2) continue;
+                "stopwatch" => TimerMode.Stopwatch,
+                "timer" => TimerMode.Timer,
+                _ => TimerMode.Clock,
+            };
 
-                var key = kv[0].Trim().ToLowerInvariant();
-                var value = kv[1].Trim();
-
-                switch (key)
-                {
-                    case "mode":
-                        _mode = value.ToLowerInvariant() switch
-                        {
-                            "stopwatch" => TimerMode.Stopwatch,
-                            "timer" => TimerMode.Timer,
-                            _ => TimerMode.Clock,
-                        };
-                        break;
-                    case "duration":
-                        if (int.TryParse(value, out int seconds))
-                            _countdownDuration = TimeSpan.FromSeconds(seconds);
-                        break;
-                }
-            }
+            var seconds = args.GetInt32("duration", 0);
+            if (seconds > 0)
+                _countdownDuration = TimeSpan.FromSeconds(seconds);
         }
 
         private void Render()

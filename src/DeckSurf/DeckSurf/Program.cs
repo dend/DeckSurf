@@ -159,7 +159,7 @@ namespace DeckSurf
             writeCommand.AddOption(new Option<string>(
                    aliases: new[] { "--action-args", "-a" },
                    getDefaultValue: () => string.Empty,
-                   description: "Arguments passed to the command.")
+                   description: "Arguments passed to the command, as comma-separated key=value pairs (e.g. \"scene=Gaming,port=4455\").")
             {
                 IsRequired = true,
                 AllowMultipleArgumentsPerToken = false
@@ -425,7 +425,9 @@ namespace DeckSurf
                     {
                         ButtonImagePath = imagePath,
                         ButtonIndex = keyIndex,
-                        CommandArguments = actionArgs,
+                        // The CLI keeps the comma-separated key=value syntax because
+                        // quoting JSON in a shell is miserable.
+                        CommandArguments = CommandArguments.FromLegacyString(actionArgs),
                         Plugin = plugin,
                         Command = command
                     };

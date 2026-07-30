@@ -54,7 +54,7 @@ namespace DeckSurf.App.ViewModels
         public partial string? CommandDisplayName { get; set; }
 
         [ObservableProperty]
-        public partial string? CommandArguments { get; set; }
+        public partial CommandArguments? CommandArguments { get; set; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(PreviewImage))]
@@ -69,6 +69,7 @@ namespace DeckSurf.App.ViewModels
         {
             MappingTarget.Knob => $"Knob {Index + 1}",
             MappingTarget.Screen => "Screen",
+            MappingTarget.TouchButton => $"T{Index + 1}",
             _ => Index == -1 ? "Any" : Index.ToString(),
         };
 

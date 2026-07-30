@@ -5,8 +5,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeckSurf.App.Helpers;
 using DeckSurf.App.Services;
+using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
-using DeckSurf.SDK.Util;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage.Streams;
@@ -20,24 +21,29 @@ namespace DeckSurf.App.ViewModels
         private readonly RuntimeService runtimeService;
         private readonly DeviceService deviceService;
         private readonly WindowService windowService;
+        private readonly AppSettingsService appSettings;
 
         private bool loadingKey;
         private bool loadingProfile;
         private bool refreshingProfiles;
         private CancellationTokenSource? autoSaveCts;
+        private CancellationTokenSource? choiceQueryCts;
+        private CancellationTokenSource? choiceRefreshCts;
 
         public ProfileEditorViewModel(
             ProfileService profileService,
             PluginService pluginService,
             RuntimeService runtimeService,
             DeviceService deviceService,
-            WindowService windowService)
+            WindowService windowService,
+            AppSettingsService appSettings)
         {
             this.profileService = profileService;
             this.pluginService = pluginService;
             this.runtimeService = runtimeService;
             this.deviceService = deviceService;
             this.windowService = windowService;
+            this.appSettings = appSettings;
 
             pluginService.PluginsChanged += (_, _) => windowService.RunOnUIThread(() => OnPropertyChanged(nameof(Plugins)));
 
@@ -52,21 +58,66 @@ namespace DeckSurf.App.ViewModels
             // explicitly so all profiles stay reachable. Posted, never inline: this
             // handler runs before the bound Device ComboBox sees the collection
             // change, and pushing a not-yet-known SelectedItem into it throws.
-            deviceService.Devices.CollectionChanged += (_, _) => windowService.PostToUIThread(() =>
-            {
-                if (SelectedDevice is null || !deviceService.Devices.Contains(SelectedDevice))
-                {
-                    SelectedDevice = deviceService.Devices.FirstOrDefault();
-                }
+            deviceService.Devices.CollectionChanged += (_, _) => windowService.PostToUIThread(RebuildDeviceList);
+            appSettings.DeviceEnablementChanged += (_, _) => windowService.PostToUIThread(RebuildDeviceList);
 
-                OnPropertyChanged(nameof(HasDevices));
-            });
-
-            SelectedDevice = deviceService.Devices.FirstOrDefault();
+            RebuildDeviceList();
             if (SelectedDevice is null)
             {
                 RefreshProfiles();
             }
+        }
+
+        /// <summary>
+        /// Points the editor at a device and, when given, one of its profiles.
+        /// Used by the Devices page to jump straight into editing.
+        /// </summary>
+        public void OpenFor(string serial, string? profileName)
+        {
+            var device = ConnectedDevices.FirstOrDefault(d => string.Equals(d.Serial, serial, StringComparison.OrdinalIgnoreCase));
+            if (device is not null && !ReferenceEquals(device, SelectedDevice))
+            {
+                SelectedDevice = device;
+            }
+
+            if (profileName is not null)
+            {
+                var match = ProfileNames.FirstOrDefault(p => string.Equals(p, profileName, StringComparison.OrdinalIgnoreCase));
+                if (match is not null)
+                {
+                    SelectedProfileName = match;
+                }
+            }
+        }
+
+        // The editor offers connected devices that are enabled. The list re-syncs
+        // on hotplug and enablement changes; when the current device leaves the
+        // list, selection falls to the first remaining one.
+        private void RebuildDeviceList()
+        {
+            for (var i = ConnectedDevices.Count - 1; i >= 0; i--)
+            {
+                var existing = ConnectedDevices[i];
+                if (!deviceService.Devices.Contains(existing) || !appSettings.IsDeviceEnabled(existing.Serial))
+                {
+                    ConnectedDevices.RemoveAt(i);
+                }
+            }
+
+            foreach (var device in deviceService.Devices)
+            {
+                if (appSettings.IsDeviceEnabled(device.Serial) && !ConnectedDevices.Contains(device))
+                {
+                    ConnectedDevices.Add(device);
+                }
+            }
+
+            if (SelectedDevice is null || !ConnectedDevices.Contains(SelectedDevice))
+            {
+                SelectedDevice = ConnectedDevices.FirstOrDefault();
+            }
+
+            OnPropertyChanged(nameof(HasDevices));
         }
 
         public ObservableCollection<string> ProfileNames { get; } = [];
@@ -79,11 +130,25 @@ namespace DeckSurf.App.ViewModels
 
         public ObservableCollection<KeyViewModel> ScreenTargets { get; } = [];
 
+        /// <summary>
+        /// Gets the touch keys flanking the screen on devices that have them
+        /// (Stream Deck Neo): index 0 left of the strip, index 1 right of it.
+        /// Separate single-item collections so each side renders in place.
+        /// </summary>
+        public ObservableCollection<KeyViewModel> TouchLeftTargets { get; } = [];
+
+        public ObservableCollection<KeyViewModel> TouchRightTargets { get; } = [];
+
         public ObservableCollection<ParameterFieldViewModel> ParameterFields { get; } = [];
 
         public IReadOnlyList<PluginInfo> Plugins => pluginService.Plugins;
 
-        public ObservableCollection<DeviceSummary> ConnectedDevices => deviceService.Devices;
+        /// <summary>
+        /// Gets the devices offered for editing: connected devices the user has
+        /// not disabled. Disabled devices, and with them their profiles, stay out
+        /// of the editor until they are enabled again on the Devices page.
+        /// </summary>
+        public ObservableCollection<DeviceSummary> ConnectedDevices { get; } = [];
 
         [ObservableProperty]
         public partial DeviceSummary? SelectedDevice { get; set; }
@@ -106,6 +171,20 @@ namespace DeckSurf.App.ViewModels
         [NotifyPropertyChangedFor(nameof(HasNoParameters))]
         public partial CommandInfo? SelectedCommand { get; set; }
 
+        /// <summary>
+        /// Gets or sets the latest health report from the selected command's
+        /// <see cref="IDeckSurfStatusProvider"/>, shown under the parameter form.
+        /// Null when the command reports no status.
+        /// </summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasCommandStatus))]
+        public partial string? CommandStatusText { get; set; }
+
+        [ObservableProperty]
+        public partial InfoBarSeverity CommandStatusSeverity { get; set; }
+
+        public bool HasCommandStatus => !string.IsNullOrEmpty(CommandStatusText);
+
         [ObservableProperty]
         public partial int GridColumns { get; set; }
 
@@ -114,6 +193,9 @@ namespace DeckSurf.App.ViewModels
 
         [ObservableProperty]
         public partial bool ShowKnobs { get; set; }
+
+        [ObservableProperty]
+        public partial bool ShowTouchKeys { get; set; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasStatus))]
@@ -125,7 +207,7 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasProfiles => ProfileNames.Count > 0;
 
-        public bool HasDevices => deviceService.Devices.Count > 0;
+        public bool HasDevices => ConnectedDevices.Count > 0;
 
         public bool HasSelectedKey => SelectedKey is not null;
 
@@ -139,6 +221,7 @@ namespace DeckSurf.App.ViewModels
             null => "Key configuration",
             { Target: MappingTarget.Knob } knob => $"Knob {knob.Index + 1}",
             { Target: MappingTarget.Screen } => "Touch screen",
+            { Target: MappingTarget.TouchButton } touch => $"Touch key {touch.Index + 1}",
             { Index: -1 } => "Any key",
             { } key => $"Key {key.Index}",
         };
@@ -151,12 +234,13 @@ namespace DeckSurf.App.ViewModels
 
         /// <summary>
         /// Gets a value indicating whether the image section applies: a command is
-        /// chosen, the target has a visible face (knobs do not), and the command
-        /// does not render its own display.
+        /// chosen, the target has a visible face (knobs and touch keys do not),
+        /// and the command does not render its own display.
         /// </summary>
         public bool ShowImageSection =>
             HasSelectedCommand
             && SelectedKey?.Target != MappingTarget.Knob
+            && SelectedKey?.Target != MappingTarget.TouchButton
             && SelectedCommand?.HasDynamicDisplay != true;
 
         /// <summary>
@@ -166,6 +250,7 @@ namespace DeckSurf.App.ViewModels
         public bool ShowDynamicImageNote =>
             HasSelectedCommand
             && SelectedKey?.Target != MappingTarget.Knob
+            && SelectedKey?.Target != MappingTarget.TouchButton
             && SelectedCommand?.HasDynamicDisplay == true;
 
         public bool HasNoParameters => SelectedCommand is not null && ParameterFields.Count == 0;
@@ -345,7 +430,7 @@ namespace DeckSurf.App.ViewModels
 
         public void CreateProfile(string name)
         {
-            var device = SelectedDevice ?? deviceService.Devices.FirstOrDefault();
+            var device = SelectedDevice ?? ConnectedDevices.FirstOrDefault();
             var profile = new ConfigurationProfile
             {
                 DeviceIndex = 0,
@@ -379,6 +464,40 @@ namespace DeckSurf.App.ViewModels
             profileService.DeleteProfile(deletedName);
             _ = Task.Run(() => runtimeService.NotifyProfileDeleted(deletedName));
             RefreshProfiles();
+        }
+
+        /// <summary>
+        /// Swaps the full mapping (command, arguments, image) between two targets
+        /// of the same kind, for drag and drop between keys or between knobs.
+        /// </summary>
+        /// <summary>
+        /// Moves a mapping from one target to another of the same kind. The source
+        /// returns to its unmapped state; whatever the destination held is replaced.
+        /// Live frames are dropped on both so the running device repaints them.
+        /// </summary>
+        public void MoveMapping(KeyViewModel source, KeyViewModel destination)
+        {
+            if (ReferenceEquals(source, destination) || source.Target != destination.Target)
+            {
+                return;
+            }
+
+            destination.PluginId = source.PluginId;
+            destination.CommandId = source.CommandId;
+            destination.CommandDisplayName = source.CommandDisplayName;
+            destination.CommandArguments = source.CommandArguments;
+            destination.ImagePath = source.ImagePath;
+            destination.LiveImage = null;
+
+            source.Clear();
+            source.LiveImage = null;
+
+            if (ReferenceEquals(SelectedKey, source) || ReferenceEquals(SelectedKey, destination))
+            {
+                LoadInspectorFromKey(SelectedKey);
+            }
+
+            ScheduleAutoSave();
         }
 
         public void SetSelectedKeyImagePath(string path)
@@ -474,9 +593,10 @@ namespace DeckSurf.App.ViewModels
                 DeviceSerial = profileDeviceSerial,
             };
 
-            // Screen tiles are saved with just an image too — a background without a
+            // Screen tiles are saved with just an image too - a background without a
             // mapped command is still meaningful.
             foreach (var key in Keys.Concat(CatchAllMappings).Concat(KnobTargets).Concat(ScreenTargets)
+                .Concat(TouchLeftTargets).Concat(TouchRightTargets)
                 .Where(k => k.HasMapping || (k.Target == MappingTarget.Screen && !string.IsNullOrEmpty(k.ImagePath))))
             {
                 profile.ButtonMap.Add(new CommandMapping
@@ -485,7 +605,7 @@ namespace DeckSurf.App.ViewModels
                     Target = key.Target,
                     Plugin = key.PluginId,
                     Command = key.CommandId,
-                    CommandArguments = key.CommandArguments ?? string.Empty,
+                    CommandArguments = key.CommandArguments,
                     ButtonImagePath = key.ImagePath ?? string.Empty,
                 });
             }
@@ -524,6 +644,8 @@ namespace DeckSurf.App.ViewModels
                 CatchAllMappings.Clear();
                 KnobTargets.Clear();
                 ScreenTargets.Clear();
+                TouchLeftTargets.Clear();
+                TouchRightTargets.Clear();
 
                 if (name is null)
                 {
@@ -552,13 +674,13 @@ namespace DeckSurf.App.ViewModels
 
                 // Prefer the profile's own device when connected; legacy profiles
                 // without a stored serial belong to whichever device is being edited.
-                var connected = deviceService.Devices.FirstOrDefault(d =>
+                var connected = ConnectedDevices.FirstOrDefault(d =>
                     !string.IsNullOrEmpty(profile.DeviceSerial)
                     && string.Equals(d.Serial, profile.DeviceSerial, StringComparison.OrdinalIgnoreCase));
 
                 if (connected is null && string.IsNullOrEmpty(profile.DeviceSerial))
                 {
-                    connected = SelectedDevice ?? deviceService.Devices.FirstOrDefault();
+                    connected = SelectedDevice ?? ConnectedDevices.FirstOrDefault();
                 }
 
                 if (connected is not null)
@@ -577,6 +699,7 @@ namespace DeckSurf.App.ViewModels
 
                 ShowScreenStrip = connected?.IsScreenSupported ?? DeviceLayouts.HasScreen(profile.DeviceModel);
                 ShowKnobs = connected?.IsKnobSupported ?? DeviceLayouts.HasKnobs(profile.DeviceModel);
+                ShowTouchKeys = (connected?.TouchButtonCount ?? (profile.DeviceModel == DeviceModel.Neo ? 2 : 0)) > 0;
 
                 BuildKeys(columns, rows);
                 BuildHardwareTargets();
@@ -587,6 +710,8 @@ namespace DeckSurf.App.ViewModels
                     {
                         MappingTarget.Knob when mapping.ButtonIndex >= 0 && mapping.ButtonIndex < KnobTargets.Count => KnobTargets[mapping.ButtonIndex],
                         MappingTarget.Screen when ScreenTargets.Count > 0 => ScreenTargets[0],
+                        MappingTarget.TouchButton when mapping.ButtonIndex == 0 && TouchLeftTargets.Count > 0 => TouchLeftTargets[0],
+                        MappingTarget.TouchButton when mapping.ButtonIndex == 1 && TouchRightTargets.Count > 0 => TouchRightTargets[0],
                         MappingTarget.Key when mapping.ButtonIndex >= 0 && mapping.ButtonIndex < Keys.Count => Keys[mapping.ButtonIndex],
                         MappingTarget.Key when mapping.ButtonIndex == -1 => AddCatchAllTile(),
                         _ => null,
@@ -639,6 +764,8 @@ namespace DeckSurf.App.ViewModels
         {
             KnobTargets.Clear();
             ScreenTargets.Clear();
+            TouchLeftTargets.Clear();
+            TouchRightTargets.Clear();
 
             if (ShowKnobs)
             {
@@ -651,6 +778,12 @@ namespace DeckSurf.App.ViewModels
             if (ShowScreenStrip)
             {
                 ScreenTargets.Add(new KeyViewModel(0, MappingTarget.Screen));
+            }
+
+            if (ShowTouchKeys)
+            {
+                TouchLeftTargets.Add(new KeyViewModel(0, MappingTarget.TouchButton));
+                TouchRightTargets.Add(new KeyViewModel(1, MappingTarget.TouchButton));
             }
         }
 
@@ -683,7 +816,7 @@ namespace DeckSurf.App.ViewModels
             }
         }
 
-        private void RebuildParameterFields(CommandInfo? command, string? existingArguments)
+        private void RebuildParameterFields(CommandInfo? command, CommandArguments? existingArguments)
         {
             foreach (var field in ParameterFields)
             {
@@ -694,7 +827,7 @@ namespace DeckSurf.App.ViewModels
 
             if (command is not null)
             {
-                var existingValues = CommandArgumentParser.Parse(existingArguments ?? string.Empty);
+                var existingValues = existingArguments ?? CommandArguments.Empty;
 
                 foreach (var parameter in command.Parameters)
                 {
@@ -704,10 +837,10 @@ namespace DeckSurf.App.ViewModels
                     // no key; surface it in the first required field.
                     if (currentValue is null
                         && parameter.Required
-                        && !string.IsNullOrEmpty(existingArguments)
-                        && !existingArguments.Contains('='))
+                        && !string.IsNullOrEmpty(existingValues.LegacyText)
+                        && !existingValues.LegacyText.Contains('='))
                     {
-                        currentValue = existingArguments;
+                        currentValue = existingValues.LegacyText;
                     }
 
                     var field = new ParameterFieldViewModel(parameter, currentValue);
@@ -715,6 +848,8 @@ namespace DeckSurf.App.ViewModels
                     ParameterFields.Add(field);
                 }
             }
+
+            QueryCommandRuntimeInfo(command);
 
             OnPropertyChanged(nameof(HasParameters));
             OnPropertyChanged(nameof(HasNoParameters));
@@ -725,6 +860,117 @@ namespace DeckSurf.App.ViewModels
             if (e.PropertyName == nameof(ParameterFieldViewModel.Value))
             {
                 ApplyInspectorToKey();
+
+                // Editing a connection-ish field (host, password) changes what the
+                // choice provider would return, so re-query after the typing settles.
+                // Edits to the dynamic field itself don't affect its own choices.
+                if (sender is ParameterFieldViewModel { HasDynamicChoices: false })
+                {
+                    ScheduleDynamicChoiceRefresh();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Probes the selected command's runtime capabilities off the UI thread:
+        /// health via <see cref="IDeckSurfStatusProvider"/> and per-field
+        /// suggestions via <see cref="IDeckSurfChoiceProvider"/>. Failures leave
+        /// the status hidden and the fields as plain text input.
+        /// </summary>
+        private void QueryCommandRuntimeInfo(CommandInfo? command)
+        {
+            CommandStatusText = null;
+
+            var isStatusProvider = command is not null && typeof(IDeckSurfStatusProvider).IsAssignableFrom(command.CommandType);
+            var isChoiceProvider = command is not null && typeof(IDeckSurfChoiceProvider).IsAssignableFrom(command.CommandType);
+            var dynamicFields = isChoiceProvider
+                ? ParameterFields.Where(f => f.HasDynamicChoices).ToList()
+                : new List<ParameterFieldViewModel>();
+
+            if (command is null || (!isStatusProvider && dynamicFields.Count == 0))
+            {
+                return;
+            }
+
+            choiceQueryCts?.Cancel();
+            var cts = choiceQueryCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var token = cts.Token;
+
+            var currentValues = CommandArguments.FromDictionary(ParameterFields
+                .Where(f => !string.IsNullOrEmpty(f.Value))
+                .ToDictionary(f => f.Key, f => f.Value!, StringComparer.OrdinalIgnoreCase));
+
+            _ = Task.Run(async () =>
+            {
+                using var instance = (IDeckSurfCommand)Activator.CreateInstance(command.CommandType)!;
+
+                if (instance is IDeckSurfStatusProvider statusProvider)
+                {
+                    try
+                    {
+                        var status = await statusProvider.GetStatusAsync(currentValues, token);
+
+                        if (!token.IsCancellationRequested)
+                        {
+                            windowService.RunOnUIThread(() =>
+                            {
+                                CommandStatusText = status.Message;
+                                CommandStatusSeverity = status.Kind == CommandStatusKind.Ready
+                                    ? InfoBarSeverity.Success
+                                    : InfoBarSeverity.Warning;
+                            });
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                if (instance is IDeckSurfChoiceProvider choiceProvider)
+                {
+                    foreach (var field in dynamicFields)
+                    {
+                        IReadOnlyList<string> choices;
+
+                        try
+                        {
+                            choices = await choiceProvider.GetChoicesAsync(field.Key, currentValues, token);
+                        }
+                        catch (Exception)
+                        {
+                            continue;
+                        }
+
+                        if (!token.IsCancellationRequested && choices.Count > 0)
+                        {
+                            windowService.RunOnUIThread(() => field.SetDynamicChoices(choices));
+                        }
+                    }
+                }
+            }, token);
+        }
+
+        private void ScheduleDynamicChoiceRefresh()
+        {
+            choiceRefreshCts?.Cancel();
+            var cts = choiceRefreshCts = new CancellationTokenSource();
+            _ = RefreshChoicesAfterDelayAsync(cts.Token);
+        }
+
+        private async Task RefreshChoicesAfterDelayAsync(CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(800, token);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+
+            if (!token.IsCancellationRequested)
+            {
+                QueryCommandRuntimeInfo(SelectedCommand);
             }
         }
 
@@ -745,15 +991,8 @@ namespace DeckSurf.App.ViewModels
                     .Where(f => !string.IsNullOrEmpty(f.Value))
                     .ToDictionary(f => f.Key, f => f.Value!, StringComparer.OrdinalIgnoreCase);
 
-                try
-                {
-                    SelectedKey.CommandArguments = CommandArgumentParser.Format(values);
-                    StatusMessage = null;
-                }
-                catch (ArgumentException ex)
-                {
-                    StatusMessage = ex.Message;
-                }
+                SelectedKey.CommandArguments = CommandArguments.FromDictionary(values);
+                StatusMessage = null;
             }
 
             if (scheduleAutoSave)
@@ -772,7 +1011,21 @@ namespace DeckSurf.App.ViewModels
                 }
 
                 var key = Keys.FirstOrDefault(k => k.Index == frame.KeyId);
-                if (key is not null && await DecodeFrameAsync(frame.Image) is { } decoded)
+                if (key is null)
+                {
+                    return;
+                }
+
+                // The runtime blanks vacated keys on the hardware, and that paint
+                // arrives here as a pure black frame. An unmapped tile shows the
+                // standard blank cap instead of mirroring the black.
+                if (!key.HasMapping)
+                {
+                    key.LiveImage = null;
+                    return;
+                }
+
+                if (await DecodeFrameAsync(frame.Image) is { } decoded)
                 {
                     key.LiveImage = decoded;
                 }
@@ -827,7 +1080,7 @@ namespace DeckSurf.App.ViewModels
             }
             catch (Exception)
             {
-                // An undecodable frame (unexpected device-specific payload) simply
+                // An undecodable frame (unexpected device-specific payload)
                 // leaves the previous preview in place.
                 return null;
             }

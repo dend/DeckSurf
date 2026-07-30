@@ -18,6 +18,10 @@ namespace DeckSurf.App.Controls
 
         public DataTemplate? ChoiceTemplate { get; set; }
 
+        public DataTemplate? DynamicChoiceTemplate { get; set; }
+
+        public DataTemplate? SecretTemplate { get; set; }
+
         public DataTemplate? FileTemplate { get; set; }
 
         public DataTemplate? ImageTemplate { get; set; }
@@ -29,13 +33,21 @@ namespace DeckSurf.App.Controls
                 return base.SelectTemplateCore(item, container);
             }
 
+            // Runtime-served choices override the declared type: the field renders
+            // as an editable combo regardless of being declared String.
+            if (field.HasDynamicChoices)
+            {
+                return DynamicChoiceTemplate ?? TextTemplate;
+            }
+
             return field.Kind switch
             {
-                CommandParameterType.Integer or CommandParameterType.DurationSeconds => NumberTemplate,
+                CommandParameterType.Integer => NumberTemplate,
                 CommandParameterType.Boolean => BooleanTemplate,
                 CommandParameterType.Choice => ChoiceTemplate,
                 CommandParameterType.FilePath or CommandParameterType.FolderPath => FileTemplate,
                 CommandParameterType.ImagePath => ImageTemplate,
+                CommandParameterType.Secret => SecretTemplate,
                 _ => TextTemplate,
             } ?? TextTemplate;
         }

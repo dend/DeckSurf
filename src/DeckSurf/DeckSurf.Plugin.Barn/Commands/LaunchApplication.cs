@@ -44,9 +44,8 @@ namespace DeckSurf.Plugin.Barn.Commands
         // is no 'path' key.
         private static string GetTargetPath(CommandMapping mappedCommand)
         {
-            return CommandArgumentParser.TryGetValue(mappedCommand.CommandArguments, "path", out var path)
-                ? path
-                : mappedCommand.CommandArguments;
+            var arguments = mappedCommand.CommandArguments;
+            return arguments.GetString("path", arguments.LegacyText ?? string.Empty);
         }
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)

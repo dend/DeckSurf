@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using DeckSurf.SDK.Models;
+using System.Collections.ObjectModel;
 
 namespace DeckSurf.App.ViewModels
 {
@@ -37,6 +38,27 @@ namespace DeckSurf.App.ViewModels
         public CommandParameterType Kind => Definition.ParameterType;
 
         public IReadOnlyList<string> Choices => Definition.Choices ?? [];
+
+        public bool HasDynamicChoices => Definition.DynamicChoices;
+
+        /// <summary>
+        /// Gets runtime suggestions served by the command's choice provider.
+        /// Suggestions only. The field stays editable, since the backing source
+        /// may be offline while the profile is edited.
+        /// </summary>
+        public ObservableCollection<string> DynamicChoices { get; } = [];
+
+        /// <summary>
+        /// Replaces the suggestion list. Must be called on the UI thread.
+        /// </summary>
+        public void SetDynamicChoices(IReadOnlyList<string> choices)
+        {
+            DynamicChoices.Clear();
+            foreach (var choice in choices)
+            {
+                DynamicChoices.Add(choice);
+            }
+        }
 
         public bool IsRequired => Definition.Required;
 
