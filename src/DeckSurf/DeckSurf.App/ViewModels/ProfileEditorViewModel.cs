@@ -11,8 +11,6 @@ namespace DeckSurf.App.ViewModels
 {
     public partial class ProfileEditorViewModel : ObservableObject
     {
-        private const int MaxLogEntries = 200;
-
         private readonly ProfileService profileService;
         private readonly PluginService pluginService;
         private readonly RuntimeService runtimeService;
@@ -37,8 +35,6 @@ namespace DeckSurf.App.ViewModels
             this.deviceService = deviceService;
             this.windowService = windowService;
 
-            runtimeService.StateChanged += OnRuntimeStateChanged;
-            runtimeService.ButtonEventLogged += OnRuntimeLog;
             pluginService.PluginsChanged += (_, _) => windowService.RunOnUIThread(() => OnPropertyChanged(nameof(Plugins)));
 
             // Editing is scoped to a device; pick the first connected one. Setting
@@ -52,7 +48,6 @@ namespace DeckSurf.App.ViewModels
                 }
 
                 OnPropertyChanged(nameof(HasDevices));
-                OnPropertyChanged(nameof(CanStart));
             });
 
             SelectedDevice = deviceService.Devices.FirstOrDefault();
@@ -73,8 +68,6 @@ namespace DeckSurf.App.ViewModels
         public ObservableCollection<KeyViewModel> ScreenTargets { get; } = [];
 
         public ObservableCollection<ParameterFieldViewModel> ParameterFields { get; } = [];
-
-        public ObservableCollection<string> RuntimeLog { get; } = [];
 
         public IReadOnlyList<PluginInfo> Plugins => pluginService.Plugins;
 
@@ -111,14 +104,8 @@ namespace DeckSurf.App.ViewModels
         public partial bool ShowKnobs { get; set; }
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsNotRunning))]
-        public partial bool IsRunning { get; set; }
-
-        [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasStatus))]
         public partial string? StatusMessage { get; set; }
-
-        public bool IsNotRunning => !IsRunning;
 
         public bool HasProfile => !string.IsNullOrEmpty(SelectedProfileName);
 
@@ -127,13 +114,6 @@ namespace DeckSurf.App.ViewModels
         public bool HasProfiles => ProfileNames.Count > 0;
 
         public bool HasDevices => deviceService.Devices.Count > 0;
-
-        /// <summary>
-        /// Gets a value indicating whether the runtime can start: a profile is loaded
-        /// and its device is connected. Prevents the primary action from failing
-        /// after the fact.
-        /// </summary>
-        public bool CanStart => HasProfile && SelectedDevice is not null;
 
         public bool HasSelectedKey => SelectedKey is not null;
 
@@ -160,8 +140,6 @@ namespace DeckSurf.App.ViewModels
         public bool HasNoParameters => SelectedCommand is not null && ParameterFields.Count == 0;
 
         public bool HasStatus => !string.IsNullOrEmpty(StatusMessage);
-
-        public bool HasNoRuntimeLog => RuntimeLog.Count == 0;
 
         /// <summary>
         /// Gets the selected plugin's commands that are compatible with the profile's
@@ -218,9 +196,9 @@ namespace DeckSurf.App.ViewModels
             }
 
             LoadProfile(SelectedProfileName);
+            ActivateSelectedProfile();
             OnPropertyChanged(nameof(HasNoProfiles));
             OnPropertyChanged(nameof(HasProfiles));
-            OnPropertyChanged(nameof(CanStart));
         }
 
         private bool ProfileBelongsToSelectedDevice(string name)
@@ -252,13 +230,12 @@ namespace DeckSurf.App.ViewModels
             }
 
             LoadProfile(value);
-            OnPropertyChanged(nameof(CanStart));
+            ActivateSelectedProfile();
         }
 
         partial void OnSelectedDeviceChanged(DeviceSummary? value)
         {
             OnPropertyChanged(nameof(AvailableCommands));
-            OnPropertyChanged(nameof(CanStart));
 
             // Switching the device switches the editing scope: the profile list
             // reloads for that device. The loaded profile is never retargeted.
@@ -266,6 +243,22 @@ namespace DeckSurf.App.ViewModels
             {
                 RefreshProfiles();
             }
+        }
+
+        /// <summary>
+        /// The profile selected in the editor becomes the device's active profile;
+        /// the runtime brings the hardware in line in the background.
+        /// </summary>
+        private void ActivateSelectedProfile()
+        {
+            var serial = SelectedDevice?.Serial;
+            var profileName = SelectedProfileName;
+            if (serial is null || profileName is null || !ProfileBelongsToSelectedDevice(profileName))
+            {
+                return;
+            }
+
+            _ = Task.Run(() => runtimeService.SetActiveProfile(serial, profileName));
         }
 
         partial void OnSelectedKeyChanged(KeyViewModel? oldValue, KeyViewModel? newValue)
@@ -278,6 +271,16 @@ namespace DeckSurf.App.ViewModels
                 && CatchAllMappings.Contains(previous))
             {
                 CatchAllMappings.Remove(previous);
+            }
+
+            if (oldValue is not null)
+            {
+                oldValue.IsSelected = false;
+            }
+
+            if (newValue is not null)
+            {
+                newValue.IsSelected = true;
             }
 
             LoadInspectorFromKey(newValue);
@@ -337,12 +340,9 @@ namespace DeckSurf.App.ViewModels
                 return;
             }
 
-            if (IsRunning && string.Equals(runtimeService.ActiveProfileName, SelectedProfileName, StringComparison.OrdinalIgnoreCase))
-            {
-                runtimeService.Stop();
-            }
-
-            profileService.DeleteProfile(SelectedProfileName);
+            var deletedName = SelectedProfileName;
+            profileService.DeleteProfile(deletedName);
+            _ = Task.Run(() => runtimeService.NotifyProfileDeleted(deletedName));
             RefreshProfiles();
         }
 
@@ -426,52 +426,10 @@ namespace DeckSurf.App.ViewModels
                 profileService.SaveProfile(SelectedProfileName, profile);
                 dirty = false;
 
-                if (IsRunning && string.Equals(runtimeService.ActiveProfileName, SelectedProfileName, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (string.Equals(runtimeService.ActiveDeviceSerial, profileDeviceSerial, StringComparison.OrdinalIgnoreCase))
-                    {
-                        await Task.Run(runtimeService.HotRestart);
-                    }
-                    else
-                    {
-                        // The profile now targets a different device; the open handle
-                        // cannot be reused, so restart the runtime fully.
-                        var profileName = SelectedProfileName;
-                        await Task.Run(() =>
-                        {
-                            runtimeService.Stop();
-                            runtimeService.Start(profileName);
-                        });
-                    }
-                }
-
-                StatusMessage = null;
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = ex.Message;
-            }
-        }
-
-        [RelayCommand]
-        private async Task ToggleRuntimeAsync()
-        {
-            try
-            {
-                if (IsRunning)
-                {
-                    await Task.Run(runtimeService.Stop);
-                }
-                else if (SelectedProfileName is not null)
-                {
-                    if (dirty)
-                    {
-                        await SaveAsync();
-                    }
-
-                    var profileName = SelectedProfileName;
-                    await Task.Run(() => runtimeService.Start(profileName));
-                }
+                // The runtime is always on: saving applies the changes to the
+                // device running this profile immediately.
+                var savedName = SelectedProfileName;
+                await Task.Run(() => runtimeService.NotifyProfileSaved(savedName));
 
                 StatusMessage = null;
             }
@@ -729,25 +687,6 @@ namespace DeckSurf.App.ViewModels
             }
 
             dirty = true;
-        }
-
-        private void OnRuntimeStateChanged(object? sender, EventArgs e)
-        {
-            windowService.RunOnUIThread(() => IsRunning = runtimeService.IsRunning);
-        }
-
-        private void OnRuntimeLog(object? sender, RuntimeLogEntry entry)
-        {
-            windowService.RunOnUIThread(() =>
-            {
-                RuntimeLog.Insert(0, $"{entry.Timestamp:HH:mm:ss}  {entry.Message}");
-                while (RuntimeLog.Count > MaxLogEntries)
-                {
-                    RuntimeLog.RemoveAt(RuntimeLog.Count - 1);
-                }
-
-                OnPropertyChanged(nameof(HasNoRuntimeLog));
-            });
         }
     }
 }

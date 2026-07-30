@@ -54,6 +54,7 @@ namespace DeckSurf.App
                     .AddSingleton<ViewModels.DevicesViewModel>()
                     .AddSingleton<ViewModels.PluginsViewModel>()
                     .AddSingleton<ViewModels.ProfileEditorViewModel>()
+                    .AddSingleton<ViewModels.ActivityViewModel>()
                     .BuildServiceProvider());
         }
 
@@ -73,6 +74,11 @@ namespace DeckSurf.App
             Ioc.Default.GetRequiredService<DeviceService>().Initialize(mainWindow.DispatcherQueue);
             Ioc.Default.GetRequiredService<TrayService>().Initialize(mainWindow);
             Ioc.Default.GetRequiredService<AppSettingsService>().ApplySavedTheme();
+
+            // The runtime is automatic: bring connected devices' active profiles
+            // up as soon as the app is on its feet.
+            var runtimeService = Ioc.Default.GetRequiredService<RuntimeService>();
+            _ = Task.Run(runtimeService.Sync);
 
             // The window has one fixed width, sized for the widest supported device
             // (the XL's eight-column stage: 220 nav + 1 border + 56 rails + 796 deck

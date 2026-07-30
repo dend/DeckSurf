@@ -44,15 +44,77 @@ namespace DeckSurf.Plugin.Barn.Helpers
             return -1;
         }
 
+        private static readonly object WindowsSampleLock = new();
+        private static ulong lastIdleTicks;
+        private static ulong lastTotalTicks;
+
         [SupportedOSPlatform("windows")]
         private static int GetWindowsCpuUsage()
         {
-            using var perfCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            // First call always returns zero — it establishes the baseline.
-            perfCounter.NextValue();
-            Thread.Sleep(500);
-            return (int)Math.Round(perfCounter.NextValue());
+            // GetSystemTimes needs no performance-counter infrastructure (which can
+            // be corrupted or unavailable) and no blocking sample interval: usage is
+            // the idle/total delta since the previous call, which for a periodic
+            // caller is exactly the elapsed interval. The first call establishes
+            // the baseline and reports a 500ms bootstrap sample.
+            lock (WindowsSampleLock)
+            {
+                if (!TryGetSystemTicks(out var idle, out var total))
+                {
+                    return -1;
+                }
+
+                if (lastTotalTicks == 0)
+                {
+                    lastIdleTicks = idle;
+                    lastTotalTicks = total;
+                    Thread.Sleep(500);
+                    if (!TryGetSystemTicks(out idle, out total))
+                    {
+                        return -1;
+                    }
+                }
+
+                var totalDelta = total - lastTotalTicks;
+                var idleDelta = idle - lastIdleTicks;
+                lastIdleTicks = idle;
+                lastTotalTicks = total;
+
+                if (totalDelta == 0)
+                {
+                    return 0;
+                }
+
+                return (int)((totalDelta - idleDelta) * 100 / totalDelta);
+            }
         }
+
+        [SupportedOSPlatform("windows")]
+        private static bool TryGetSystemTicks(out ulong idle, out ulong total)
+        {
+            idle = 0;
+            total = 0;
+
+            if (!GetSystemTimes(out var idleTime, out var kernelTime, out var userTime))
+            {
+                return false;
+            }
+
+            idle = ToTicks(idleTime);
+
+            // Kernel time includes idle time, so kernel + user is the full total.
+            total = ToTicks(kernelTime) + ToTicks(userTime);
+            return true;
+        }
+
+        private static ulong ToTicks(System.Runtime.InteropServices.ComTypes.FILETIME time) =>
+            ((ulong)(uint)time.dwHighDateTime << 32) | (uint)time.dwLowDateTime;
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetSystemTimes(
+            out System.Runtime.InteropServices.ComTypes.FILETIME idleTime,
+            out System.Runtime.InteropServices.ComTypes.FILETIME kernelTime,
+            out System.Runtime.InteropServices.ComTypes.FILETIME userTime);
 
         private static int GetLinuxCpuUsage()
         {

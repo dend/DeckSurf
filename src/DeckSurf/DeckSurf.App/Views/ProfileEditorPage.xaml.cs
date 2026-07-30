@@ -34,13 +34,6 @@ namespace DeckSurf.App.Views
                 }
             });
             RegisterAccelerator(Windows.System.VirtualKey.N, Windows.System.VirtualKeyModifiers.Control, () => NewProfile_Click(this, new RoutedEventArgs()));
-            RegisterAccelerator(Windows.System.VirtualKey.F5, Windows.System.VirtualKeyModifiers.None, () =>
-            {
-                if (ViewModel.ToggleRuntimeCommand.CanExecute(null))
-                {
-                    ViewModel.ToggleRuntimeCommand.Execute(null);
-                }
-            });
         }
 
         private void RegisterAccelerator(Windows.System.VirtualKey key, Windows.System.VirtualKeyModifiers modifiers, Action action)

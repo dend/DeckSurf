@@ -32,6 +32,7 @@ namespace DeckSurf.App
 
             var runtimeService = Ioc.Default.GetRequiredService<RuntimeService>();
             runtimeService.StateChanged += (_, _) => DispatcherQueue.TryEnqueue(() => UpdateRuntimeStatus(runtimeService));
+            UpdateRuntimeStatus(runtimeService);
 
             RootNavigation.SelectedItem = DevicesItem;
         }
@@ -45,6 +46,7 @@ namespace DeckSurf.App
                 {
                     "editor" => typeof(Views.ProfileEditorPage),
                     "plugins" => typeof(Views.PluginsPage),
+                    "activity" => typeof(Views.ActivityPage),
                     "settings" => typeof(Views.SettingsPage),
                     _ => typeof(Views.DevicesPage),
                 };
@@ -60,17 +62,22 @@ namespace DeckSurf.App
             }
         }
 
+        // The runtime is automatic: while a device is connected, its active profile
+        // runs on it. The dot informs; there is nothing to start or stop.
         private void UpdateRuntimeStatus(RuntimeService runtimeService)
         {
-            if (runtimeService.IsRunning)
+            var activeSessions = runtimeService.ActiveSessions;
+            if (activeSessions.Count > 0)
             {
                 RuntimeStatusDot.Fill = (Brush)Application.Current.Resources["SystemFillColorSuccessBrush"];
-                RuntimeStatusText.Text = $"Running: {runtimeService.ActiveProfileName}";
+                RuntimeStatusText.Text = activeSessions.Count == 1
+                    ? $"Active on {activeSessions[0].DeviceName}"
+                    : $"Active on {activeSessions.Count} devices";
             }
             else
             {
                 RuntimeStatusDot.Fill = (Brush)Application.Current.Resources["SystemFillColorNeutralBrush"];
-                RuntimeStatusText.Text = "Stopped";
+                RuntimeStatusText.Text = "Idle";
             }
         }
     }

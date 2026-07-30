@@ -30,6 +30,44 @@ namespace DeckSurf.App.Services
         /// </summary>
         public ObservableCollection<string> PluginDirectories { get; } = [];
 
+        /// <summary>
+        /// Gets the active profile per device serial. While a device is connected,
+        /// its active profile runs on it automatically.
+        /// </summary>
+        public Dictionary<string, string> ActiveProfiles { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Records the active profile for a device and persists the choice.
+        /// Passing null clears the entry.
+        /// </summary>
+        public void SetActiveProfile(string serial, string? profileName)
+        {
+            if (string.IsNullOrWhiteSpace(serial))
+            {
+                return;
+            }
+
+            if (profileName is null)
+            {
+                if (!ActiveProfiles.Remove(serial))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                if (ActiveProfiles.TryGetValue(serial, out var current)
+                    && string.Equals(current, profileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                ActiveProfiles[serial] = profileName;
+            }
+
+            Save();
+        }
+
         public void ApplyTheme(ElementTheme theme)
         {
             Theme = theme;
@@ -104,6 +142,14 @@ namespace DeckSurf.App.Services
                             PluginDirectories.Add(directory);
                         }
                     }
+
+                    foreach (var (serial, profile) in settings.ActiveProfiles ?? [])
+                    {
+                        if (!string.IsNullOrWhiteSpace(serial) && !string.IsNullOrWhiteSpace(profile))
+                        {
+                            ActiveProfiles[serial] = profile;
+                        }
+                    }
                 }
             }
             catch (Exception)
@@ -121,6 +167,7 @@ namespace DeckSurf.App.Services
                 {
                     Theme = Theme.ToString(),
                     PluginDirectories = [.. PluginDirectories],
+                    ActiveProfiles = new Dictionary<string, string>(ActiveProfiles),
                 }));
             }
             catch (Exception)
@@ -134,6 +181,8 @@ namespace DeckSurf.App.Services
             public string? Theme { get; set; }
 
             public List<string>? PluginDirectories { get; set; }
+
+            public Dictionary<string, string>? ActiveProfiles { get; set; }
         }
     }
 }

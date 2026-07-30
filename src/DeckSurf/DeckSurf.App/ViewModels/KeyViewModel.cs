@@ -21,6 +21,14 @@ namespace DeckSurf.App.ViewModels
 
         public MappingTarget Target { get; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this target is the one being
+        /// configured. Drives the accent selection ring on the deck stage, which
+        /// carries the selection visibly on the dark face.
+        /// </summary>
+        [ObservableProperty]
+        public partial bool IsSelected { get; set; }
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasMapping))]
         [NotifyPropertyChangedFor(nameof(Label))]

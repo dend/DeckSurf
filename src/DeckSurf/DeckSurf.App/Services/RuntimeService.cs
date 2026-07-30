@@ -6,178 +6,228 @@ using DeckSurf.SDK.Util;
 namespace DeckSurf.App.Services
 {
     /// <summary>
-    /// A single entry in the runtime's button event log.
+    /// A single entry in the runtime activity log, attributed to the profile and
+    /// device it came from when the source is a running session.
     /// </summary>
-    public sealed record RuntimeLogEntry(DateTime Timestamp, string Message);
+    public sealed record ActivityEntry(DateTime Timestamp, string? ProfileName, string? DeviceName, string Message)
+    {
+        public string TimeText => Timestamp.ToString("HH:mm:ss");
+
+        public string SourceText => (ProfileName, DeviceName) switch
+        {
+            (null, null) => "System",
+            (null, var device) => device!,
+            (var profile, null) => profile!,
+            var (profile, device) => $"{profile} on {device}",
+        };
+    }
 
     /// <summary>
-    /// Hosts the live profile runtime: owns the single open device, loads plugin
-    /// command instances, dispatches button presses, and manages the
-    /// activation/dispose lifecycle. This is the GUI equivalent of `deck listen`.
+    /// Hosts the always-on profile runtime: while a device is connected, its active
+    /// profile runs on it automatically. One session per connected device, each
+    /// owning its open device handle, plugin command instances, and dispatch;
+    /// sessions reconcile on hotplug, profile save, and active-profile changes.
     /// </summary>
     public sealed class RuntimeService : IDisposable
     {
         private readonly PluginService pluginService;
         private readonly ProfileService profileService;
+        private readonly AppSettingsService appSettings;
         private readonly object stateLock = new();
+        private readonly Dictionary<string, Session> sessions = new(StringComparer.OrdinalIgnoreCase);
 
-        private ConnectedDevice? device;
-        private ConfigurationProfile? activeProfile;
-        private Dictionary<string, IReadOnlyList<IDeckSurfCommand>> commands = [];
-        private string? resumeProfileName;
+        private bool disposed;
 
-        public RuntimeService(PluginService pluginService, ProfileService profileService)
+        public RuntimeService(PluginService pluginService, ProfileService profileService, AppSettingsService appSettings)
         {
             this.pluginService = pluginService;
             this.profileService = profileService;
+            this.appSettings = appSettings;
 
-            // Auto-resume when the device for a profile stopped by disconnect reappears.
             DeviceManager.DeviceListChanged += OnDeviceListChanged;
+            pluginService.PluginsChanged += (_, _) => Task.Run(RestartAllSessions);
         }
 
         /// <summary>
-        /// Raised when the runtime starts, stops, or fails. Raised on arbitrary threads.
+        /// Raised when sessions start or stop. Raised on arbitrary threads.
         /// </summary>
         public event EventHandler? StateChanged;
 
         /// <summary>
-        /// Raised for every button-down event while running. Raised on arbitrary threads.
+        /// Raised for every runtime event. Raised on arbitrary threads.
         /// </summary>
-        public event EventHandler<RuntimeLogEntry>? ButtonEventLogged;
+        public event EventHandler<ActivityEntry>? ActivityLogged;
 
-        public bool IsRunning { get; private set; }
-
-        public string? ActiveProfileName { get; private set; }
+        public int ActiveSessionCount
+        {
+            get
+            {
+                lock (stateLock)
+                {
+                    return sessions.Count;
+                }
+            }
+        }
 
         /// <summary>
-        /// Gets the serial of the currently open device, when running.
+        /// Gets a snapshot of the running sessions as (serial, profile, device name).
         /// </summary>
-        public string? ActiveDeviceSerial => device?.Serial;
+        public IReadOnlyList<(string Serial, string ProfileName, string DeviceName)> ActiveSessions
+        {
+            get
+            {
+                lock (stateLock)
+                {
+                    return [.. sessions.Select(s => (s.Key, s.Value.ProfileName, s.Value.Device.Name))];
+                }
+            }
+        }
 
         /// <summary>
-        /// Starts the runtime for a stored profile. Throws when the profile or its
-        /// device cannot be loaded; the caller surfaces the message in the UI.
+        /// Records the active profile for a device and brings its session in line.
+        /// The profile selected in the editor becomes the device's active profile.
         /// </summary>
-        public void Start(string profileName)
+        public void SetActiveProfile(string serial, string profileName)
+        {
+            appSettings.SetActiveProfile(serial, profileName);
+            Sync();
+        }
+
+        /// <summary>
+        /// Re-applies a saved profile to any session currently running it.
+        /// </summary>
+        public void NotifyProfileSaved(string profileName)
         {
             lock (stateLock)
             {
-                StopCore();
+                var session = sessions.Values.FirstOrDefault(s => string.Equals(s.ProfileName, profileName, StringComparison.OrdinalIgnoreCase));
+                if (session is not null)
+                {
+                    var profile = profileService.GetProfile(profileName);
 
-                var profile = profileService.GetProfile(profileName)
-                    ?? throw new InvalidOperationException($"Profile '{profileName}' could not be loaded.");
+                    // The profile may now target a different device; reconcile
+                    // instead of hot-reloading onto the wrong hardware.
+                    if (profile is not null && string.Equals(profile.DeviceSerial, session.Device.Serial, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HotReload(session, profile);
+                        return;
+                    }
+                }
+            }
 
-                var openedDevice = DeviceManager.SetupDevice(profile);
+            Sync();
+        }
 
+        /// <summary>
+        /// Drops a deleted profile from every device that had it active and stops
+        /// its sessions.
+        /// </summary>
+        public void NotifyProfileDeleted(string profileName)
+        {
+            foreach (var serial in appSettings.ActiveProfiles
+                .Where(p => string.Equals(p.Value, profileName, StringComparison.OrdinalIgnoreCase))
+                .Select(p => p.Key)
+                .ToList())
+            {
+                appSettings.SetActiveProfile(serial, null);
+            }
+
+            Sync();
+        }
+
+        /// <summary>
+        /// Reconciles running sessions with connected devices and their active
+        /// profiles: connected device with an active profile gets a session,
+        /// everything else stops. A device with exactly one profile adopts it as
+        /// active automatically.
+        /// </summary>
+        public void Sync()
+        {
+            var changed = false;
+
+            lock (stateLock)
+            {
+                if (disposed)
+                {
+                    return;
+                }
+
+                List<(string Serial, string Name)> connected;
                 try
                 {
-                    openedDevice.ButtonPressed += OnButtonPressed;
-                    openedDevice.DeviceDisconnected += OnDeviceDisconnected;
+                    connected = [.. DeviceManager.GetDeviceList().Select(d => (d.Serial, d.Name))];
+                }
+                catch (Exception ex)
+                {
+                    Log(null, $"Device enumeration failed: {ex.Message}");
+                    return;
+                }
 
-                    var loadedCommands = new Dictionary<string, IReadOnlyList<IDeckSurfCommand>>();
-                    foreach (var plugin in pluginService.Plugins)
+                var desired = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var (serial, _) in connected)
+                {
+                    if (string.IsNullOrEmpty(serial))
                     {
-                        loadedCommands.Add(
-                            plugin.Id.ToLowerInvariant(),
-                            PluginLoader.LoadCompatibleCommands(plugin.Plugin, openedDevice.Model, message => Log(message)));
+                        continue;
                     }
 
-                    openedDevice.StartListening();
+                    if (!appSettings.ActiveProfiles.TryGetValue(serial, out var profileName))
+                    {
+                        // No explicit choice yet: a device with exactly one matching
+                        // profile adopts it, so plugging in just works.
+                        var candidates = ProfilesForSerial(serial);
+                        if (candidates.Count != 1)
+                        {
+                            continue;
+                        }
 
-                    device = openedDevice;
-                    activeProfile = profile;
-                    commands = loadedCommands;
-                    ActiveProfileName = profileName;
-                    resumeProfileName = profileName;
-                    IsRunning = true;
+                        profileName = candidates[0];
+                        appSettings.SetActiveProfile(serial, profileName);
+                    }
 
-                    ActivateMappings();
+                    if (profileService.GetProfile(profileName) is not null)
+                    {
+                        desired[serial] = profileName;
+                    }
                 }
-                catch
+
+                foreach (var serial in sessions.Keys.ToList())
                 {
-                    openedDevice.ButtonPressed -= OnButtonPressed;
-                    openedDevice.DeviceDisconnected -= OnDeviceDisconnected;
-                    openedDevice.Dispose();
-                    device = null;
-                    activeProfile = null;
-                    IsRunning = false;
-                    throw;
+                    if (!desired.TryGetValue(serial, out var wantedProfile)
+                        || !string.Equals(sessions[serial].ProfileName, wantedProfile, StringComparison.OrdinalIgnoreCase))
+                    {
+                        StopSession(serial);
+                        changed = true;
+                    }
+                }
+
+                foreach (var (serial, profileName) in desired)
+                {
+                    if (!sessions.ContainsKey(serial))
+                    {
+                        changed |= TryStartSession(serial, profileName);
+                    }
                 }
             }
 
-            Log($"Runtime started on profile '{profileName}'.");
-            StateChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Stops the runtime, disposing command instances and clearing the device.
-        /// Also cancels any pending auto-resume.
-        /// </summary>
-        public void Stop()
-        {
-            lock (stateLock)
+            if (changed)
             {
-                resumeProfileName = null;
-                if (!IsRunning)
-                {
-                    return;
-                }
-
-                StopCore();
+                StateChanged?.Invoke(this, EventArgs.Empty);
             }
-
-            Log("Runtime stopped.");
-            StateChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
-        /// Re-applies the active profile on the already-open device: disposes the
-        /// current command instances, reloads the stored profile, and re-runs
-        /// activation. Used after saving profile edits while running.
-        /// </summary>
-        public void HotRestart()
-        {
-            lock (stateLock)
-            {
-                if (!IsRunning || device is null || ActiveProfileName is null)
-                {
-                    return;
-                }
-
-                DisposeCommands();
-
-                activeProfile = profileService.GetProfile(ActiveProfileName)
-                    ?? throw new InvalidOperationException($"Profile '{ActiveProfileName}' could not be reloaded.");
-
-                var reloaded = new Dictionary<string, IReadOnlyList<IDeckSurfCommand>>();
-                foreach (var plugin in pluginService.Plugins)
-                {
-                    reloaded.Add(
-                        plugin.Id.ToLowerInvariant(),
-                        PluginLoader.LoadCompatibleCommands(plugin.Plugin, device.Model, message => Log(message)));
-                }
-
-                commands = reloaded;
-
-                device.ClearButtons();
-                ActivateMappings();
-            }
-
-            Log($"Profile '{ActiveProfileName}' re-applied.");
-        }
-
-        /// <summary>
-        /// Runs a short synchronous action against a device that is NOT owned by the
-        /// runtime (brightness, identify). When the runtime holds the requested device,
-        /// the action runs against the runtime's open instance instead of a second handle.
+        /// Runs a short synchronous action against a device. When a session owns the
+        /// requested device, the action runs against the session's open instance
+        /// instead of a second handle.
         /// </summary>
         public void WithDevice(string serial, Action<ConnectedDevice> action)
         {
             lock (stateLock)
             {
-                if (IsRunning && device is not null && string.Equals(device.Serial, serial, StringComparison.OrdinalIgnoreCase))
+                if (sessions.TryGetValue(serial, out var session))
                 {
-                    action(device);
+                    action(session.Device);
                     return;
                 }
             }
@@ -196,45 +246,148 @@ namespace DeckSurf.App.Services
         public void Dispose()
         {
             DeviceManager.DeviceListChanged -= OnDeviceListChanged;
-            Stop();
+
+            lock (stateLock)
+            {
+                disposed = true;
+                foreach (var serial in sessions.Keys.ToList())
+                {
+                    StopSession(serial);
+                }
+            }
         }
 
-        private void StopCore()
+        private List<string> ProfilesForSerial(string serial)
         {
-            if (device is null)
+            var matches = new List<string>();
+            foreach (var name in profileService.ListProfiles())
             {
-                DisposeCommands();
-                IsRunning = false;
-                ActiveProfileName = null;
-                activeProfile = null;
-                return;
+                var profile = profileService.GetProfile(name);
+                if (profile is not null && string.Equals(profile.DeviceSerial, serial, StringComparison.OrdinalIgnoreCase))
+                {
+                    matches.Add(name);
+                }
             }
 
-            DisposeCommands();
+            return matches;
+        }
 
-            device.ButtonPressed -= OnButtonPressed;
-            device.DeviceDisconnected -= OnDeviceDisconnected;
+        private bool TryStartSession(string serial, string profileName)
+        {
+            var profile = profileService.GetProfile(profileName);
+            if (profile is null)
+            {
+                return false;
+            }
 
+            ConnectedDevice openedDevice;
             try
             {
-                device.StopListening();
-                device.ClearButtons();
+                openedDevice = DeviceManager.SetupDevice(profile)
+                    ?? throw new InvalidOperationException("Device could not be opened.");
             }
             catch (Exception ex)
             {
-                Log($"Cleanup warning: {ex.Message}");
+                Log(null, $"Could not open device for profile '{profileName}': {ex.Message}");
+                return false;
             }
 
-            device.Dispose();
-            device = null;
-            activeProfile = null;
-            IsRunning = false;
-            ActiveProfileName = null;
+            var session = new Session(serial, profileName, profile, openedDevice);
+
+            try
+            {
+                session.ButtonHandler = (_, e) => OnButtonPressed(session, e);
+                session.DisconnectHandler = (_, _) => OnSessionDeviceDisconnected(session);
+                openedDevice.ButtonPressed += session.ButtonHandler;
+                openedDevice.DeviceDisconnected += session.DisconnectHandler;
+
+                session.Commands = LoadCommands(openedDevice, session);
+
+                openedDevice.StartListening();
+                sessions[serial] = session;
+                ActivateMappings(session);
+            }
+            catch (Exception ex)
+            {
+                openedDevice.ButtonPressed -= session.ButtonHandler;
+                openedDevice.DeviceDisconnected -= session.DisconnectHandler;
+                openedDevice.Dispose();
+                Log(null, $"Could not start profile '{profileName}': {ex.Message}");
+                return false;
+            }
+
+            Log(session, "Profile activated.");
+            return true;
         }
 
-        private void DisposeCommands()
+        private void StopSession(string serial)
         {
-            foreach (var commandGroup in commands.Values)
+            if (!sessions.TryGetValue(serial, out var session))
+            {
+                return;
+            }
+
+            sessions.Remove(serial);
+            DisposeCommands(session);
+
+            session.Device.ButtonPressed -= session.ButtonHandler;
+            session.Device.DeviceDisconnected -= session.DisconnectHandler;
+
+            try
+            {
+                session.Device.StopListening();
+                session.Device.ClearButtons();
+            }
+            catch (Exception ex)
+            {
+                Log(session, $"Cleanup warning: {ex.Message}");
+            }
+
+            session.Device.Dispose();
+            Log(session, "Profile deactivated.");
+        }
+
+        private void HotReload(Session session, ConfigurationProfile profile)
+        {
+            DisposeCommands(session);
+            session.Profile = profile;
+            session.Commands = LoadCommands(session.Device, session);
+            session.Device.ClearButtons();
+            ActivateMappings(session);
+            Log(session, "Profile changes applied.");
+        }
+
+        private void RestartAllSessions()
+        {
+            lock (stateLock)
+            {
+                foreach (var session in sessions.Values.ToList())
+                {
+                    var profile = profileService.GetProfile(session.ProfileName);
+                    if (profile is not null)
+                    {
+                        HotReload(session, profile);
+                    }
+                }
+            }
+        }
+
+        private Dictionary<string, IReadOnlyList<IDeckSurfCommand>> LoadCommands(ConnectedDevice device, Session session)
+        {
+            var loaded = new Dictionary<string, IReadOnlyList<IDeckSurfCommand>>();
+            foreach (var plugin in pluginService.Plugins)
+            {
+                loaded.Add(
+                    plugin.Id.ToLowerInvariant(),
+                    PluginLoader.LoadCompatibleCommands(plugin.Plugin, device.Model, message => Log(session, message)));
+            }
+
+            return loaded;
+        }
+
+        private void DisposeCommands(Session session)
+        {
+            foreach (var commandGroup in session.Commands.Values)
             {
                 foreach (var command in commandGroup)
                 {
@@ -244,47 +397,41 @@ namespace DeckSurf.App.Services
                     }
                     catch (Exception ex)
                     {
-                        Log($"Command dispose warning: {ex.Message}");
+                        Log(session, $"Command dispose warning: {ex.Message}");
                     }
                 }
             }
 
-            commands = [];
+            session.Commands = [];
         }
 
-        private void ActivateMappings()
+        private void ActivateMappings(Session session)
         {
-            if (activeProfile is null || device is null)
-            {
-                return;
-            }
-
-            foreach (var mapping in activeProfile.ButtonMap)
+            foreach (var mapping in session.Profile.ButtonMap)
             {
                 if (mapping.Target == MappingTarget.Screen)
                 {
-                    RenderScreenImage(mapping);
+                    RenderScreenImage(session, mapping);
                 }
 
-                var command = FindCommand(mapping);
+                var command = FindCommand(session, mapping);
                 if (command is not null)
                 {
                     try
                     {
-                        command.ExecuteOnActivation(mapping, device);
+                        command.ExecuteOnActivation(mapping, session.Device);
                     }
                     catch (Exception ex)
                     {
-                        Log($"Activation of '{mapping.Command}' failed: {ex.Message}");
+                        Log(session, $"Activation of '{mapping.Command}' failed: {ex.Message}");
                     }
                 }
             }
         }
 
-        private void RenderScreenImage(CommandMapping mapping)
+        private void RenderScreenImage(Session session, CommandMapping mapping)
         {
-            if (device is null
-                || !device.IsScreenSupported
+            if (!session.Device.IsScreenSupported
                 || string.IsNullOrEmpty(mapping.ButtonImagePath)
                 || !File.Exists(mapping.ButtonImagePath))
             {
@@ -295,60 +442,47 @@ namespace DeckSurf.App.Services
             {
                 var resized = ImageHelper.ResizeImage(
                     File.ReadAllBytes(mapping.ButtonImagePath),
-                    device.ScreenWidth,
-                    device.ScreenHeight,
+                    session.Device.ScreenWidth,
+                    session.Device.ScreenHeight,
                     DeviceRotation.None,
                     DeviceImageFormat.Jpeg);
-                device.SetScreen(resized, 0, device.ScreenWidth, device.ScreenHeight);
+                session.Device.SetScreen(resized, 0, session.Device.ScreenWidth, session.Device.ScreenHeight);
             }
             catch (Exception ex)
             {
-                Log($"Screen image render failed: {ex.Message}");
+                Log(session, $"Screen image render failed: {ex.Message}");
             }
         }
 
-        private IDeckSurfCommand? FindCommand(CommandMapping mapping)
+        private IDeckSurfCommand? FindCommand(Session session, CommandMapping mapping)
         {
             if (mapping.Plugin is null || mapping.Command is null)
             {
                 return null;
             }
 
-            return commands.TryGetValue(mapping.Plugin.ToLowerInvariant(), out var pluginCommands)
+            return session.Commands.TryGetValue(mapping.Plugin.ToLowerInvariant(), out var pluginCommands)
                 ? pluginCommands.FirstOrDefault(c => string.Equals(c.GetType().Name, mapping.Command, StringComparison.OrdinalIgnoreCase))
                 : null;
         }
 
-        private void OnButtonPressed(object? sender, ButtonPressEventArgs e)
+        private void OnButtonPressed(Session session, ButtonPressEventArgs e)
         {
-            Log($"Button {e.Id} {e.EventKind} ({e.ButtonKind}).");
-
-            ConfigurationProfile? profile;
-            ConnectedDevice? currentDevice;
-            lock (stateLock)
-            {
-                profile = activeProfile;
-                currentDevice = device;
-            }
-
-            if (profile is null || currentDevice is null)
-            {
-                return;
-            }
+            Log(session, $"Button {e.Id} {e.EventKind} ({e.ButtonKind}).");
 
             switch (e.ButtonKind)
             {
                 case ButtonKind.Knob:
-                    foreach (var knobMapping in profile.ButtonMap.Where(m => m.Target == MappingTarget.Knob && m.ButtonIndex == e.Id))
+                    foreach (var knobMapping in session.Profile.ButtonMap.Where(m => m.Target == MappingTarget.Knob && m.ButtonIndex == e.Id))
                     {
-                        ExecuteEvent(knobMapping, currentDevice, e);
+                        ExecuteEvent(session, knobMapping, e);
                     }
 
                     break;
                 case ButtonKind.Screen:
-                    foreach (var screenMapping in profile.ButtonMap.Where(m => m.Target == MappingTarget.Screen))
+                    foreach (var screenMapping in session.Profile.ButtonMap.Where(m => m.Target == MappingTarget.Screen))
                     {
-                        ExecuteEvent(screenMapping, currentDevice, e);
+                        ExecuteEvent(session, screenMapping, e);
                     }
 
                     break;
@@ -358,24 +492,24 @@ namespace DeckSurf.App.Services
                         return;
                     }
 
-                    var exactMatch = profile.ButtonMap.FirstOrDefault(m => m.Target == MappingTarget.Key && m.ButtonIndex == e.Id);
+                    var exactMatch = session.Profile.ButtonMap.FirstOrDefault(m => m.Target == MappingTarget.Key && m.ButtonIndex == e.Id);
                     if (exactMatch is not null)
                     {
-                        ExecuteAction(exactMatch, currentDevice);
+                        ExecuteAction(session, exactMatch);
                     }
 
-                    foreach (var catchAll in profile.ButtonMap.Where(m => m.Target == MappingTarget.Key && m.ButtonIndex == -1))
+                    foreach (var catchAll in session.Profile.ButtonMap.Where(m => m.Target == MappingTarget.Key && m.ButtonIndex == -1))
                     {
-                        ExecuteAction(catchAll, currentDevice, e.Id);
+                        ExecuteAction(session, catchAll, e.Id);
                     }
 
                     break;
             }
         }
 
-        private void ExecuteEvent(CommandMapping mapping, ConnectedDevice targetDevice, ButtonPressEventArgs e)
+        private void ExecuteEvent(Session session, CommandMapping mapping, ButtonPressEventArgs e)
         {
-            var command = FindCommand(mapping);
+            var command = FindCommand(session, mapping);
             if (command is null)
             {
                 return;
@@ -383,17 +517,17 @@ namespace DeckSurf.App.Services
 
             try
             {
-                command.ExecuteOnEvent(mapping, targetDevice, e);
+                command.ExecuteOnEvent(mapping, session.Device, e);
             }
             catch (Exception ex)
             {
-                Log($"Event handler '{mapping.Command}' failed: {ex.Message}");
+                Log(session, $"Event handler '{mapping.Command}' failed: {ex.Message}");
             }
         }
 
-        private void ExecuteAction(CommandMapping mapping, ConnectedDevice targetDevice, int activatingButton = -1)
+        private void ExecuteAction(Session session, CommandMapping mapping, int activatingButton = -1)
         {
-            var command = FindCommand(mapping);
+            var command = FindCommand(session, mapping);
             if (command is null)
             {
                 return;
@@ -401,72 +535,59 @@ namespace DeckSurf.App.Services
 
             try
             {
-                command.ExecuteOnAction(mapping, targetDevice, activatingButton);
+                command.ExecuteOnAction(mapping, session.Device, activatingButton);
             }
             catch (Exception ex)
             {
-                Log($"Action '{mapping.Command}' failed: {ex.Message}");
+                Log(session, $"Action '{mapping.Command}' failed: {ex.Message}");
             }
         }
 
-        private void OnDeviceDisconnected(object? sender, EventArgs e)
+        private void OnSessionDeviceDisconnected(Session session)
         {
-            var profileToResume = ActiveProfileName;
+            var changed = false;
 
             lock (stateLock)
             {
-                if (!IsRunning)
+                if (sessions.TryGetValue(session.Serial, out var current) && ReferenceEquals(current, session))
                 {
-                    return;
+                    StopSession(session.Serial);
+                    changed = true;
                 }
-
-                DisposeCommands();
-
-                if (device is not null)
-                {
-                    device.ButtonPressed -= OnButtonPressed;
-                    device.DeviceDisconnected -= OnDeviceDisconnected;
-                    device.Dispose();
-                    device = null;
-                }
-
-                activeProfile = null;
-                IsRunning = false;
-                ActiveProfileName = null;
-                resumeProfileName = profileToResume;
             }
 
-            Log("Device disconnected. The runtime stopped and will resume when the device returns.");
-            StateChanged?.Invoke(this, EventArgs.Empty);
+            if (changed)
+            {
+                Log(null, $"{session.Device.Name} disconnected. Its profile resumes when it returns.");
+                StateChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         private void OnDeviceListChanged(object? sender, DeviceListChangedEventArgs e)
         {
-            string? profileName;
-            lock (stateLock)
-            {
-                if (IsRunning || resumeProfileName is null || e.Added.Count == 0)
-                {
-                    return;
-                }
-
-                profileName = resumeProfileName;
-            }
-
-            try
-            {
-                Start(profileName);
-                Log($"Device reconnected. Resumed profile '{profileName}'.");
-            }
-            catch (Exception ex)
-            {
-                Log($"Auto-resume failed: {ex.Message}");
-            }
+            Sync();
         }
 
-        private void Log(string message)
+        private void Log(Session? session, string message)
         {
-            ButtonEventLogged?.Invoke(this, new RuntimeLogEntry(DateTime.Now, message));
+            ActivityLogged?.Invoke(this, new ActivityEntry(DateTime.Now, session?.ProfileName, session?.Device.Name, message));
+        }
+
+        private sealed class Session(string serial, string profileName, ConfigurationProfile profile, ConnectedDevice device)
+        {
+            public string Serial { get; } = serial;
+
+            public string ProfileName { get; } = profileName;
+
+            public ConfigurationProfile Profile { get; set; } = profile;
+
+            public ConnectedDevice Device { get; } = device;
+
+            public Dictionary<string, IReadOnlyList<IDeckSurfCommand>> Commands { get; set; } = [];
+
+            public EventHandler<ButtonPressEventArgs>? ButtonHandler { get; set; }
+
+            public EventHandler<EventArgs>? DisconnectHandler { get; set; }
         }
     }
 }

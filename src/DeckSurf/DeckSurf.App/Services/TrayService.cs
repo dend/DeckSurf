@@ -41,15 +41,11 @@ namespace DeckSurf.App.Services
             var openItem = new MenuFlyoutItem { Text = "Open DeckSurf" };
             openItem.Click += (_, _) => ShowWindow();
 
-            var stopItem = new MenuFlyoutItem { Text = "Stop runtime" };
-            stopItem.Click += (_, _) => Task.Run(runtimeService.Stop);
-
             var exitItem = new MenuFlyoutItem { Text = "Exit" };
             exitItem.Click += (_, _) => Exit();
 
             var menu = new MenuFlyout();
             menu.Items.Add(openItem);
-            menu.Items.Add(stopItem);
             menu.Items.Add(new MenuFlyoutSeparator());
             menu.Items.Add(exitItem);
 
@@ -91,7 +87,7 @@ namespace DeckSurf.App.Services
 
             try
             {
-                runtimeService.Stop();
+                runtimeService.Dispose();
             }
             catch (Exception)
             {
