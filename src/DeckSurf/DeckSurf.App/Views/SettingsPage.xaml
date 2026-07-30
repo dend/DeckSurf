@@ -11,7 +11,7 @@
     NavigationCacheMode="Required">
 
     <ScrollViewer Padding="28,20,28,0">
-        <StackPanel Width="1000" HorizontalAlignment="Left" Spacing="24" Margin="0,0,0,24">
+        <StackPanel Spacing="24" Margin="0,0,0,24">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />

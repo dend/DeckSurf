@@ -11,7 +11,7 @@
     NavigationCacheMode="Required">
 
     <Grid Padding="28,20,28,0">
-        <Grid Width="1000" HorizontalAlignment="Left">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />

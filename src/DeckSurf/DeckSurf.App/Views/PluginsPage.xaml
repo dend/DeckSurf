@@ -296,7 +296,7 @@
     </Page.Resources>
 
     <Grid Padding="28,20,28,0">
-        <Grid Width="1000" HorizontalAlignment="Left">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -340,10 +340,10 @@
                 <ItemsControl ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}" Margin="0,0,0,24">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="services:PluginInfo">
-                            <!-- One plugin = single-line section head + a 4-column tile
-                                 grid: 4 x 236 + 3 x 8 = 968, so four columns hold even
-                                 when a reserved scrollbar narrows the viewport, and
-                                 ItemsStretch=Fill runs the tiles out to the rail. -->
+                            <!-- One plugin = single-line section head + a tile grid on
+                                 the full content width; MinItemWidth 236 yields five
+                                 columns at the locked window width and ItemsStretch=Fill
+                                 runs the tiles out to the page's right rail. -->
                             <StackPanel Margin="0,0,0,24">
                                 <Grid ColumnSpacing="8" Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
