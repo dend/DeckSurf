@@ -17,34 +17,31 @@
                 </CommandBar.Content>
             </CommandBar>
 
-            <TextBlock Text="Appearance" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,0,0,8" />
-            <tk:SettingsCard Header="App theme" Description="Restart is not required.">
+            <tk:SettingsCard Header="App theme" Description="Changes apply immediately.">
                 <tk:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE790;" />
+                    <FontIcon Glyph="&#xE790;" Foreground="#FF9A6CFF" />
                 </tk:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="ThemeSelector" MinWidth="140" SelectionChanged="ThemeSelector_SelectionChanged">
+                <ComboBox x:Name="ThemeSelector" MinWidth="160" SelectionChanged="ThemeSelector_SelectionChanged">
                     <ComboBoxItem Content="Use system setting" Tag="Default" />
                     <ComboBoxItem Content="Light" Tag="Light" />
                     <ComboBoxItem Content="Dark" Tag="Dark" />
                 </ComboBox>
             </tk:SettingsCard>
 
-            <TextBlock Text="Storage" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,8" />
             <tk:SettingsCard Header="Profiles folder" Description="{x:Bind ProfilesPath}">
                 <tk:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE8B7;" />
+                    <FontIcon Glyph="&#xE8B7;" Foreground="#FFFFC83D" />
                 </tk:SettingsCard.HeaderIcon>
                 <Button Content="Open" Click="OpenProfilesFolder_Click" />
             </tk:SettingsCard>
 
-            <TextBlock Text="Plugins" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,8" />
             <tk:SettingsExpander
                 Header="Plugin folders"
                 Description="{x:Bind BuiltInPathsText}"
                 IsExpanded="True"
                 ItemsSource="{x:Bind CustomFolders}">
                 <tk:SettingsExpander.HeaderIcon>
-                    <FontIcon Glyph="&#xEA86;" />
+                    <FontIcon Glyph="&#xEA86;" Foreground="#FF00B7C3" />
                 </tk:SettingsExpander.HeaderIcon>
                 <Button Click="AddPluginFolder_Click" AutomationProperties.Name="Add plugin folder">
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -63,10 +60,9 @@
                 </tk:SettingsExpander.ItemTemplate>
             </tk:SettingsExpander>
 
-            <TextBlock Text="About" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,8" />
-            <tk:SettingsCard Header="DeckSurf" Description="{x:Bind AboutText}">
+            <tk:SettingsCard Header="DeckSurf" Description="{x:Bind AboutText}" Margin="0,16,0,0">
                 <tk:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE946;" />
+                    <FontIcon Glyph="&#xE946;" Foreground="#FF60CDFF" />
                 </tk:SettingsCard.HeaderIcon>
                 <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/dend/decksurf" />
             </tk:SettingsCard>
