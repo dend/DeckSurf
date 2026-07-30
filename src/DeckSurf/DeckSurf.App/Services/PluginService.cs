@@ -18,19 +18,9 @@ namespace DeckSurf.App.Services
     {
         private const int AllKnownModelCount = 9;
 
-        public string ModelsText => CompatibleModels.Count is 0 or >= AllKnownModelCount
-            ? "All models"
-            : string.Join(", ", CompatibleModels);
-
         public IReadOnlyList<string> ModelChips => CompatibleModels.Count is 0 or >= AllKnownModelCount
             ? ["All models"]
             : [.. CompatibleModels.Select(m => m.ToString())];
-
-        public string ParametersText => Parameters.Count == 0
-            ? "No settings"
-            : "Settings: " + string.Join(", ", Parameters.Select(p => p.DisplayName ?? p.Key));
-
-        public string MetaText => $"{ModelsText} ({ParametersText})";
 
         public bool HasParameters => Parameters.Count > 0;
 
@@ -69,17 +59,16 @@ namespace DeckSurf.App.Services
                 meta += " (required)";
             }
 
-            return new ParameterRow(p.DisplayName ?? p.Key, meta, p.Description ?? string.Empty);
+            return new ParameterRow(p.DisplayName ?? p.Key, meta, string.IsNullOrEmpty(p.Description) ? null : p.Description);
         })];
     }
 
     /// <summary>
-    /// One declared command parameter, shaped for display.
+    /// One declared command parameter, shaped for display. Description must stay null
+    /// (not empty) when there is no help text so SettingsCard collapses its
+    /// description presenter.
     /// </summary>
-    public sealed record ParameterRow(string Name, string Meta, string Description)
-    {
-        public bool HasDescription => !string.IsNullOrEmpty(Description);
-    }
+    public sealed record ParameterRow(string Name, string Meta, string? Description);
 
     /// <summary>
     /// Metadata for a loaded plugin and its commands.

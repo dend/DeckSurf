@@ -10,6 +10,28 @@
     mc:Ignorable="d"
     NavigationCacheMode="Required">
 
+    <Page.Resources>
+        <!-- Neutral device chip: control fill + secondary text = metadata, not action. -->
+        <DataTemplate x:Key="DeviceChipTemplate" x:DataType="x:String">
+            <Border
+                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="8,2"
+                VerticalAlignment="Center">
+                <TextBlock
+                    Text="{x:Bind}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Border>
+        </DataTemplate>
+
+        <ItemsPanelTemplate x:Key="HorizontalChipsPanel">
+            <StackPanel Orientation="Horizontal" Spacing="6" />
+        </ItemsPanelTemplate>
+    </Page.Resources>
+
     <ScrollViewer Padding="28,20,28,0">
         <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,0,0,24">
             <CommandBar DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Background="Transparent" IsOpen="False" Margin="0,0,0,8">
@@ -54,74 +76,81 @@
             <ItemsControl ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="services:PluginInfo">
-                        <tk:SettingsExpander
-                            Header="{x:Bind DisplayName}"
-                            Description="{x:Bind Subtitle}"
-                            IsExpanded="True"
-                            HorizontalAlignment="Stretch"
-                            ItemsSource="{x:Bind Commands}"
-                            Margin="0,0,0,8">
-                            <tk:SettingsExpander.HeaderIcon>
-                                <ImageIcon Source="ms-appx:///Assets/Icons/puzzle_piece.png" />
-                            </tk:SettingsExpander.HeaderIcon>
-                            <tk:SettingsExpander.ItemTemplate>
-                                <DataTemplate x:DataType="services:CommandInfo">
-                                    <tk:SettingsCard
-                                        Header="{x:Bind DisplayName}"
-                                        Description="{x:Bind Description}">
-                                        <Button Content="Details">
-                                            <Button.Flyout>
-                                                <Flyout Placement="LeftEdgeAlignedTop">
-                                                    <StackPanel Spacing="14" Width="360">
-                                                        <StackPanel Spacing="4">
-                                                            <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="16" />
-                                                            <TextBlock Text="{x:Bind Description}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" />
-                                                        </StackPanel>
+                        <!-- One plugin = one Settings-style section: text header + tight card stack. -->
+                        <StackPanel Margin="0,0,0,16">
+                            <TextBlock
+                                Text="{x:Bind DisplayName}"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Margin="1,8,0,0" />
+                            <TextBlock
+                                Text="{x:Bind Subtitle}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Margin="1,2,0,8" />
 
-                                                        <StackPanel Spacing="8">
-                                                            <TextBlock Text="Supported devices" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
-                                                            <ItemsControl ItemsSource="{x:Bind ModelChips}">
-                                                                <ItemsControl.ItemsPanel>
-                                                                    <ItemsPanelTemplate>
-                                                                        <StackPanel Orientation="Horizontal" Spacing="6" />
-                                                                    </ItemsPanelTemplate>
-                                                                </ItemsControl.ItemsPanel>
-                                                                <ItemsControl.ItemTemplate>
-                                                                    <DataTemplate x:DataType="x:String">
-                                                                        <Border Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,4">
-                                                                            <TextBlock Text="{x:Bind}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                                                                        </Border>
-                                                                    </DataTemplate>
-                                                                </ItemsControl.ItemTemplate>
-                                                            </ItemsControl>
-                                                        </StackPanel>
+                            <ItemsControl ItemsSource="{x:Bind Commands}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="2" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="services:CommandInfo">
+                                        <Grid>
+                                            <!-- No settings: a flat card. No chevron, no button, nothing to open. -->
+                                            <tk:SettingsCard
+                                                Header="{x:Bind DisplayName}"
+                                                Description="{x:Bind Description}"
+                                                Visibility="{x:Bind HasNoParameters}">
+                                                <ItemsControl
+                                                    ItemsSource="{x:Bind ModelChips}"
+                                                    ItemTemplate="{StaticResource DeviceChipTemplate}"
+                                                    ItemsPanel="{StaticResource HorizontalChipsPanel}"
+                                                    ToolTipService.ToolTip="Supported devices"
+                                                    AutomationProperties.Name="Supported devices" />
+                                            </tk:SettingsCard>
 
-                                                        <StackPanel Spacing="8" Visibility="{x:Bind HasParameters}">
-                                                            <TextBlock Text="Settings" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
-                                                            <ItemsControl ItemsSource="{x:Bind ParameterRows}">
-                                                                <ItemsControl.ItemTemplate>
-                                                                    <DataTemplate x:DataType="services:ParameterRow">
-                                                                        <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
-                                                                            <StackPanel Spacing="2">
-                                                                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="13" />
-                                                                                <TextBlock Text="{x:Bind Meta}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" />
-                                                                                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
-                                                                            </StackPanel>
-                                                                        </Border>
-                                                                    </DataTemplate>
-                                                                </ItemsControl.ItemTemplate>
-                                                            </ItemsControl>
-                                                        </StackPanel>
-
-                                                        <TextBlock Text="This command has no settings." Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" Visibility="{x:Bind HasNoParameters}" />
-                                                    </StackPanel>
-                                                </Flyout>
-                                            </Button.Flyout>
-                                        </Button>
-                                    </tk:SettingsCard>
-                                </DataTemplate>
-                            </tk:SettingsExpander.ItemTemplate>
-                        </tk:SettingsExpander>
+                                            <!-- Has settings: the row itself expands, PowerToys-style. -->
+                                            <tk:SettingsExpander
+                                                Header="{x:Bind DisplayName}"
+                                                Description="{x:Bind Description}"
+                                                Visibility="{x:Bind HasParameters}"
+                                                ItemsSource="{x:Bind ParameterRows}"
+                                                HorizontalAlignment="Stretch">
+                                                <tk:SettingsExpander.Content>
+                                                    <ItemsControl
+                                                        ItemsSource="{x:Bind ModelChips}"
+                                                        ItemTemplate="{StaticResource DeviceChipTemplate}"
+                                                        ItemsPanel="{StaticResource HorizontalChipsPanel}"
+                                                        ToolTipService.ToolTip="Supported devices"
+                                                        AutomationProperties.Name="Supported devices" />
+                                                </tk:SettingsExpander.Content>
+                                                <tk:SettingsExpander.ItemTemplate>
+                                                    <DataTemplate x:DataType="services:ParameterRow">
+                                                        <!-- Name left, help text under it, type/default as the right-hand value.
+                                                             Local Padding overrides the toolkit's 58px icon indent so parameter
+                                                             names align flush with the command name above. -->
+                                                        <tk:SettingsCard
+                                                            Header="{x:Bind Name}"
+                                                            Description="{x:Bind Description}"
+                                                            Padding="16,8,16,8">
+                                                            <TextBlock
+                                                                Text="{x:Bind Meta}"
+                                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                TextWrapping="Wrap"
+                                                                TextAlignment="Right"
+                                                                MaxWidth="280"
+                                                                VerticalAlignment="Center" />
+                                                        </tk:SettingsCard>
+                                                    </DataTemplate>
+                                                </tk:SettingsExpander.ItemTemplate>
+                                            </tk:SettingsExpander>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
