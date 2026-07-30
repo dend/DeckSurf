@@ -69,7 +69,19 @@
                                     <tk:SettingsCard
                                         Header="{x:Bind DisplayName}"
                                         Description="{x:Bind Description}">
-                                        <Button Content="Details" Click="CommandCard_Click" />
+                                        <Button Content="Details">
+                                            <Button.Flyout>
+                                                <Flyout Placement="LeftEdgeAlignedTop">
+                                                    <StackPanel Spacing="10" MaxWidth="380">
+                                                        <TextBlock Text="{x:Bind DisplayName}" FontWeight="SemiBold" FontSize="16" />
+                                                        <TextBlock Text="{x:Bind Description}" TextWrapping="Wrap" Opacity="0.85" />
+                                                        <TextBlock Text="{x:Bind ModelsLine}" TextWrapping="Wrap" Opacity="0.7" />
+                                                        <TextBlock Text="Settings" FontWeight="SemiBold" Margin="0,4,0,0" />
+                                                        <TextBlock Text="{x:Bind ParametersDetailText}" TextWrapping="Wrap" Opacity="0.7" FontSize="12" />
+                                                    </StackPanel>
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
                                     </tk:SettingsCard>
                                 </DataTemplate>
                             </tk:SettingsExpander.ItemTemplate>

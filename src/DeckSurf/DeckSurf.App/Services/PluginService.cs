@@ -31,6 +31,50 @@ namespace DeckSurf.App.Services
             : "Settings: " + string.Join(", ", Parameters.Select(p => p.DisplayName ?? p.Key));
 
         public string MetaText => $"{ModelsText} ({ParametersText})";
+
+        public string ModelsLine => $"Supported devices: {ModelsText}";
+
+        /// <summary>
+        /// Gets a multi-line description of the declared parameters for the details flyout.
+        /// </summary>
+        public string ParametersDetailText
+        {
+            get
+            {
+                if (Parameters.Count == 0)
+                {
+                    return "This command has no settings.";
+                }
+
+                var lines = new List<string>();
+                foreach (var parameter in Parameters)
+                {
+                    var details = parameter.ParameterType.ToString();
+                    if (parameter.Choices is { Length: > 0 })
+                    {
+                        details += $" ({string.Join(", ", parameter.Choices)})";
+                    }
+
+                    if (!string.IsNullOrEmpty(parameter.DefaultValue))
+                    {
+                        details += $", default {parameter.DefaultValue}";
+                    }
+
+                    if (parameter.Required)
+                    {
+                        details += ", required";
+                    }
+
+                    lines.Add($"{parameter.DisplayName ?? parameter.Key}: {details}");
+                    if (!string.IsNullOrEmpty(parameter.Description))
+                    {
+                        lines.Add($"   {parameter.Description}");
+                    }
+                }
+
+                return string.Join(Environment.NewLine, lines);
+            }
+        }
     }
 
     /// <summary>
