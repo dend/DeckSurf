@@ -72,12 +72,48 @@
                                         <Button Content="Details">
                                             <Button.Flyout>
                                                 <Flyout Placement="LeftEdgeAlignedTop">
-                                                    <StackPanel Spacing="10" MaxWidth="380">
-                                                        <TextBlock Text="{x:Bind DisplayName}" FontWeight="SemiBold" FontSize="16" />
-                                                        <TextBlock Text="{x:Bind Description}" TextWrapping="Wrap" Opacity="0.85" />
-                                                        <TextBlock Text="{x:Bind ModelsLine}" TextWrapping="Wrap" Opacity="0.7" />
-                                                        <TextBlock Text="Settings" FontWeight="SemiBold" Margin="0,4,0,0" />
-                                                        <TextBlock Text="{x:Bind ParametersDetailText}" TextWrapping="Wrap" Opacity="0.7" FontSize="12" />
+                                                    <StackPanel Spacing="14" Width="360">
+                                                        <StackPanel Spacing="4">
+                                                            <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="16" />
+                                                            <TextBlock Text="{x:Bind Description}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" />
+                                                        </StackPanel>
+
+                                                        <StackPanel Spacing="8">
+                                                            <TextBlock Text="Supported devices" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
+                                                            <ItemsControl ItemsSource="{x:Bind ModelChips}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate>
+                                                                        <StackPanel Orientation="Horizontal" Spacing="6" />
+                                                                    </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate x:DataType="x:String">
+                                                                        <Border Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,4">
+                                                                            <TextBlock Text="{x:Bind}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+
+                                                        <StackPanel Spacing="8" Visibility="{x:Bind HasParameters}">
+                                                            <TextBlock Text="Settings" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
+                                                            <ItemsControl ItemsSource="{x:Bind ParameterRows}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate x:DataType="services:ParameterRow">
+                                                                        <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
+                                                                            <StackPanel Spacing="2">
+                                                                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="13" />
+                                                                                <TextBlock Text="{x:Bind Meta}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" />
+                                                                                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+                                                                            </StackPanel>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+
+                                                        <TextBlock Text="This command has no settings." Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" Visibility="{x:Bind HasNoParameters}" />
                                                     </StackPanel>
                                                 </Flyout>
                                             </Button.Flyout>

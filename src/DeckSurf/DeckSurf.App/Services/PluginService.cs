@@ -32,49 +32,53 @@ namespace DeckSurf.App.Services
 
         public string MetaText => $"{ModelsText} ({ParametersText})";
 
-        public string ModelsLine => $"Supported devices: {ModelsText}";
+        public bool HasParameters => Parameters.Count > 0;
+
+        public bool HasNoParameters => Parameters.Count == 0;
 
         /// <summary>
-        /// Gets a multi-line description of the declared parameters for the details flyout.
+        /// Gets structured parameter rows for the details flyout.
         /// </summary>
-        public string ParametersDetailText
+        public IReadOnlyList<ParameterRow> ParameterRows => [.. Parameters.Select(p =>
         {
-            get
+            var meta = p.ParameterType switch
             {
-                if (Parameters.Count == 0)
-                {
-                    return "This command has no settings.";
-                }
+                CommandParameterType.String => "Text",
+                CommandParameterType.Integer => "Number",
+                CommandParameterType.Boolean => "On/off",
+                CommandParameterType.Choice => "Choice",
+                CommandParameterType.FilePath => "File path",
+                CommandParameterType.FolderPath => "Folder path",
+                CommandParameterType.ImagePath => "Image file",
+                CommandParameterType.DurationSeconds => "Duration in seconds",
+                _ => p.ParameterType.ToString(),
+            };
 
-                var lines = new List<string>();
-                foreach (var parameter in Parameters)
-                {
-                    var details = parameter.ParameterType.ToString();
-                    if (parameter.Choices is { Length: > 0 })
-                    {
-                        details += $" ({string.Join(", ", parameter.Choices)})";
-                    }
-
-                    if (!string.IsNullOrEmpty(parameter.DefaultValue))
-                    {
-                        details += $", default {parameter.DefaultValue}";
-                    }
-
-                    if (parameter.Required)
-                    {
-                        details += ", required";
-                    }
-
-                    lines.Add($"{parameter.DisplayName ?? parameter.Key}: {details}");
-                    if (!string.IsNullOrEmpty(parameter.Description))
-                    {
-                        lines.Add($"   {parameter.Description}");
-                    }
-                }
-
-                return string.Join(Environment.NewLine, lines);
+            if (p.Choices is { Length: > 0 })
+            {
+                meta += $": {string.Join(" | ", p.Choices)}";
             }
-        }
+
+            if (!string.IsNullOrEmpty(p.DefaultValue))
+            {
+                meta += $" (default {p.DefaultValue})";
+            }
+
+            if (p.Required)
+            {
+                meta += " (required)";
+            }
+
+            return new ParameterRow(p.DisplayName ?? p.Key, meta, p.Description ?? string.Empty);
+        })];
+    }
+
+    /// <summary>
+    /// One declared command parameter, shaped for display.
+    /// </summary>
+    public sealed record ParameterRow(string Name, string Meta, string Description)
+    {
+        public bool HasDescription => !string.IsNullOrEmpty(Description);
     }
 
     /// <summary>
