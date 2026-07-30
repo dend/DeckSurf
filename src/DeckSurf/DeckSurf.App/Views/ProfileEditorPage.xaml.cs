@@ -17,11 +17,6 @@ namespace DeckSurf.App.Views
         // column gap, and the key-configuration inspector in its expanded state.
         private const int NonGridWidth = 760;
 
-        private const double InspectorExpandedWidth = 380;
-        private const double InspectorCollapsedWidth = 52;
-
-        private bool inspectorCollapsed;
-
         public ProfileEditorPage()
         {
             InitializeComponent();
@@ -88,24 +83,9 @@ namespace DeckSurf.App.Views
 
             KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
 
-            // The any-key strip shares the deck card's width so the two read as one
-            // cohesive stage (grid width + card padding + border).
-            AnyKeyCard.Width = KeyGrid.Width + 30;
-
             Ioc.Default.GetRequiredService<WindowService>().SetMinimumSize(
                 (ViewModel.GridColumns * TileSlotWidth) + NonGridWidth,
                 560);
-        }
-
-        private void ToggleInspector_Click(object sender, RoutedEventArgs e)
-        {
-            inspectorCollapsed = !inspectorCollapsed;
-
-            InspectorColumn.Width = new GridLength(inspectorCollapsed ? InspectorCollapsedWidth : InspectorExpandedWidth);
-            InspectorBody.Visibility = inspectorCollapsed ? Visibility.Collapsed : Visibility.Visible;
-            InspectorTitle.Visibility = inspectorCollapsed ? Visibility.Collapsed : Visibility.Visible;
-            InspectorToggleGlyph.Glyph = inspectorCollapsed ? "\uE76B" : "\uE76C";
-            ToolTipService.SetToolTip(InspectorToggle, inspectorCollapsed ? "Expand panel" : "Collapse panel");
         }
 
         // All target lists (keys, catch-alls, knobs, screen) share single-selection:

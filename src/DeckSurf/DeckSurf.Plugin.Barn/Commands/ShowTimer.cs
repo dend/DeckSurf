@@ -8,15 +8,6 @@ using System.IO;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
-    [CompatibleWith(DeviceModel.XL)]
-    [CompatibleWith(DeviceModel.XL2022)]
-    [CompatibleWith(DeviceModel.Original)]
-    [CompatibleWith(DeviceModel.Original2019)]
-    [CompatibleWith(DeviceModel.MK2)]
-    [CompatibleWith(DeviceModel.Mini)]
-    [CompatibleWith(DeviceModel.Mini2022)]
-    [CompatibleWith(DeviceModel.Plus)]
-    [CompatibleWith(DeviceModel.Neo)]
     [CommandParameter("mode", CommandParameterType.Choice, DisplayName = "Mode", Description = "Clock shows the current time; stopwatch counts up; timer counts down.", Choices = new[] { "clock", "stopwatch", "timer" }, DefaultValue = "clock", Order = 0)]
     [CommandParameter("duration", CommandParameterType.DurationSeconds, DisplayName = "Duration (seconds)", Description = "Countdown length. Only used in timer mode.", DefaultValue = "300", MinValue = 1, Order = 1)]
     class ShowTimer : IDeckSurfCommand

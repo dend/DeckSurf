@@ -240,7 +240,7 @@
         <Grid Grid.Row="2" ColumnSpacing="16" Margin="0,8,0,0" Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition x:Name="InspectorColumn" Width="380" />
+                <ColumnDefinition Width="340" />
             </Grid.ColumnDefinitions>
 
             <ScrollViewer Grid.Column="0">
@@ -366,99 +366,93 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- Key inspector: fixed-width side panel with a collapse-to-rail toggle so
-                 the layout never reflows with selection state. -->
-            <Border
-                Grid.Column="1"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="8"
-                Padding="12">
-                <Grid RowSpacing="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
+            <!-- Key inspector: a seamless side pane on the page layer, separated by a
+                 hairline divider, with a contextual header naming the selected target. -->
+            <Grid Grid.Column="1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1,0,0,0" Padding="20,4,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0">
-                        <TextBlock x:Name="InspectorTitle" Text="Key configuration" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" Margin="4,0,0,0" />
-                        <Button
-                            x:Name="InspectorToggle"
-                            HorizontalAlignment="Right"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Padding="6"
-                            Click="ToggleInspector_Click"
-                            ToolTipService.ToolTip="Collapse panel"
-                            AutomationProperties.Name="Collapse key configuration panel">
-                            <FontIcon x:Name="InspectorToggleGlyph" Glyph="&#xE76C;" FontSize="12" />
-                        </Button>
-                    </Grid>
+                <Grid Grid.Row="0" Margin="0,0,12,16">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{x:Bind ViewModel.InspectorTitle, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="{x:Bind ViewModel.InspectorSubtitle, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}" />
+                    </StackPanel>
+                    <Button
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="6"
+                        Command="{x:Bind ViewModel.ClearSelectedKeyCommand}"
+                        Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}"
+                        ToolTipService.ToolTip="Clear this key"
+                        AutomationProperties.Name="Clear this key">
+                        <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                    </Button>
+                </Grid>
 
-                    <ScrollViewer x:Name="InspectorBody" Grid.Row="1">
-                        <StackPanel Spacing="12" Margin="4,4,12,4">
-                            <TextBlock
-                                Text="Select a key on the grid to configure it."
-                                Opacity="0.7"
-                                TextWrapping="Wrap"
-                                Visibility="{x:Bind ViewModel.HasNoSelectedKey, Mode=OneWay}" />
+                <ScrollViewer Grid.Row="1">
+                    <StackPanel Margin="0,0,12,8">
+                        <TextBlock
+                            Text="Select a key on the grid to configure it."
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Opacity="0.7"
+                            TextWrapping="Wrap"
+                            Visibility="{x:Bind ViewModel.HasNoSelectedKey, Mode=OneWay}" />
 
-                            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}">
-                                <ComboBox
-                                    Header="Plugin"
-                                    HorizontalAlignment="Stretch"
-                                    ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}"
-                                    DisplayMemberPath="DisplayName"
-                                    SelectedItem="{Binding SelectedPlugin, Mode=TwoWay}" />
+                        <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}">
+                            <ComboBox
+                                Header="Plugin"
+                                HorizontalAlignment="Stretch"
+                                ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}"
+                                DisplayMemberPath="DisplayName"
+                                SelectedItem="{Binding SelectedPlugin, Mode=TwoWay}" />
 
-                                <ComboBox
-                                    Header="Command"
-                                    HorizontalAlignment="Stretch"
-                                    ItemsSource="{x:Bind ViewModel.AvailableCommands, Mode=OneWay}"
-                                    DisplayMemberPath="DisplayName"
-                                    SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" />
+                            <ComboBox
+                                Header="Command"
+                                HorizontalAlignment="Stretch"
+                                ItemsSource="{x:Bind ViewModel.AvailableCommands, Mode=OneWay}"
+                                DisplayMemberPath="DisplayName"
+                                SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" />
 
-                                <StackPanel Spacing="4">
-                                    <TextBlock Text="Button image (optional)" Style="{StaticResource BodyTextBlockStyle}" />
-                                    <Grid ColumnSpacing="8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <Border Grid.Column="0" Width="48" Height="48" CornerRadius="6" Background="{ThemeResource ControlFillColorSecondaryBrush}">
-                                            <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="48" Height="48" Stretch="UniformToFill" />
-                                        </Border>
-                                        <TextBox Grid.Column="1" IsReadOnly="True" Text="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}" VerticalAlignment="Center" />
-                                        <Button Grid.Column="2" Content="Browse" Click="BrowseKeyImage_Click" VerticalAlignment="Center" />
-                                        <Button Grid.Column="3" Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}" VerticalAlignment="Center" ToolTipService.ToolTip="Remove image" AutomationProperties.Name="Remove button image">
-                                            <FontIcon Glyph="&#xE711;" FontSize="12" />
-                                        </Button>
-                                    </Grid>
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Button image" Style="{StaticResource BodyTextBlockStyle}" />
+                                <Border Width="96" Height="96" CornerRadius="8" Background="{ThemeResource ControlFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" HorizontalAlignment="Left">
+                                    <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="96" Height="96" Stretch="UniformToFill" />
+                                </Border>
+                                <TextBlock
+                                    Text="{x:Bind ViewModel.SelectedKey.ImageFileName, Mode=OneWay, FallbackValue=''}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Opacity="0.6"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}"
+                                    Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Browse" Click="BrowseKeyImage_Click" />
+                                    <Button
+                                        Content="Remove"
+                                        Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}"
+                                        Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
                                 </StackPanel>
+                            </StackPanel>
 
-                                <TextBlock Text="Command settings" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Command settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                 <TextBlock
                                     Text="This command has no settings."
+                                    Style="{StaticResource CaptionTextBlockStyle}"
                                     Opacity="0.7"
                                     Visibility="{x:Bind ViewModel.HasNoParameters, Mode=OneWay}" />
                                 <ItemsControl
                                     ItemsSource="{x:Bind ViewModel.ParameterFields}"
                                     ItemTemplateSelector="{StaticResource ParameterTemplates}" />
-
-                                <Button Command="{x:Bind ViewModel.ClearSelectedKeyCommand}" Margin="0,8,0,0">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <FontIcon Glyph="&#xE74D;" FontSize="13" />
-                                        <TextBlock Text="Clear key" />
-                                    </StackPanel>
-                                </Button>
                             </StackPanel>
                         </StackPanel>
-                    </ScrollViewer>
-                </Grid>
-            </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
         </Grid>
     </Grid>
 </Page>

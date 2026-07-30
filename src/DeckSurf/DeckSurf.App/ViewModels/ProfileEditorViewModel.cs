@@ -71,6 +71,7 @@ namespace DeckSurf.App.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasSelectedKey))]
         [NotifyPropertyChangedFor(nameof(HasNoSelectedKey))]
+        [NotifyPropertyChangedFor(nameof(InspectorTitle))]
         public partial KeyViewModel? SelectedKey { get; set; }
 
         [ObservableProperty]
@@ -108,6 +109,20 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasNoSelectedKey => SelectedKey is null;
 
+        /// <summary>
+        /// Gets the contextual header for the configuration pane, naming the selected target.
+        /// </summary>
+        public string InspectorTitle => SelectedKey switch
+        {
+            null => "Key configuration",
+            { Target: MappingTarget.Knob } knob => $"Knob {knob.Index + 1}",
+            { Target: MappingTarget.Screen } => "Touch screen",
+            { Index: -1 } => "Any key",
+            { } key => $"Key {key.Index}",
+        };
+
+        public string InspectorSubtitle => SelectedCommand?.DisplayName ?? "Not assigned";
+
         public bool HasParameters => ParameterFields.Count > 0;
 
         public bool HasNoParameters => SelectedCommand is not null && ParameterFields.Count == 0;
@@ -116,7 +131,23 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasNoRuntimeLog => RuntimeLog.Count == 0;
 
-        public IReadOnlyList<CommandInfo> AvailableCommands => SelectedPlugin?.Commands ?? [];
+        /// <summary>
+        /// Gets the selected plugin's commands that are compatible with the profile's
+        /// device. Commands without compatibility annotations work everywhere.
+        /// </summary>
+        public IReadOnlyList<CommandInfo> AvailableCommands
+        {
+            get
+            {
+                if (SelectedPlugin is null)
+                {
+                    return [];
+                }
+
+                var model = SelectedDevice?.Model ?? profileDeviceModel;
+                return [.. SelectedPlugin.Commands.Where(c => c.CompatibleModels.Count == 0 || c.CompatibleModels.Contains(model))];
+            }
+        }
 
         private DeviceModel profileDeviceModel = DeviceModel.XL;
         private string? profileDeviceSerial;
@@ -150,6 +181,8 @@ namespace DeckSurf.App.ViewModels
 
         partial void OnSelectedDeviceChanged(DeviceSummary? value)
         {
+            OnPropertyChanged(nameof(AvailableCommands));
+
             if (!loadingProfile && value is not null)
             {
                 ApplyDeviceSelection(value);
@@ -173,6 +206,8 @@ namespace DeckSurf.App.ViewModels
 
         partial void OnSelectedCommandChanged(CommandInfo? value)
         {
+            OnPropertyChanged(nameof(InspectorSubtitle));
+
             if (!loadingKey)
             {
                 RebuildParameterFields(value, existingArguments: null);

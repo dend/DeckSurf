@@ -66,11 +66,14 @@
                             </tk:SettingsExpander.HeaderIcon>
                             <tk:SettingsExpander.ItemTemplate>
                                 <DataTemplate x:DataType="services:CommandInfo">
-                                    <tk:SettingsCard Header="{x:Bind DisplayName}" Description="{x:Bind Description}">
+                                    <tk:SettingsCard
+                                        Header="{x:Bind DisplayName}"
+                                        Description="{x:Bind Description}"
+                                        IsClickEnabled="True"
+                                        Click="CommandCard_Click">
                                         <tk:SettingsCard.HeaderIcon>
                                             <ImageIcon Source="ms-appx:///Assets/Icons/high_voltage.png" />
                                         </tk:SettingsCard.HeaderIcon>
-                                        <TextBlock Text="{x:Bind MetaText}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
                                     </tk:SettingsCard>
                                 </DataTemplate>
                             </tk:SettingsExpander.ItemTemplate>
