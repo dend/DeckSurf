@@ -78,10 +78,6 @@ namespace DeckSurf.App.Views
             }
 
             KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
-
-            // The any-key section aligns with the deck card's width so the column
-            // reads as one stage (grid width + card padding + border).
-            AnyKeySection.Width = KeyGrid.Width + 30;
         }
 
         // All target lists (keys, catch-alls, knobs, screen) share single-selection:

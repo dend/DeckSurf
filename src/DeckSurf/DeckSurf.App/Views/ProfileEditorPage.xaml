@@ -249,6 +249,7 @@
                     <!-- Deck face: the key grid sits on a dark rounded card that mirrors
                          the physical device. -->
                     <Border
+                        x:Name="DeckCard"
                         Background="#FF1C1C1C"
                         BorderBrush="#26FFFFFF"
                         BorderThickness="1"
@@ -323,7 +324,12 @@
 
                     <!-- Any-key commands: a compact list of mappings that fire on every
                          key press, edited through the same inspector. Usually zero or one. -->
-                    <StackPanel x:Name="AnyKeySection" Spacing="4" HorizontalAlignment="Left" Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+                    <StackPanel
+                        x:Name="AnyKeySection"
+                        Spacing="4"
+                        HorizontalAlignment="Left"
+                        Width="{Binding ElementName=DeckCard, Path=ActualWidth, Mode=OneWay}"
+                        Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
                         <Grid Margin="4,4,0,0">
                             <StackPanel Spacing="2" VerticalAlignment="Center">
                                 <TextBlock Text="Any-key commands" Style="{StaticResource BodyStrongTextBlockStyle}" />
@@ -361,10 +367,7 @@
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:KeyViewModel">
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Image Source="ms-appx:///Assets/Icons/high_voltage.png" Width="16" Height="16" VerticalAlignment="Center" />
-                                        <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" VerticalAlignment="Center" />
-                                    </StackPanel>
+                                    <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" VerticalAlignment="Center" />
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>

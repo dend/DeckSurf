@@ -70,11 +70,7 @@
                                         Header="{x:Bind DisplayName}"
                                         Description="{x:Bind Description}"
                                         IsClickEnabled="True"
-                                        Click="CommandCard_Click">
-                                        <tk:SettingsCard.HeaderIcon>
-                                            <ImageIcon Source="ms-appx:///Assets/Icons/high_voltage.png" />
-                                        </tk:SettingsCard.HeaderIcon>
-                                    </tk:SettingsCard>
+                                        Click="CommandCard_Click" />
                                 </DataTemplate>
                             </tk:SettingsExpander.ItemTemplate>
                         </tk:SettingsExpander>
