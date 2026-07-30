@@ -125,20 +125,20 @@
             <CommandBar.Content>
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <ComboBox
-                        MinWidth="180"
-                        VerticalAlignment="Center"
-                        PlaceholderText="Select a profile"
-                        ItemsSource="{x:Bind ViewModel.ProfileNames}"
-                        SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
-                    <ComboBox
                         MinWidth="220"
                         VerticalAlignment="Center"
                         PlaceholderText="Device"
-                        ToolTipService.ToolTip="Device this profile targets"
+                        ToolTipService.ToolTip="Device you are editing; each device has its own profiles"
                         ItemsSource="{x:Bind ViewModel.ConnectedDevices}"
                         DisplayMemberPath="DisplayText"
-                        SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
-                        IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}" />
+                        SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" />
+                    <ComboBox
+                        MinWidth="180"
+                        VerticalAlignment="Center"
+                        PlaceholderText="Select a profile"
+                        ToolTipService.ToolTip="Profiles for the selected device"
+                        ItemsSource="{x:Bind ViewModel.ProfileNames}"
+                        SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
                 </StackPanel>
             </CommandBar.Content>
 

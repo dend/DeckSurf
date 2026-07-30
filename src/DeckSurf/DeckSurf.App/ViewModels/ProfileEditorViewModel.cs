@@ -40,7 +40,22 @@ namespace DeckSurf.App.ViewModels
             runtimeService.ButtonEventLogged += OnRuntimeLog;
             pluginService.PluginsChanged += (_, _) => windowService.RunOnUIThread(() => OnPropertyChanged(nameof(Plugins)));
 
-            RefreshProfiles();
+            // Editing is scoped to a device; pick the first connected one. Setting
+            // SelectedDevice refreshes the profile list; without devices, refresh
+            // explicitly so all profiles stay reachable.
+            deviceService.Devices.CollectionChanged += (_, _) => windowService.RunOnUIThread(() =>
+            {
+                if (SelectedDevice is null || !deviceService.Devices.Contains(SelectedDevice))
+                {
+                    SelectedDevice = deviceService.Devices.FirstOrDefault();
+                }
+            });
+
+            SelectedDevice = deviceService.Devices.FirstOrDefault();
+            if (SelectedDevice is null)
+            {
+                RefreshProfiles();
+            }
         }
 
         public ObservableCollection<string> ProfileNames { get; } = [];
@@ -155,13 +170,22 @@ namespace DeckSurf.App.ViewModels
         private string? profileDeviceSerial;
         private int profileDeviceIndex;
 
+        /// <summary>
+        /// Rebuilds the profile list scoped to the selected device. Profiles belong to
+        /// a device; a profile written for one layout is never silently retargeted to
+        /// another. Profiles without a stored serial (legacy CLI profiles) appear for
+        /// every device and adopt the device they are saved under.
+        /// </summary>
         public void RefreshProfiles()
         {
             var current = SelectedProfileName;
             ProfileNames.Clear();
             foreach (var name in profileService.ListProfiles())
             {
-                ProfileNames.Add(name);
+                if (ProfileBelongsToSelectedDevice(name))
+                {
+                    ProfileNames.Add(name);
+                }
             }
 
             if (current is not null && ProfileNames.Contains(current))
@@ -176,6 +200,27 @@ namespace DeckSurf.App.ViewModels
             OnPropertyChanged(nameof(HasNoProfiles));
         }
 
+        private bool ProfileBelongsToSelectedDevice(string name)
+        {
+            if (SelectedDevice is null)
+            {
+                // No devices connected: show everything so profiles stay editable.
+                return true;
+            }
+
+            try
+            {
+                var profile = profileService.GetProfile(name);
+                return profile is null
+                    || string.IsNullOrEmpty(profile.DeviceSerial)
+                    || string.Equals(profile.DeviceSerial, SelectedDevice.Serial, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         partial void OnSelectedProfileNameChanged(string? value)
         {
             LoadProfile(value);
@@ -185,9 +230,11 @@ namespace DeckSurf.App.ViewModels
         {
             OnPropertyChanged(nameof(AvailableCommands));
 
-            if (!loadingProfile && value is not null)
+            // Switching the device switches the editing scope: the profile list
+            // reloads for that device. The loaded profile is never retargeted.
+            if (!loadingProfile)
             {
-                ApplyDeviceSelection(value);
+                RefreshProfiles();
             }
         }
 
@@ -230,7 +277,7 @@ namespace DeckSurf.App.ViewModels
 
         public void CreateProfile(string name)
         {
-            var device = deviceService.Devices.FirstOrDefault();
+            var device = SelectedDevice ?? deviceService.Devices.FirstOrDefault();
             var profile = new ConfigurationProfile
             {
                 DeviceIndex = 0,
@@ -448,16 +495,15 @@ namespace DeckSurf.App.ViewModels
                 profileDeviceSerial = profile.DeviceSerial;
                 profileDeviceIndex = profile.DeviceIndex;
 
-                // Prefer the connected device's real layout when the profile's device is
-                // present; fall back to the device-index match for profiles written by the
-                // CLI, which does not store model or serial.
+                // Prefer the profile's own device when connected; legacy profiles
+                // without a stored serial belong to whichever device is being edited.
                 var connected = deviceService.Devices.FirstOrDefault(d =>
                     !string.IsNullOrEmpty(profile.DeviceSerial)
                     && string.Equals(d.Serial, profile.DeviceSerial, StringComparison.OrdinalIgnoreCase));
 
-                if (connected is null && profile.DeviceIndex >= 0 && profile.DeviceIndex < deviceService.Devices.Count)
+                if (connected is null && string.IsNullOrEmpty(profile.DeviceSerial))
                 {
-                    connected = deviceService.Devices[profile.DeviceIndex];
+                    connected = SelectedDevice ?? deviceService.Devices.FirstOrDefault();
                 }
 
                 if (connected is not null)
@@ -548,74 +594,6 @@ namespace DeckSurf.App.ViewModels
             {
                 ScreenTargets.Add(new KeyViewModel(0, MappingTarget.Screen));
             }
-        }
-
-        // Retarget the loaded profile to a different connected device: adopt its
-        // identity and rebuild the grid to its layout, keeping in-range mappings.
-        private void ApplyDeviceSelection(DeviceSummary device)
-        {
-            profileDeviceModel = device.Model;
-            profileDeviceSerial = device.Serial;
-            profileDeviceIndex = Math.Max(0, deviceService.Devices.IndexOf(device));
-
-            ShowScreenStrip = device.IsScreenSupported;
-            ShowKnobs = device.IsKnobSupported;
-
-            var preserved = Keys
-                .Where(k => k.HasMapping)
-                .Select(k => (k.Index, k.PluginId, k.CommandId, k.CommandArguments, k.ImagePath))
-                .ToList();
-            var preservedHardware = KnobTargets.Concat(ScreenTargets)
-                .Where(k => k.HasMapping || !string.IsNullOrEmpty(k.ImagePath))
-                .Select(k => (k.Target, k.Index, k.PluginId, k.CommandId, k.CommandArguments, k.ImagePath))
-                .ToList();
-
-            SelectedKey = null;
-            BuildKeys(device.ButtonColumns, device.ButtonRows);
-            BuildHardwareTargets();
-
-            var dropped = 0;
-            foreach (var mapping in preserved)
-            {
-                if (mapping.Index < Keys.Count)
-                {
-                    var key = Keys[mapping.Index];
-                    key.PluginId = mapping.PluginId;
-                    key.CommandId = mapping.CommandId;
-                    key.CommandArguments = mapping.CommandArguments;
-                    key.ImagePath = mapping.ImagePath;
-                }
-                else
-                {
-                    dropped++;
-                }
-            }
-
-            foreach (var mapping in preservedHardware)
-            {
-                var target = mapping.Target switch
-                {
-                    MappingTarget.Knob when mapping.Index < KnobTargets.Count => KnobTargets[mapping.Index],
-                    MappingTarget.Screen when ScreenTargets.Count > 0 => ScreenTargets[0],
-                    _ => null,
-                };
-
-                if (target is null)
-                {
-                    dropped++;
-                    continue;
-                }
-
-                target.PluginId = mapping.PluginId;
-                target.CommandId = mapping.CommandId;
-                target.CommandArguments = mapping.CommandArguments;
-                target.ImagePath = mapping.ImagePath;
-            }
-
-            StatusMessage = dropped > 0
-                ? $"{dropped} mapping(s) fell outside the {device.ButtonColumns} x {device.ButtonRows} layout and were removed."
-                : null;
-            dirty = true;
         }
 
         private void LoadInspectorFromKey(KeyViewModel? key)
