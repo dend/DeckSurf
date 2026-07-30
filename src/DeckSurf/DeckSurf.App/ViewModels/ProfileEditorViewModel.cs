@@ -1,11 +1,15 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeckSurf.App.Helpers;
 using DeckSurf.App.Services;
 using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Storage.Streams;
 
 namespace DeckSurf.App.ViewModels
 {
@@ -36,6 +40,12 @@ namespace DeckSurf.App.ViewModels
             this.windowService = windowService;
 
             pluginService.PluginsChanged += (_, _) => windowService.RunOnUIThread(() => OnPropertyChanged(nameof(Plugins)));
+
+            // Live previews: mirror what running sessions draw on the hardware
+            // onto the stage tiles of the device being edited.
+            runtimeService.KeyFrameRendered += OnLiveKeyFrame;
+            runtimeService.ScreenFrameRendered += OnLiveScreenFrame;
+            runtimeService.StateChanged += OnRuntimeStateChanged;
 
             // Editing is scoped to a device; pick the first connected one. Setting
             // SelectedDevice refreshes the profile list; without devices, refresh
@@ -687,6 +697,77 @@ namespace DeckSurf.App.ViewModels
             }
 
             dirty = true;
+        }
+
+        private void OnLiveKeyFrame(object? sender, LiveKeyFrame frame)
+        {
+            windowService.RunOnUIThread(async () =>
+            {
+                if (!string.Equals(SelectedDevice?.Serial, frame.Serial, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                var key = Keys.FirstOrDefault(k => k.Index == frame.KeyId);
+                if (key is not null && await DecodeFrameAsync(frame.Image) is { } decoded)
+                {
+                    key.LiveImage = decoded;
+                }
+            });
+        }
+
+        private void OnLiveScreenFrame(object? sender, LiveScreenFrame frame)
+        {
+            windowService.RunOnUIThread(async () =>
+            {
+                if (!string.Equals(SelectedDevice?.Serial, frame.Serial, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                var screen = ScreenTargets.FirstOrDefault();
+                if (screen is not null && await DecodeFrameAsync(frame.Image) is { } decoded)
+                {
+                    screen.LiveImage = decoded;
+                }
+            });
+        }
+
+        private void OnRuntimeStateChanged(object? sender, EventArgs e)
+        {
+            windowService.RunOnUIThread(() =>
+            {
+                // When the edited device's session ends, the hardware goes dark;
+                // the mirrored frames go with it.
+                var serial = SelectedDevice?.Serial;
+                if (serial is null || runtimeService.ActiveSessions.All(s => !string.Equals(s.Serial, serial, StringComparison.OrdinalIgnoreCase)))
+                {
+                    foreach (var key in Keys.Concat(ScreenTargets).Concat(KnobTargets).Concat(CatchAllMappings))
+                    {
+                        key.LiveImage = null;
+                    }
+                }
+            });
+        }
+
+        private static async Task<ImageSource?> DecodeFrameAsync(byte[] imageBytes)
+        {
+            try
+            {
+                using var stream = new InMemoryRandomAccessStream();
+                await stream.WriteAsync(imageBytes.AsBuffer());
+                stream.Seek(0);
+
+                var bitmap = new BitmapImage();
+                await bitmap.SetSourceAsync(stream);
+                return bitmap;
+            }
+            catch (Exception)
+            {
+                // An undecodable frame (unexpected device-specific payload) simply
+                // leaves the previous preview in place.
+                return null;
+            }
         }
     }
 }

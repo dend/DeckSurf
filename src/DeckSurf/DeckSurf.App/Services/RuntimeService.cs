@@ -23,6 +23,18 @@ namespace DeckSurf.App.Services
     }
 
     /// <summary>
+    /// A live frame written to a key on a running device, mirrored for on-screen
+    /// previews. Image bytes are as passed to the device, before device-specific
+    /// encoding, so they decode with standard imaging APIs.
+    /// </summary>
+    public sealed record LiveKeyFrame(string Serial, int KeyId, byte[] Image);
+
+    /// <summary>
+    /// A live frame written to the screen of a running device.
+    /// </summary>
+    public sealed record LiveScreenFrame(string Serial, byte[] Image);
+
+    /// <summary>
     /// Hosts the always-on profile runtime: while a device is connected, its active
     /// profile runs on it automatically. One session per connected device, each
     /// owning its open device handle, plugin command instances, and dispatch;
@@ -57,6 +69,18 @@ namespace DeckSurf.App.Services
         /// Raised for every runtime event. Raised on arbitrary threads.
         /// </summary>
         public event EventHandler<ActivityEntry>? ActivityLogged;
+
+        /// <summary>
+        /// Raised whenever a running session writes an image to a key, so the
+        /// editor can mirror the hardware live. Raised on arbitrary threads.
+        /// </summary>
+        public event EventHandler<LiveKeyFrame>? KeyFrameRendered;
+
+        /// <summary>
+        /// Raised whenever a running session writes an image to a device screen.
+        /// Raised on arbitrary threads.
+        /// </summary>
+        public event EventHandler<LiveScreenFrame>? ScreenFrameRendered;
 
         public int ActiveSessionCount
         {
@@ -298,8 +322,12 @@ namespace DeckSurf.App.Services
             {
                 session.ButtonHandler = (_, e) => OnButtonPressed(session, e);
                 session.DisconnectHandler = (_, _) => OnSessionDeviceDisconnected(session);
+                session.KeyImageHandler = (_, e) => KeyFrameRendered?.Invoke(this, new LiveKeyFrame(session.Serial, e.KeyId, e.Image));
+                session.ScreenImageHandler = (_, e) => ScreenFrameRendered?.Invoke(this, new LiveScreenFrame(session.Serial, e.Image));
                 openedDevice.ButtonPressed += session.ButtonHandler;
                 openedDevice.DeviceDisconnected += session.DisconnectHandler;
+                openedDevice.KeyImageSet += session.KeyImageHandler;
+                openedDevice.ScreenImageSet += session.ScreenImageHandler;
 
                 session.Commands = LoadCommands(openedDevice, session);
 
@@ -311,6 +339,8 @@ namespace DeckSurf.App.Services
             {
                 openedDevice.ButtonPressed -= session.ButtonHandler;
                 openedDevice.DeviceDisconnected -= session.DisconnectHandler;
+                openedDevice.KeyImageSet -= session.KeyImageHandler;
+                openedDevice.ScreenImageSet -= session.ScreenImageHandler;
                 openedDevice.Dispose();
                 Log(null, $"Could not start profile '{profileName}': {ex.Message}");
                 return false;
@@ -332,6 +362,8 @@ namespace DeckSurf.App.Services
 
             session.Device.ButtonPressed -= session.ButtonHandler;
             session.Device.DeviceDisconnected -= session.DisconnectHandler;
+            session.Device.KeyImageSet -= session.KeyImageHandler;
+            session.Device.ScreenImageSet -= session.ScreenImageHandler;
 
             try
             {
@@ -588,6 +620,10 @@ namespace DeckSurf.App.Services
             public EventHandler<ButtonPressEventArgs>? ButtonHandler { get; set; }
 
             public EventHandler<EventArgs>? DisconnectHandler { get; set; }
+
+            public EventHandler<KeyImageSetEventArgs>? KeyImageHandler { get; set; }
+
+            public EventHandler<ScreenImageSetEventArgs>? ScreenImageHandler { get; set; }
         }
     }
 }

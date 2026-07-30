@@ -98,15 +98,24 @@ namespace DeckSurf.App.ViewModels
         }
 
         /// <summary>
-        /// Gets a value indicating whether the tile shows its text label. Hidden when a
-        /// custom image occupies the key face.
+        /// Gets or sets the frame the physical key is currently displaying, mirrored
+        /// from the running device. Cleared when the device's session ends.
         /// </summary>
-        public bool ShowLabel => HasMapping && !HasPreviewImage;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ShowLabel))]
+        [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
+        public partial ImageSource? LiveImage { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the tile shows its text label. Hidden when a
+        /// custom image or a live hardware frame occupies the key face.
+        /// </summary>
+        public bool ShowLabel => HasMapping && !HasPreviewImage && LiveImage is null;
 
         /// <summary>
         /// Gets a value indicating whether the tile shows its unmapped placeholder.
         /// </summary>
-        public bool ShowPlaceholder => !HasMapping && !HasPreviewImage;
+        public bool ShowPlaceholder => !HasMapping && !HasPreviewImage && LiveImage is null;
 
         public bool HasPreviewImage => !string.IsNullOrEmpty(ImagePath) && File.Exists(ImagePath);
 

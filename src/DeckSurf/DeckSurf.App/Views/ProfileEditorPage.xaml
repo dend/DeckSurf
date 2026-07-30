@@ -18,6 +18,9 @@
         <DataTemplate x:Key="KeyTileTemplate" x:DataType="vm:KeyViewModel">
             <Grid CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
                 <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
+                <!-- The live mirror of what the physical key is displaying right
+                     now, drawn over the static profile image while a session runs. -->
+                <Image Source="{x:Bind LiveImage, Mode=OneWay}" Stretch="UniformToFill" />
                 <TextBlock
                     Text="{x:Bind Label, Mode=OneWay}"
                     Style="{StaticResource CaptionTextBlockStyle}"
@@ -284,6 +287,7 @@
                                 <DataTemplate x:DataType="vm:KeyViewModel">
                                     <Grid Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
                                         <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                        <Image Source="{x:Bind LiveImage, Mode=OneWay}" Stretch="Uniform" />
                                         <TextBlock Text="Touch screen (select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
                                         <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
                                         <Border BorderBrush="{ThemeResource AccentFillColorDefaultBrush}" BorderThickness="2" CornerRadius="8" Visibility="{x:Bind IsSelected, Mode=OneWay}" />
