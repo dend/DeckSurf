@@ -98,19 +98,18 @@
                 Style="{StaticResource CommandTileStyle}"
                 AutomationProperties.Name="{x:Bind AccessibleName}"
                 ToolTipService.ToolTip="{x:Bind DescriptionToolTip}">
-                <Grid ColumnSpacing="8" RowSpacing="4">
+                <!-- Gallery tile anatomy: the cap centers vertically against the
+                     text block, and title with description travel as one centered
+                     stack, so nothing hangs past anything. -->
+                <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
 
                     <!-- The command's key cap: declared artwork when the plugin ships
                          an icon, otherwise a clean blank key. -->
-                    <Grid Grid.RowSpan="2" Width="44" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}" VerticalAlignment="Top">
+                    <Grid Width="44" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}" VerticalAlignment="Center">
                         <Image Width="28" Height="28" Stretch="Uniform" Visibility="{x:Bind HasIcon}">
                             <Image.Source>
                                 <BitmapImage UriSource="{x:Bind IconUri}" DecodePixelWidth="56" />
@@ -118,21 +117,19 @@
                         </Image>
                     </Grid>
 
-                    <TextBlock
-                        Grid.Column="1"
-                        Text="{x:Bind DisplayName}"
-                        Style="{StaticResource BodyStrongTextBlockStyle}"
-                        TextTrimming="CharacterEllipsis" />
-                    <TextBlock
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Text="{x:Bind Description}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        TextWrapping="Wrap"
-                        MaxLines="2"
-                        TextTrimming="CharacterEllipsis"
-                        VerticalAlignment="Top" />
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock
+                            Text="{x:Bind DisplayName}"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            Text="{x:Bind Description}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap"
+                            MaxLines="2"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
                 </Grid>
                 <Button.Flyout>
                     <Flyout Placement="Bottom">
@@ -288,23 +285,18 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="services:PluginInfo">
                             <StackPanel Margin="0,0,0,24">
-                                <Grid ColumnSpacing="8" Margin="0,0,0,8" ToolTipService.ToolTip="{x:Bind HeaderToolTip}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
+                                <!-- Plugin name with its metadata stacked quietly
+                                     beneath, not dangling off the title baseline. -->
+                                <StackPanel Spacing="2" Margin="0,0,0,8" ToolTipService.ToolTip="{x:Bind HeaderToolTip}">
                                     <TextBlock
                                         Text="{x:Bind DisplayName}"
                                         Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock
-                                        Grid.Column="1"
                                         Text="{x:Bind Subtitle}"
                                         Style="{StaticResource CaptionTextBlockStyle}"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        VerticalAlignment="Bottom"
-                                        Margin="0,0,0,2"
                                         TextTrimming="CharacterEllipsis" />
-                                </Grid>
+                                </StackPanel>
                                 <ItemsRepeater
                                     ItemsSource="{x:Bind Commands}"
                                     ItemTemplate="{StaticResource CommandTileTemplate}">
