@@ -184,7 +184,11 @@ namespace DeckSurf.App.Services
         string SourcePath,
         IReadOnlyList<CommandInfo> Commands)
     {
-        public string Subtitle => $"{Author}, version {Version}";
+        /// <summary>
+        /// Gets the version as pill text; a comma-joined sentence read like prose
+        /// where metadata was wanted.
+        /// </summary>
+        public string VersionText => $"v{Version}";
 
         /// <summary>
         /// Gets the developer identity, shown only in the section-header tooltip.
