@@ -408,35 +408,67 @@
                                     DisplayMemberPath="DisplayName"
                                     SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" />
 
-                                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.HasSelectedCommand, Mode=OneWay}">
+                                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.ShowImageSection, Mode=OneWay}">
                                     <TextBlock Text="Button image" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                    <Grid ColumnSpacing="8">
+                                    <!-- The key cap itself is the picker: an empty cap invites
+                                         with a dashed outline, a filled cap shows the image, and
+                                         clicking either opens the file picker. -->
+                                    <Button
+                                        Width="96"
+                                        Height="96"
+                                        Padding="0"
+                                        CornerRadius="8"
+                                        BorderThickness="0"
+                                        Background="{ThemeResource DeckKeyBrush}"
+                                        HorizontalAlignment="Left"
+                                        Click="BrowseKeyImage_Click"
+                                        ToolTipService.ToolTip="Choose an image for this key"
+                                        AutomationProperties.Name="Choose button image">
+                                        <Grid Width="96" Height="96" CornerRadius="8">
+                                            <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                            <FontIcon
+                                                Glyph="&#xE91B;"
+                                                FontSize="20"
+                                                Foreground="{ThemeResource DeckTextBrush}"
+                                                Opacity="0.6"
+                                                Visibility="{x:Bind ViewModel.SelectedKey.HasNoPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
+                                            <Rectangle
+                                                Stroke="{ThemeResource DeckTextBrush}"
+                                                Opacity="0.6"
+                                                StrokeThickness="1"
+                                                StrokeDashArray="3 3"
+                                                RadiusX="8"
+                                                RadiusY="8"
+                                                Visibility="{x:Bind ViewModel.SelectedKey.HasNoPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
+                                        </Grid>
+                                    </Button>
+                                    <Grid ColumnSpacing="8" Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <!-- The preview is literally a key cap: the same primitive
-                                             as the Devices heroes and Plugins tiles. -->
-                                        <Border Grid.Column="0" Width="96" Height="96" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
-                                            <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="96" Height="96" Stretch="UniformToFill" />
-                                        </Border>
-                                        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                                            <TextBlock
-                                                Text="{x:Bind ViewModel.SelectedKey.ImageFileName, Mode=OneWay, FallbackValue=''}"
-                                                Style="{StaticResource CaptionTextBlockStyle}"
-                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                TextTrimming="CharacterEllipsis"
-                                                ToolTipService.ToolTip="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}"
-                                                Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <Button Content="Browse" Click="BrowseKeyImage_Click" />
-                                                <Button
-                                                    Content="Remove"
-                                                    Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}"
-                                                    Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
-                                            </StackPanel>
-                                        </StackPanel>
+                                        <TextBlock
+                                            Text="{x:Bind ViewModel.SelectedKey.ImageFileName, Mode=OneWay, FallbackValue=''}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            TextTrimming="CharacterEllipsis"
+                                            ToolTipService.ToolTip="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}"
+                                            VerticalAlignment="Center" />
+                                        <Button
+                                            Grid.Column="1"
+                                            Content="Remove"
+                                            Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}" />
                                     </Grid>
+                                </StackPanel>
+
+                                <!-- Dynamic commands draw their own key face; say so instead of
+                                     offering an image that would have no effect. -->
+                                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.ShowDynamicImageNote, Mode=OneWay}">
+                                    <TextBlock Text="Button image" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock
+                                        Text="This command draws its own button image."
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                 </StackPanel>
 
                                 <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.HasSelectedCommand, Mode=OneWay}">

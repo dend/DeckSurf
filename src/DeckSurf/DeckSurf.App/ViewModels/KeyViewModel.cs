@@ -59,6 +59,7 @@ namespace DeckSurf.App.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(PreviewImage))]
         [NotifyPropertyChangedFor(nameof(HasPreviewImage))]
+        [NotifyPropertyChangedFor(nameof(HasNoPreviewImage))]
         [NotifyPropertyChangedFor(nameof(ImageFileName))]
         [NotifyPropertyChangedFor(nameof(ShowLabel))]
         [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
@@ -118,6 +119,8 @@ namespace DeckSurf.App.ViewModels
         public bool ShowPlaceholder => !HasMapping && !HasPreviewImage && LiveImage is null;
 
         public bool HasPreviewImage => !string.IsNullOrEmpty(ImagePath) && File.Exists(ImagePath);
+
+        public bool HasNoPreviewImage => !HasPreviewImage;
 
         public string ImageFileName => string.IsNullOrEmpty(ImagePath) ? string.Empty : Path.GetFileName(ImagePath);
 

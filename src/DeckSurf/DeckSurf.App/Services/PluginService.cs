@@ -73,6 +73,13 @@ namespace DeckSurf.App.Services
 
         public bool HasNoParameters => Parameters.Count == 0;
 
+        /// <summary>
+        /// Gets a value indicating whether the command renders its own key or
+        /// screen content at runtime, making a static button image meaningless.
+        /// </summary>
+        public bool HasDynamicDisplay { get; } =
+            CommandType.IsDefined(typeof(CommandDynamicDisplayAttribute), inherit: true);
+
         public bool HasDescription => !string.IsNullOrEmpty(Description);
 
         /// <summary>

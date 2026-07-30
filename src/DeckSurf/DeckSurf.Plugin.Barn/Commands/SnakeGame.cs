@@ -8,6 +8,7 @@ using System.Timers;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
+    [CommandDynamicDisplay]
     class SnakeGame : IDeckSurfCommand
     {
         public string Name => "Snake game";

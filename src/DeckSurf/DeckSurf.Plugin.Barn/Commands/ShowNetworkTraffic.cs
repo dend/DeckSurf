@@ -9,6 +9,7 @@ using System.IO;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
+    [CommandDynamicDisplay]
     class ShowNetworkTraffic : IDeckSurfCommand
     {
         private const int MaxHistory = 30;

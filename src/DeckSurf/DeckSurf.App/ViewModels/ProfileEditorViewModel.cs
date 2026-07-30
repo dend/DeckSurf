@@ -147,6 +147,25 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasSelectedCommand => SelectedCommand is not null;
 
+        /// <summary>
+        /// Gets a value indicating whether the image section applies: a command is
+        /// chosen, the target has a visible face (knobs do not), and the command
+        /// does not render its own display.
+        /// </summary>
+        public bool ShowImageSection =>
+            HasSelectedCommand
+            && SelectedKey?.Target != MappingTarget.Knob
+            && SelectedCommand?.HasDynamicDisplay != true;
+
+        /// <summary>
+        /// Gets a value indicating whether to explain that the command draws its
+        /// own button image, so the missing image section reads as intended.
+        /// </summary>
+        public bool ShowDynamicImageNote =>
+            HasSelectedCommand
+            && SelectedKey?.Target != MappingTarget.Knob
+            && SelectedCommand?.HasDynamicDisplay == true;
+
         public bool HasNoParameters => SelectedCommand is not null && ParameterFields.Count == 0;
 
         public bool HasStatus => !string.IsNullOrEmpty(StatusMessage);
@@ -294,6 +313,8 @@ namespace DeckSurf.App.ViewModels
             }
 
             LoadInspectorFromKey(newValue);
+            OnPropertyChanged(nameof(ShowImageSection));
+            OnPropertyChanged(nameof(ShowDynamicImageNote));
         }
 
         partial void OnSelectedPluginChanged(PluginInfo? value)
@@ -310,6 +331,8 @@ namespace DeckSurf.App.ViewModels
         {
             OnPropertyChanged(nameof(InspectorSubtitle));
             OnPropertyChanged(nameof(HasSelectedCommand));
+            OnPropertyChanged(nameof(ShowImageSection));
+            OnPropertyChanged(nameof(ShowDynamicImageNote));
 
             if (!loadingKey)
             {

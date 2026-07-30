@@ -8,6 +8,7 @@ using System.IO;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
+    [CommandDynamicDisplay]
     [CommandParameter("mode", CommandParameterType.Choice, DisplayName = "Mode", Description = "Clock shows the current time; stopwatch counts up; timer counts down.", Choices = new[] { "clock", "stopwatch", "timer" }, DefaultValue = "clock", Order = 0)]
     [CommandParameter("duration", CommandParameterType.DurationSeconds, DisplayName = "Duration (seconds)", Description = "Countdown length. Only used in timer mode.", DefaultValue = "300", MinValue = 1, Order = 1)]
     class ShowTimer : IDeckSurfCommand

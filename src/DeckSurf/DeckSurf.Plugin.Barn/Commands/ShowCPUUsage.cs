@@ -9,6 +9,7 @@ using System.IO;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
+    [CommandDynamicDisplay]
     class ShowCPUUsage : IDeckSurfCommand
     {
         private const int MaxHistory = 30;
