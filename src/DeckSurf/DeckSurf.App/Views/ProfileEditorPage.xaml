@@ -180,15 +180,18 @@
             </StackPanel>
         </DataTemplate>
 
-        <!-- Runtime-populated suggestions (e.g. OBS scene names). Editable so the
-             value can still be typed when the backing source is offline. -->
+        <!-- Runtime-populated suggestions (e.g. OBS scene names). An AutoSuggestBox
+             instead of an editable ComboBox: it renders a stored value reliably and
+             keeps it when the suggestion list arrives later, and the value can still
+             be typed when the backing source is offline. -->
         <DataTemplate x:Key="ParameterDynamicChoiceTemplate" x:DataType="vm:ParameterFieldViewModel">
             <StackPanel Margin="0,0,0,8" Spacing="4">
-                <ComboBox
+                <AutoSuggestBox
                     Header="{x:Bind HeaderText}"
-                    IsEditable="True"
-                    ItemsSource="{x:Bind DynamicChoices}"
+                    PlaceholderText="Choose or type a value"
                     Text="{Binding Value, Mode=TwoWay}"
+                    GotFocus="DynamicChoice_GotFocus"
+                    TextChanged="DynamicChoice_TextChanged"
                     HorizontalAlignment="Stretch" />
                 <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
             </StackPanel>

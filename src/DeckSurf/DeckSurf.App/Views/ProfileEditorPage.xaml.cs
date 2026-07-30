@@ -74,8 +74,9 @@ namespace DeckSurf.App.Views
             CatchAllList.Width = pitchWidth;
         }
 
-        // Drag and drop swaps full mappings between two targets of the same kind:
-        // key to key, knob to knob. Strips and the any-key slot stay put.
+        // Drag and drop moves a full mapping between two targets of the same kind:
+        // key to key, knob to knob. The source key returns to its blank state.
+        // Strips and the any-key slot stay put.
         private KeyViewModel? dragSource;
 
         private void TargetList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
@@ -111,7 +112,7 @@ namespace DeckSurf.App.Views
             if (dragSource is not null
                 && sender is FrameworkElement { DataContext: KeyViewModel target })
             {
-                ViewModel.SwapTargets(dragSource, target);
+                ViewModel.MoveMapping(dragSource, target);
                 e.Handled = true;
             }
 
@@ -191,6 +192,31 @@ namespace DeckSurf.App.Views
             {
                 ViewModel.DeleteSelectedProfile();
             }
+        }
+
+        // The dynamic-choice field acts like a dropdown on focus (full suggestion
+        // list) and like a search box while typing (filtered list). The list is
+        // fed per-field from the command's choice provider.
+        private void DynamicChoice_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is AutoSuggestBox box && box.DataContext is ParameterFieldViewModel field && field.DynamicChoices.Count > 0)
+            {
+                box.ItemsSource = field.DynamicChoices;
+                box.IsSuggestionListOpen = true;
+            }
+        }
+
+        private void DynamicChoice_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput
+                || sender.DataContext is not ParameterFieldViewModel field)
+            {
+                return;
+            }
+
+            sender.ItemsSource = string.IsNullOrEmpty(sender.Text)
+                ? field.DynamicChoices
+                : field.DynamicChoices.Where(choice => choice.Contains(sender.Text, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         private async void BrowseKeyImage_Click(object sender, RoutedEventArgs e)
