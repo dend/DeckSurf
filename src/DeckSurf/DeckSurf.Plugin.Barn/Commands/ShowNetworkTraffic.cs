@@ -12,11 +12,7 @@ namespace DeckSurf.Plugin.Barn.Commands
     [CommandDynamicDisplay]
     class ShowNetworkTraffic : IDeckSurfCommand
     {
-        private const int MaxHistory = 30;
-
-        private System.Timers.Timer _netTimer;
-        private readonly List<long> _history = new();
-        private readonly object _historyLock = new();
+        private EventHandler _sampleHandler;
 
         public string Name => "Show network traffic";
         public string Description => "Displays live network upload/download speeds on a Stream Deck button.";
@@ -27,52 +23,38 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            _netTimer = new System.Timers.Timer(1000);
-            _netTimer.Elapsed += (s, e) =>
+            // Rendering rides the shared sampler so every instance of this
+            // command, across all connected devices, draws the same series.
+            _sampleHandler = (s, e) =>
             {
                 try
                 {
-                    var (up, down) = NetworkMonitor.GetThroughput();
+                    var (up, down, series) = SystemSampler.GetNetwork();
                     if (up < 0) return;
 
-                    long total = up + down;
-
-                    lock (_historyLock)
-                    {
-                        _history.Add(total);
-                        if (_history.Count > MaxHistory)
-                            _history.RemoveAt(0);
-                    }
-
-                    RenderButton(up, down, mappedCommand, mappedDevice);
+                    RenderButton(up, down, series, mappedCommand, mappedDevice);
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error in network traffic timer callback: {ex}");
+                    Debug.WriteLine($"Error rendering network traffic: {ex}");
                 }
             };
-            _netTimer.Start();
+            SystemSampler.SampleAvailable += _sampleHandler;
         }
 
-        private void RenderButton(long up, long down, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+        private void RenderButton(long up, long down, List<long> series, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
             var font = IconGenerator.ResolveFont(28, SixLabors.Fonts.FontStyle.Bold);
 
-            List<long> snapshot;
-            lock (_historyLock)
-            {
-                snapshot = new List<long>(_history);
-            }
-
             // Normalize history to 0-100 based on peak value in the window.
-            var normalized = new List<int>(snapshot.Count);
-            if (snapshot.Count > 0)
+            var normalized = new List<int>(series.Count);
+            if (series.Count > 0)
             {
                 long max = 0;
-                foreach (var v in snapshot)
+                foreach (var v in series)
                     if (v > max) max = v;
 
-                foreach (var v in snapshot)
+                foreach (var v in series)
                     normalized.Add(max > 0 ? (int)(v * 100 / max) : 0);
             }
 
@@ -125,8 +107,11 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void Dispose()
         {
-            _netTimer?.Stop();
-            _netTimer?.Dispose();
+            if (_sampleHandler != null)
+            {
+                SystemSampler.SampleAvailable -= _sampleHandler;
+                _sampleHandler = null;
+            }
         }
     }
 }

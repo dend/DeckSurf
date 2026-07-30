@@ -12,11 +12,7 @@ namespace DeckSurf.Plugin.Barn.Commands
     [CommandDynamicDisplay]
     class ShowRAMUsage : IDeckSurfCommand
     {
-        private const int MaxHistory = 30;
-
-        private System.Timers.Timer _ramUsageTimer;
-        private readonly List<int> _history = new();
-        private readonly object _historyLock = new();
+        private EventHandler _sampleHandler;
 
         public string Name => "Show RAM usage";
         public string Description => "Displays live RAM usage percentage on a Stream Deck button.";
@@ -27,47 +23,35 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            _ramUsageTimer = new System.Timers.Timer(2000);
-            _ramUsageTimer.Elapsed += (s, e) =>
+            // Rendering rides the shared sampler so every instance of this
+            // command, across all connected devices, draws the same series.
+            _sampleHandler = (s, e) =>
             {
                 try
                 {
-                    int ramUsage = MemoryMonitor.GetSystemMemoryUsagePercent();
+                    var (ramUsage, series) = SystemSampler.GetRam();
                     if (ramUsage < 0) return;
 
-                    lock (_historyLock)
-                    {
-                        _history.Add(ramUsage);
-                        if (_history.Count > MaxHistory)
-                            _history.RemoveAt(0);
-                    }
-
-                    RenderButton(ramUsage, mappedCommand, mappedDevice);
+                    RenderButton(ramUsage, series, mappedCommand, mappedDevice);
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error in RAM usage timer callback: {ex}");
+                    Debug.WriteLine($"Error rendering RAM usage: {ex}");
                 }
             };
-            _ramUsageTimer.Start();
+            SystemSampler.SampleAvailable += _sampleHandler;
         }
 
-        private void RenderButton(int ramUsage, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+        private void RenderButton(int ramUsage, List<int> series, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
             var font = IconGenerator.ResolveFont(36, SixLabors.Fonts.FontStyle.Bold);
-
-            List<int> snapshot;
-            lock (_historyLock)
-            {
-                snapshot = new List<int>(_history);
-            }
 
             using var image = IconGenerator.GenerateUsageImage(
                 200,
                 "RAM",
                 ramUsage + "%",
                 font,
-                snapshot);
+                series);
 
             byte[] byteContent;
             using (var ms = new MemoryStream())
@@ -81,8 +65,11 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void Dispose()
         {
-            _ramUsageTimer?.Stop();
-            _ramUsageTimer?.Dispose();
+            if (_sampleHandler != null)
+            {
+                SystemSampler.SampleAvailable -= _sampleHandler;
+                _sampleHandler = null;
+            }
         }
     }
 }
