@@ -294,7 +294,8 @@
             <ScrollViewer Grid.Column="0" Padding="0,0,0,24">
                 <!-- Deck face: a dark card that mirrors the physical device. One
                      border (the card's own), one grid (the 96px key pitch), one
-                     shared left edge for every element on the stage. -->
+                     shared left edge for every element on the stage. Left-aligned
+                     to the page rail like everything else. -->
                 <Border
                     x:Name="DeckCard"
                     Background="{ThemeResource DeckFaceBrush}"
@@ -302,7 +303,7 @@
                     BorderThickness="1"
                     CornerRadius="{StaticResource OverlayCornerRadius}"
                     Padding="12"
-                    HorizontalAlignment="Center"
+                    HorizontalAlignment="Left"
                     VerticalAlignment="Top">
                     <StackPanel Spacing="0">
                         <GridView

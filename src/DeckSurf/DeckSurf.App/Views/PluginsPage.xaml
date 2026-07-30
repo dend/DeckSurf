@@ -81,9 +81,10 @@
             </Setter>
         </Style>
 
-        <!-- A metadata pill: neutral fill, caption secondary text, fully rounded. -->
+        <!-- A metadata pill: neutral fill with a hairline stroke so it reads as a
+             pill on light surfaces too, caption secondary text, fully rounded. -->
         <DataTemplate x:Key="PillTemplate" x:DataType="x:String">
-            <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="12" Padding="10,3">
+            <Border Background="{ThemeResource ControlFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3">
                 <TextBlock Text="{x:Bind}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             </Border>
         </DataTemplate>
@@ -208,10 +209,10 @@
                                             <StackPanel Spacing="6">
                                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                                     <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
-                                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
+                                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
                                                         <TextBlock Text="{x:Bind TypeLabel}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                     </Border>
-                                                    <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="12" Padding="10,3" VerticalAlignment="Center" Visibility="{x:Bind IsRequired}">
+                                                    <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3" VerticalAlignment="Center" Visibility="{x:Bind IsRequired}">
                                                         <TextBlock Text="Required" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                                                     </Border>
                                                 </StackPanel>
