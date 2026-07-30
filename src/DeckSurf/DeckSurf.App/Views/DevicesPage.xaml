@@ -218,7 +218,7 @@
                                             VerticalAlignment="Center"
                                             ToolTipService.ToolTip="Copy serial"
                                             AutomationProperties.Name="Copy serial">
-                                            <FontIcon Glyph="&#xE8C8;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <FontIcon Glyph="{x:Bind CopyGlyph, Mode=OneWay}" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                         </Button>
                                     </Grid>
                                 </Border>

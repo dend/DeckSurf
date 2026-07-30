@@ -354,6 +354,11 @@ namespace DeckSurf.App.Services
             {
                 session.Device.StopListening();
                 session.Device.ClearButtons();
+
+                for (var i = 0; i < session.Device.TouchButtonCount; i++)
+                {
+                    SetTouchKeyLight(session, i, lit: false);
+                }
             }
             catch (Exception ex)
             {
@@ -431,6 +436,11 @@ namespace DeckSurf.App.Services
                     RenderScreenImage(session, mapping);
                 }
 
+                if (mapping.Target == MappingTarget.TouchButton)
+                {
+                    SetTouchKeyLight(session, mapping.ButtonIndex, lit: true);
+                }
+
                 var command = FindCommand(session, mapping);
                 if (command is not null)
                 {
@@ -498,6 +508,12 @@ namespace DeckSurf.App.Services
 
         private void BlankKey(Session session, CommandMapping mapping)
         {
+            if (mapping.Target == MappingTarget.TouchButton)
+            {
+                SetTouchKeyLight(session, mapping.ButtonIndex, lit: false);
+                return;
+            }
+
             if (mapping.Target != MappingTarget.Key || mapping.ButtonIndex < 0)
             {
                 return;
@@ -512,6 +528,30 @@ namespace DeckSurf.App.Services
             catch (Exception ex)
             {
                 Log(session, $"Key clear warning: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Drives a touch key's backlight (Neo): mapped keys glow so a live
+        /// target is visible, unmapped keys stay dark. Commands may override the
+        /// color from their own activation.
+        /// </summary>
+        private static void SetTouchKeyLight(Session session, int touchIndex, bool lit)
+        {
+            if (touchIndex < 0 || touchIndex >= session.Device.TouchButtonCount)
+            {
+                return;
+            }
+
+            try
+            {
+                session.Device.SetKeyColor(
+                    session.Device.ButtonCount + touchIndex,
+                    lit ? DeviceColor.White : DeviceColor.Black);
+            }
+            catch (Exception ex)
+            {
+                Log(session, $"Touch key light warning: {ex.Message}");
             }
         }
 
@@ -626,6 +666,11 @@ namespace DeckSurf.App.Services
                     RenderScreenImage(session, mapping);
                 }
 
+                if (mapping.Target == MappingTarget.TouchButton)
+                {
+                    SetTouchKeyLight(session, mapping.ButtonIndex, lit: true);
+                }
+
                 var command = FindCommand(session, mapping);
                 if (command is not null)
                 {
@@ -701,6 +746,20 @@ namespace DeckSurf.App.Services
                 default:
                     if (e.EventKind != ButtonEventKind.Down)
                     {
+                        return;
+                    }
+
+                    // Touch keys (Neo) report as plain buttons past the key grid;
+                    // they have their own mapping target and skip the catch-alls,
+                    // which are a key-grid concept.
+                    if (session.Device.TouchButtonCount > 0 && e.Id >= session.Device.ButtonCount)
+                    {
+                        var touchIndex = e.Id - session.Device.ButtonCount;
+                        foreach (var touchMapping in session.Profile.ButtonMap.Where(m => m.Target == MappingTarget.TouchButton && m.ButtonIndex == touchIndex))
+                        {
+                            ExecuteAction(session, touchMapping);
+                        }
+
                         return;
                     }
 

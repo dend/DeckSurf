@@ -355,31 +355,77 @@
                             </GridView.ItemsPanel>
                         </GridView>
 
-                        <!-- Touch screen: a mappable target that can carry a background
-                             image and a command receiving tap events. -->
-                        <ListView
-                            x:Name="ScreenList"
-                            ItemsSource="{x:Bind ViewModel.ScreenTargets}"
-                            SelectionMode="Single"
-                            SelectionChanged="TargetList_SelectionChanged"
-                            ItemContainerStyle="{StaticResource DeckStripContainerStyle}"
+                        <!-- Touch screen row. On the Neo two touch keys flank the strip;
+                             they have no display of their own, so their caps carry just
+                             the index and a mapped dot. Elsewhere the strip runs the
+                             full pitch width alone. -->
+                        <Grid
+                            x:Name="ScreenRow"
                             Visibility="{x:Bind ViewModel.ShowScreenStrip, Mode=OneWay}"
-                            HorizontalAlignment="Left"
-                            Padding="0"
-                            ScrollViewer.VerticalScrollMode="Disabled"
-                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
-                            <ListView.ItemTemplate>
-                                <DataTemplate x:DataType="vm:KeyViewModel">
-                                    <Grid Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
-                                        <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
-                                        <Image Source="{x:Bind LiveImage, Mode=OneWay}" Stretch="Uniform" />
-                                        <TextBlock Text="Touch screen (select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
-                                        <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                            HorizontalAlignment="Left">
+                            <Grid.Resources>
+                                <DataTemplate x:Key="TouchKeyTemplate" x:DataType="vm:KeyViewModel">
+                                    <Grid Width="48" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}" ToolTipService.ToolTip="{x:Bind IndexLabel}">
+                                        <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind IndexLabel}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" Opacity="0.6" HorizontalAlignment="Center" />
+                                            <Ellipse Width="6" Height="6" Fill="{ThemeResource DeckTextBrush}" Visibility="{x:Bind HasMapping, Mode=OneWay}" HorizontalAlignment="Center" />
+                                        </StackPanel>
                                         <Border BorderBrush="{ThemeResource AccentFillColorDefaultBrush}" BorderThickness="2" CornerRadius="8" Visibility="{x:Bind IsSelected, Mode=OneWay}" />
                                     </Grid>
                                 </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
+                            </Grid.Resources>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ListView
+                                x:Name="TouchLeftList"
+                                ItemsSource="{x:Bind ViewModel.TouchLeftTargets}"
+                                SelectionMode="Single"
+                                SelectionChanged="TargetList_SelectionChanged"
+                                ItemContainerStyle="{StaticResource DeckStripContainerStyle}"
+                                ItemTemplate="{StaticResource TouchKeyTemplate}"
+                                Visibility="{x:Bind ViewModel.ShowTouchKeys, Mode=OneWay}"
+                                Padding="0"
+                                ScrollViewer.VerticalScrollMode="Disabled"
+                                ScrollViewer.VerticalScrollBarVisibility="Hidden" />
+                            <ListView
+                                x:Name="ScreenList"
+                                Grid.Column="1"
+                                ItemsSource="{x:Bind ViewModel.ScreenTargets}"
+                                SelectionMode="Single"
+                                SelectionChanged="TargetList_SelectionChanged"
+                                ItemContainerStyle="{StaticResource DeckStripContainerStyle}"
+                                HorizontalAlignment="Stretch"
+                                Padding="0"
+                                ScrollViewer.VerticalScrollMode="Disabled"
+                                ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:KeyViewModel">
+                                        <Grid Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
+                                            <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                            <Image Source="{x:Bind LiveImage, Mode=OneWay}" Stretch="Uniform" />
+                                            <TextBlock Text="Touch screen (select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
+                                            <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                            <Border BorderBrush="{ThemeResource AccentFillColorDefaultBrush}" BorderThickness="2" CornerRadius="8" Visibility="{x:Bind IsSelected, Mode=OneWay}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                            <ListView
+                                x:Name="TouchRightList"
+                                Grid.Column="2"
+                                ItemsSource="{x:Bind ViewModel.TouchRightTargets}"
+                                SelectionMode="Single"
+                                SelectionChanged="TargetList_SelectionChanged"
+                                ItemContainerStyle="{StaticResource DeckStripContainerStyle}"
+                                ItemTemplate="{StaticResource TouchKeyTemplate}"
+                                Visibility="{x:Bind ViewModel.ShowTouchKeys, Mode=OneWay}"
+                                Padding="0"
+                                ScrollViewer.VerticalScrollMode="Disabled"
+                                ScrollViewer.VerticalScrollBarVisibility="Hidden" />
+                        </Grid>
 
                         <!-- Knobs: mappable targets on the same 96px pitch as the keys;
                              rotation and press events route to the mapped command. -->

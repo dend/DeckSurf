@@ -70,7 +70,7 @@ namespace DeckSurf.App.Views
             // gets 2px of slack against fractional-DPI rounding.
             var pitchWidth = ViewModel.GridColumns * TileSlotWidth;
             KeyGrid.Width = pitchWidth + 2;
-            ScreenList.Width = pitchWidth;
+            ScreenRow.Width = pitchWidth;
             CatchAllList.Width = pitchWidth;
         }
 
@@ -128,7 +128,7 @@ namespace DeckSurf.App.Views
                 return;
             }
 
-            ListViewBase[] allLists = [KeyGrid, CatchAllList, KnobList, ScreenList];
+            ListViewBase[] allLists = [KeyGrid, CatchAllList, KnobList, ScreenList, TouchLeftList, TouchRightList];
 
             if (active.SelectedItem is KeyViewModel key)
             {

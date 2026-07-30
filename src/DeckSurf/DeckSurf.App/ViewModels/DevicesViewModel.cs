@@ -193,12 +193,23 @@ namespace DeckSurf.App.ViewModels
         [RelayCommand]
         private void OpenEditor() => openEditor(Serial, SelectedProfileName);
 
+        /// <summary>
+        /// Gets or sets the copy button's glyph; flips to a checkmark briefly
+        /// after a copy so the click visibly landed.
+        /// </summary>
+        [ObservableProperty]
+        public partial string CopyGlyph { get; set; } = "";
+
         [RelayCommand]
-        private void CopySerial()
+        private async Task CopySerialAsync()
         {
             var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
             package.SetText(Serial);
             Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+
+            CopyGlyph = "";
+            await Task.Delay(1500);
+            CopyGlyph = "";
         }
 
         [RelayCommand]
