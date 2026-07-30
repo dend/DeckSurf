@@ -19,6 +19,8 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasNoPlugins => Plugins.Count == 0;
 
+        public bool HasPlugins => Plugins.Count > 0;
+
         public bool HasDiagnostics => pluginService.Diagnostics.Count > 0;
 
         public string DiagnosticsText => string.Join(Environment.NewLine, pluginService.Diagnostics);
@@ -47,6 +49,7 @@ namespace DeckSurf.App.ViewModels
         {
             OnPropertyChanged(nameof(Plugins));
             OnPropertyChanged(nameof(HasNoPlugins));
+            OnPropertyChanged(nameof(HasPlugins));
             OnPropertyChanged(nameof(HasDiagnostics));
             OnPropertyChanged(nameof(DiagnosticsText));
         }

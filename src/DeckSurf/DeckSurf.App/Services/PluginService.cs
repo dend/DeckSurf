@@ -25,9 +25,15 @@ namespace DeckSurf.App.Services
         /// </summary>
         public IReadOnlyList<ParameterRow> ParameterRows { get; } = BuildParameterRows(Parameters);
 
+        /// <summary>
+        /// Gets the restricted-compatibility chips. Empty when the command works on
+        /// every model: silence means universal, so no chip renders.
+        /// </summary>
         public IReadOnlyList<string> ModelChips => CompatibleModels.Count is 0 or >= AllKnownModelCount
-            ? ["All models"]
+            ? []
             : [.. CompatibleModels.Select(m => m.ToString())];
+
+        public bool HasModelChips => ModelChips.Count > 0;
 
         /// <summary>
         /// Gets at most two chips for the tile footer; more collapse into a "+N"
@@ -42,7 +48,9 @@ namespace DeckSurf.App.Services
             }
         }
 
-        public string DevicesToolTip => $"Supported devices: {string.Join(", ", ModelChips)}";
+        public string DevicesToolTip => ModelChips.Count == 0
+            ? "Supported devices: all models"
+            : $"Supported devices: {string.Join(", ", ModelChips)}";
 
         public bool HasParameters => Parameters.Count > 0;
 
@@ -106,12 +114,12 @@ namespace DeckSurf.App.Services
     }
 
     /// <summary>
-    /// One choice value; the default choice renders as an accent pill.
-    /// IsNotDefault exists because x:Bind has no inline negation.
+    /// One choice value; defaultness is marked in words, not color, so every chip
+    /// shares the single neutral colorway.
     /// </summary>
     public sealed record ChoiceChip(string Label, bool IsDefault)
     {
-        public bool IsNotDefault => !IsDefault;
+        public string DisplayLabel => IsDefault ? $"{Label} (default)" : Label;
     }
 
     /// <summary>

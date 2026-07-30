@@ -77,12 +77,14 @@ namespace DeckSurf.App.Views
                 panel.MaximumRowsOrColumns = ViewModel.GridColumns;
             }
 
-            KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
-
-            // Strips inside the deck card align with the visible tile faces: tiles are
-            // 86px centered in 96px slots, so the faces sit 5px inside the grid edges.
-            CatchAllList.Width = (ViewModel.GridColumns * TileSlotWidth) - 10;
-            CatchAllList.HorizontalAlignment = HorizontalAlignment.Center;
+            // Everything on the stage shares the 96px key pitch. Strips span the full
+            // pitch width; their items carry the same uniform 4px margin as the key
+            // tiles, so all visible edges land on the tiles' visible edges. The grid
+            // gets 2px of slack against fractional-DPI rounding.
+            var pitchWidth = ViewModel.GridColumns * TileSlotWidth;
+            KeyGrid.Width = pitchWidth + 2;
+            ScreenList.Width = pitchWidth;
+            CatchAllList.Width = pitchWidth;
         }
 
         // All target lists (keys, catch-alls, knobs, screen) share single-selection:

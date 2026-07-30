@@ -10,25 +10,85 @@
     mc:Ignorable="d"
     NavigationCacheMode="Required">
 
-    <ScrollViewer Padding="28,20,28,0">
-        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,0,0,24">
-            <CommandBar DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Background="Transparent" IsOpen="False" Margin="0,0,0,8">
-                <CommandBar.Content>
-                    <TextBlock Text="Devices" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
-                </CommandBar.Content>
-                <AppBarButton Label="Refresh" Command="{x:Bind ViewModel.RefreshCommand}">
-                    <AppBarButton.Icon>
-                        <FontIcon Glyph="&#xE72C;" />
-                    </AppBarButton.Icon>
-                </AppBarButton>
-            </CommandBar>
+    <Grid Padding="28,20,28,0">
+        <Grid Width="1000" HorizontalAlignment="Left">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-            <!-- Empty state -->
+            <Grid Grid.Row="0" Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Devices" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                    <Button Command="{x:Bind ViewModel.RefreshCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE72C;" FontSize="16" />
+                            <TextBlock Text="Refresh" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <InfoBar
+                Grid.Row="1"
+                Title="Device operation failed"
+                Severity="Error"
+                IsClosable="False"
+                IsOpen="{x:Bind ViewModel.HasStatus, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.HasStatus, Mode=OneWay}"
+                Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                Margin="0,0,0,24" />
+
+            <ScrollViewer Grid.Row="2" Visibility="{x:Bind ViewModel.HasDevices, Mode=OneWay}">
+                <ItemsControl ItemsSource="{x:Bind ViewModel.Items}" Margin="0,0,0,24">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="24" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:DeviceItemViewModel">
+                            <tk:SettingsExpander
+                                Header="{x:Bind Name}"
+                                Description="{x:Bind Subtitle}"
+                                IsExpanded="True"
+                                HorizontalAlignment="Stretch">
+                                <tk:SettingsExpander.Items>
+                                    <tk:SettingsCard Header="Brightness" Description="Applies immediately to the device backlight.">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Slider
+                                                Width="220"
+                                                Minimum="0"
+                                                Maximum="100"
+                                                StepFrequency="5"
+                                                Value="{Binding Brightness, Mode=TwoWay}"
+                                                ValueChanged="BrightnessSlider_ValueChanged" />
+                                            <TextBlock Text="{Binding BrightnessText, Mode=OneWay}" VerticalAlignment="Center" MinWidth="40" TextAlignment="Right" />
+                                        </StackPanel>
+                                    </tk:SettingsCard>
+
+                                    <tk:SettingsCard Header="Identify" Description="Flashes all keys white so you can tell devices apart.">
+                                        <Button Content="Flash keys" Command="{x:Bind IdentifyCommand}" />
+                                    </tk:SettingsCard>
+                                </tk:SettingsExpander.Items>
+                            </tk:SettingsExpander>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
             <StackPanel
+                Grid.Row="2"
                 Spacing="8"
-                HorizontalAlignment="Center"
-                Margin="0,64,0,0"
                 MaxWidth="420"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
                 Visibility="{x:Bind ViewModel.HasNoDevices, Mode=OneWay}">
                 <Image Source="ms-appx:///Assets/Icons/control_knobs.png" Width="56" Height="56" HorizontalAlignment="Center" />
                 <TextBlock Text="No Stream Deck found" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
@@ -39,72 +99,12 @@
                     TextWrapping="Wrap"
                     TextAlignment="Center" />
                 <Button
+                    Content="Scan again"
                     Style="{StaticResource AccentButtonStyle}"
                     HorizontalAlignment="Center"
                     Margin="0,8,0,0"
-                    Command="{x:Bind ViewModel.RefreshCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE72C;" FontSize="13" />
-                        <TextBlock Text="Scan again" />
-                    </StackPanel>
-                </Button>
+                    Command="{x:Bind ViewModel.RefreshCommand}" />
             </StackPanel>
-
-            <ItemsControl ItemsSource="{x:Bind ViewModel.Items}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:DeviceItemViewModel">
-                        <StackPanel Spacing="4" Margin="0,0,0,8">
-                            <InfoBar
-                                IsOpen="{Binding HasStatus, Mode=OneWay}"
-                                Severity="Error"
-                                IsClosable="False"
-                                Title="Device operation failed"
-                                Message="{Binding StatusMessage, Mode=OneWay}" />
-
-                            <tk:SettingsExpander
-                                Header="{x:Bind Name}"
-                                Description="{x:Bind Subtitle}"
-                                IsExpanded="True"
-                                HorizontalAlignment="Stretch">
-                                <tk:SettingsExpander.HeaderIcon>
-                                    <ImageIcon Source="ms-appx:///Assets/Icons/control_knobs.png" />
-                                </tk:SettingsExpander.HeaderIcon>
-
-                                <tk:SettingsExpander.Items>
-                                    <tk:SettingsCard Header="Layout" Description="{x:Bind LayoutText}">
-                                        <tk:SettingsCard.HeaderIcon>
-                                            <ImageIcon Source="ms-appx:///Assets/Icons/straight_ruler.png" />
-                                        </tk:SettingsCard.HeaderIcon>
-                                    </tk:SettingsCard>
-
-                                    <tk:SettingsCard Header="Brightness" Description="Applies immediately to the device backlight.">
-                                        <tk:SettingsCard.HeaderIcon>
-                                            <ImageIcon Source="ms-appx:///Assets/Icons/light_bulb.png" />
-                                        </tk:SettingsCard.HeaderIcon>
-                                        <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <Slider
-                                                Width="220"
-                                                Minimum="0"
-                                                Maximum="100"
-                                                StepFrequency="5"
-                                                Value="{Binding Brightness, Mode=TwoWay}"
-                                                ValueChanged="BrightnessSlider_ValueChanged" />
-                                            <TextBlock Text="{Binding BrightnessText, Mode=OneWay}" VerticalAlignment="Center" MinWidth="40" />
-                                        </StackPanel>
-                                    </tk:SettingsCard>
-
-                                    <tk:SettingsCard Header="Identify" Description="Flashes all keys white so you can tell devices apart.">
-                                        <tk:SettingsCard.HeaderIcon>
-                                            <ImageIcon Source="ms-appx:///Assets/Icons/high_voltage.png" />
-                                        </tk:SettingsCard.HeaderIcon>
-                                        <Button Content="Flash keys" Command="{x:Bind IdentifyCommand}" />
-                                    </tk:SettingsCard>
-                                </tk:SettingsExpander.Items>
-                            </tk:SettingsExpander>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </StackPanel>
-    </ScrollViewer>
+        </Grid>
+    </Grid>
 </Page>

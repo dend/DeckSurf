@@ -72,6 +72,21 @@ namespace DeckSurf.App.Views
             }
         }
 
+        // Show and dismiss keep IsOpen and Visibility in lockstep: a closed InfoBar
+        // stays Visible at zero height and would otherwise still spend its group
+        // spacing slots, doubling the header gap in the default no-error state.
+        private void ShowPageError(string message)
+        {
+            PageInfoBar.Message = message;
+            PageInfoBar.Visibility = Visibility.Visible;
+            PageInfoBar.IsOpen = true;
+        }
+
+        private void PageInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
+        {
+            PageInfoBar.Visibility = Visibility.Collapsed;
+        }
+
         private void ThemeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (initializingTheme || ThemeSelector.SelectedItem is not ComboBoxItem { Tag: string tag })
@@ -79,44 +94,74 @@ namespace DeckSurf.App.Views
                 return;
             }
 
-            if (Enum.TryParse<ElementTheme>(tag, out var theme))
+            try
             {
-                appSettings.ApplyTheme(theme);
+                if (Enum.TryParse<ElementTheme>(tag, out var theme))
+                {
+                    appSettings.ApplyTheme(theme);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowPageError(ex.Message);
             }
         }
 
         private async void AddPluginFolder_Click(object sender, RoutedEventArgs e)
         {
-            var picker = new FolderPicker();
-            picker.FileTypeFilter.Add("*");
-            windowService.InitializePicker(picker);
-
-            var folder = await picker.PickSingleFolderAsync();
-            if (folder is not null && appSettings.AddPluginDirectory(folder.Path))
+            try
             {
-                RebuildFolderRows();
-                pluginService.Reload();
+                var picker = new FolderPicker();
+                picker.FileTypeFilter.Add("*");
+                windowService.InitializePicker(picker);
+
+                var folder = await picker.PickSingleFolderAsync();
+                if (folder is not null && appSettings.AddPluginDirectory(folder.Path))
+                {
+                    RebuildFolderRows();
+                    pluginService.Reload();
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowPageError(ex.Message);
             }
         }
 
         private void RemovePluginFolder_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement { DataContext: PluginFolderRow { IsBuiltIn: false } row })
+            if (sender is not FrameworkElement { DataContext: PluginFolderRow { IsBuiltIn: false } row })
+            {
+                return;
+            }
+
+            try
             {
                 appSettings.RemovePluginDirectory(row.Path);
                 RebuildFolderRows();
                 pluginService.Reload();
             }
+            catch (Exception ex)
+            {
+                ShowPageError(ex.Message);
+            }
         }
 
         private void OpenProfilesFolder_Click(object sender, RoutedEventArgs e)
         {
-            Directory.CreateDirectory(ProfilesPath);
-            Process.Start(new ProcessStartInfo
+            try
             {
-                FileName = ProfilesPath,
-                UseShellExecute = true,
-            });
+                Directory.CreateDirectory(ProfilesPath);
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = ProfilesPath,
+                    UseShellExecute = true,
+                });
+            }
+            catch (Exception ex)
+            {
+                ShowPageError(ex.Message);
+            }
         }
     }
 }

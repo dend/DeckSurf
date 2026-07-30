@@ -124,6 +124,8 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasNoProfiles => ProfileNames.Count == 0;
 
+        public bool HasProfiles => ProfileNames.Count > 0;
+
         public bool HasDevices => deviceService.Devices.Count > 0;
 
         /// <summary>
@@ -217,6 +219,7 @@ namespace DeckSurf.App.ViewModels
 
             LoadProfile(SelectedProfileName);
             OnPropertyChanged(nameof(HasNoProfiles));
+            OnPropertyChanged(nameof(HasProfiles));
             OnPropertyChanged(nameof(CanStart));
         }
 

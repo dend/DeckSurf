@@ -13,12 +13,14 @@ namespace DeckSurf.App.ViewModels
     public partial class DeviceItemViewModel : ObservableObject
     {
         private readonly DeviceService deviceService;
+        private readonly Action<string?> reportStatus;
         private bool applyingBrightness;
         private int? pendingBrightness;
 
-        public DeviceItemViewModel(DeviceService deviceService, DeviceSummary device)
+        public DeviceItemViewModel(DeviceService deviceService, DeviceSummary device, Action<string?> reportStatus)
         {
             this.deviceService = deviceService;
+            this.reportStatus = reportStatus;
             Device = device;
             Brightness = 60;
         }
@@ -29,7 +31,9 @@ namespace DeckSurf.App.ViewModels
 
         public string Name => Device.Name;
 
-        public string Subtitle => $"{Device.Model}, serial {Device.Serial}";
+        // The full identity in one sentence; the redundant Layout row was folded in
+        // here so the expander says everything once.
+        public string Subtitle => $"{Device.Model}, serial {Device.Serial}, {LayoutText}";
 
         public string LayoutText
         {
@@ -67,12 +71,6 @@ namespace DeckSurf.App.ViewModels
         [ObservableProperty]
         public partial double Brightness { get; set; }
 
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(HasStatus))]
-        public partial string? StatusMessage { get; set; }
-
-        public bool HasStatus => !string.IsNullOrEmpty(StatusMessage);
-
         public string BrightnessText => $"{(int)Brightness}%";
 
         partial void OnBrightnessChanged(double value)
@@ -100,12 +98,12 @@ namespace DeckSurf.App.ViewModels
                     await Task.Run(() => deviceService.SetBrightness(Serial, level));
                 }
 
-                StatusMessage = null;
+                reportStatus(null);
             }
             catch (Exception ex)
             {
                 pendingBrightness = null;
-                StatusMessage = ex.Message;
+                reportStatus($"{Name}: {ex.Message}");
             }
             finally
             {
@@ -119,11 +117,11 @@ namespace DeckSurf.App.ViewModels
             try
             {
                 await Task.Run(() => deviceService.Identify(Serial));
-                StatusMessage = null;
+                reportStatus(null);
             }
             catch (Exception ex)
             {
-                StatusMessage = ex.Message;
+                reportStatus($"{Name}: {ex.Message}");
             }
         }
     }
@@ -142,6 +140,18 @@ namespace DeckSurf.App.ViewModels
         public ObservableCollection<DeviceItemViewModel> Items { get; } = [];
 
         public bool HasNoDevices => Items.Count == 0;
+
+        public bool HasDevices => Items.Count > 0;
+
+        /// <summary>
+        /// Gets the page-level failure message; per-device failures summarize into it
+        /// prefixed with the device name.
+        /// </summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasStatus))]
+        public partial string? StatusMessage { get; set; }
+
+        public bool HasStatus => !string.IsNullOrEmpty(StatusMessage);
 
         [RelayCommand]
         private void Refresh() => deviceService.Refresh();
@@ -168,11 +178,12 @@ namespace DeckSurf.App.ViewModels
             {
                 if (!Items.Any(i => string.Equals(i.Serial, device.Serial, StringComparison.OrdinalIgnoreCase)))
                 {
-                    Items.Add(new DeviceItemViewModel(deviceService, device));
+                    Items.Add(new DeviceItemViewModel(deviceService, device, message => StatusMessage = message));
                 }
             }
 
             OnPropertyChanged(nameof(HasNoDevices));
+            OnPropertyChanged(nameof(HasDevices));
         }
     }
 }

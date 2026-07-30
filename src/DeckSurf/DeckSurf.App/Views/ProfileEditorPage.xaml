@@ -12,40 +12,55 @@
     KeyboardAcceleratorPlacementMode="Hidden">
 
     <Page.Resources>
+        <!-- Key tile: fills its 96px cell (88px visible inside the uniform 4px
+             container margin) so selection chrome hugs the tile. Fill-only; the
+             deck card's border is the only outline on the stage. -->
         <DataTemplate x:Key="KeyTileTemplate" x:DataType="vm:KeyViewModel">
-            <Grid Width="86" Height="86" CornerRadius="8" Background="#FF2B2B2B" BorderBrush="#FF3D3D3D" BorderThickness="1">
-                <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Width="86" Height="86" Stretch="UniformToFill" />
+            <Grid CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
+                <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
                 <TextBlock
                     Text="{x:Bind Label, Mode=OneWay}"
-                    Foreground="#FFE8E8E8"
-                    FontSize="11"
-                    FontWeight="SemiBold"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Foreground="{ThemeResource DeckTextBrush}"
                     TextWrapping="Wrap"
                     TextTrimming="CharacterEllipsis"
-                    Margin="6,18,6,6"
+                    Margin="8,8"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center"
                     TextAlignment="Center"
                     Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
-                <Border Background="#66000000" CornerRadius="4" Padding="5,1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="4">
-                    <TextBlock Text="{x:Bind IndexLabel}" FontSize="10" Foreground="#B3FFFFFF" />
+                <Border Background="{ThemeResource DeckFaceBrush}" CornerRadius="{StaticResource ControlCornerRadius}" Padding="8,2" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="4">
+                    <TextBlock Text="{x:Bind IndexLabel}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" />
                 </Border>
             </Grid>
         </DataTemplate>
 
+        <!-- The uniform 4px margin makes every gutter on the stage 8px and lands
+             every element on one shared left edge 16px inside the card border. -->
         <Style x:Key="KeyTileContainerStyle" TargetType="GridViewItem">
-            <Setter Property="Margin" Value="0" />
+            <Setter Property="Margin" Value="4" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />
-            <!-- Match the tile corner radius so hover and selection chrome follows the shape. -->
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        </Style>
+
+        <!-- Strips (touch screen, any-key) share one container: same margin, same
+             radius, stretched content, no border. -->
+        <Style x:Key="DeckStripContainerStyle" TargetType="ListViewItem">
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </Style>
 
         <DataTemplate x:Key="ParameterTextTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <StackPanel Margin="0,0,0,14" Spacing="4">
+            <StackPanel Margin="0,0,0,8" Spacing="4">
                 <TextBox
                     Header="{x:Bind HeaderText}"
                     Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -54,7 +69,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ParameterNumberTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <StackPanel Margin="0,0,0,14" Spacing="4">
+            <StackPanel Margin="0,0,0,8" Spacing="4">
                 <NumberBox
                     Header="{x:Bind HeaderText}"
                     Minimum="{x:Bind Minimum}"
@@ -67,7 +82,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ParameterBooleanTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <StackPanel Margin="0,0,0,14" Spacing="4">
+            <StackPanel Margin="0,0,0,8" Spacing="4">
                 <ToggleSwitch
                     Header="{x:Bind HeaderText}"
                     IsOn="{Binding BoolValue, Mode=TwoWay}" />
@@ -76,7 +91,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ParameterChoiceTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <StackPanel Margin="0,0,0,14" Spacing="4">
+            <StackPanel Margin="0,0,0,8" Spacing="4">
                 <ComboBox
                     Header="{x:Bind HeaderText}"
                     PlaceholderText="Select…"
@@ -88,7 +103,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ParameterFileTemplate" x:DataType="vm:ParameterFieldViewModel">
-            <StackPanel Margin="0,0,0,14" Spacing="4">
+            <StackPanel Margin="0,0,0,8" Spacing="4">
                 <TextBlock Text="{x:Bind HeaderText}" Style="{StaticResource BodyTextBlockStyle}" />
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
@@ -114,7 +129,7 @@
             ImageTemplate="{StaticResource ParameterFileTemplate}" />
     </Page.Resources>
 
-    <Grid Padding="28,20,28,24" RowSpacing="8">
+    <Grid Padding="28,20,28,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -122,79 +137,97 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <CommandBar Grid.Row="0" DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Background="Transparent" IsOpen="False">
-            <CommandBar.Content>
-                <TextBlock Text="Editor" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
-            </CommandBar.Content>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Editor" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Visibility="{x:Bind ViewModel.HasProfiles, Mode=OneWay}">
+                <Button Click="NewProfile_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="16" />
+                        <TextBlock Text="New" />
+                    </StackPanel>
+                </Button>
+                <Button Click="DeleteProfile_Click" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE74D;" FontSize="16" />
+                        <TextBlock Text="Delete" />
+                    </StackPanel>
+                </Button>
+                <Button Command="{x:Bind ViewModel.SaveCommand}" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE74E;" FontSize="16" />
+                        <TextBlock Text="Save" />
+                    </StackPanel>
+                </Button>
+                <Button ToolTipService.ToolTip="Recent runtime events">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE81C;" FontSize="16" />
+                        <TextBlock Text="Activity" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout Placement="Bottom">
+                            <Grid Width="420" MaxHeight="340">
+                                <TextBlock
+                                    Text="No runtime events yet."
+                                    Opacity="0.6"
+                                    Margin="4"
+                                    Visibility="{x:Bind ViewModel.HasNoRuntimeLog, Mode=OneWay}" />
+                                <ListView ItemsSource="{x:Bind ViewModel.RuntimeLog}" SelectionMode="None">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <TextBlock Text="{x:Bind}" FontFamily="Consolas" FontSize="12" Opacity="0.85" />
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="MinHeight" Value="24" />
+                                            <Setter Property="Padding" Value="8,2" />
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                </ListView>
+                            </Grid>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+                <Button
+                    Style="{StaticResource AccentButtonStyle}"
+                    Command="{x:Bind ViewModel.ToggleRuntimeCommand}"
+                    IsEnabled="{x:Bind ViewModel.CanStart, Mode=OneWay}"
+                    ToolTipService.ToolTip="Start the runtime on the selected profile; requires its device to be connected"
+                    Visibility="{x:Bind ViewModel.IsNotRunning, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE768;" FontSize="16" />
+                        <TextBlock Text="Start" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    Style="{StaticResource AccentButtonStyle}"
+                    Command="{x:Bind ViewModel.ToggleRuntimeCommand}"
+                    Visibility="{x:Bind ViewModel.IsRunning, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE71A;" FontSize="16" />
+                        <TextBlock Text="Stop" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
 
-            <AppBarButton Label="New" Click="NewProfile_Click">
-                <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE710;" />
-                </AppBarButton.Icon>
-            </AppBarButton>
-            <AppBarButton Label="Delete" Click="DeleteProfile_Click" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
-                <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE74D;" />
-                </AppBarButton.Icon>
-            </AppBarButton>
-            <AppBarButton Label="Save" Command="{x:Bind ViewModel.SaveCommand}" IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
-                <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE74E;" />
-                </AppBarButton.Icon>
-            </AppBarButton>
-            <AppBarSeparator />
-            <AppBarButton Label="Activity" ToolTipService.ToolTip="Recent runtime events">
-                <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE81C;" />
-                </AppBarButton.Icon>
-                <AppBarButton.Flyout>
-                    <Flyout Placement="Bottom">
-                        <Grid Width="420" MaxHeight="340">
-                            <TextBlock
-                                Text="No runtime events yet."
-                                Opacity="0.6"
-                                Margin="4"
-                                Visibility="{x:Bind ViewModel.HasNoRuntimeLog, Mode=OneWay}" />
-                            <ListView ItemsSource="{x:Bind ViewModel.RuntimeLog}" SelectionMode="None">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate x:DataType="x:String">
-                                        <TextBlock Text="{x:Bind}" FontFamily="Consolas" FontSize="12" Opacity="0.85" />
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem">
-                                        <Setter Property="MinHeight" Value="24" />
-                                        <Setter Property="Padding" Value="8,2" />
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                            </ListView>
-                        </Grid>
-                    </Flyout>
-                </AppBarButton.Flyout>
-            </AppBarButton>
-            <AppBarSeparator />
-            <AppBarButton
-                Label="Start"
-                Command="{x:Bind ViewModel.ToggleRuntimeCommand}"
-                IsEnabled="{x:Bind ViewModel.CanStart, Mode=OneWay}"
-                ToolTipService.ToolTip="Start the runtime on the selected profile; requires its device to be connected"
-                Visibility="{x:Bind ViewModel.IsNotRunning, Mode=OneWay}">
-                <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE768;" />
-                </AppBarButton.Icon>
-            </AppBarButton>
-            <AppBarButton
-                Label="Stop"
-                Command="{x:Bind ViewModel.ToggleRuntimeCommand}"
-                Visibility="{x:Bind ViewModel.IsRunning, Mode=OneWay}">
-                <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE71A;" />
-                </AppBarButton.Icon>
-            </AppBarButton>
-        </CommandBar>
+        <InfoBar
+            Grid.Row="1"
+            Title="Profile operation failed"
+            Severity="Error"
+            IsClosable="False"
+            IsOpen="{x:Bind ViewModel.HasStatus, Mode=OneWay}"
+            Visibility="{x:Bind ViewModel.HasStatus, Mode=OneWay}"
+            Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+            Margin="0,24,0,0" />
 
         <!-- Scope row: which device is being edited, and which of its profiles. -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="0,0,0,4">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,24,0,24" Visibility="{x:Bind ViewModel.HasProfiles, Mode=OneWay}">
             <ComboBox
                 MinWidth="240"
                 Header="Device"
@@ -211,20 +244,13 @@
                 SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
         </StackPanel>
 
-        <InfoBar
-            Grid.Row="2"
-            IsOpen="{x:Bind ViewModel.HasStatus, Mode=OneWay}"
-            Severity="Error"
-            IsClosable="False"
-            Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
-
         <!-- First-run empty state -->
         <StackPanel
             Grid.Row="3"
-            Spacing="12"
+            Spacing="8"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            MaxWidth="440"
+            MaxWidth="420"
             Visibility="{x:Bind ViewModel.HasNoProfiles, Mode=OneWay}">
             <Image Source="ms-appx:///Assets/Icons/joystick.png" Width="56" Height="56" HorizontalAlignment="Center" />
             <TextBlock Text="Set up your Stream Deck" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
@@ -234,227 +260,227 @@
                 Opacity="0.7"
                 TextWrapping="Wrap"
                 TextAlignment="Center" />
-            <Button Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Center" Click="NewProfile_Click" Margin="0,8,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Glyph="&#xE710;" FontSize="13" />
-                    <TextBlock Text="Create your first profile" />
-                </StackPanel>
-            </Button>
+            <Button
+                Content="Create your first profile"
+                Style="{StaticResource AccentButtonStyle}"
+                HorizontalAlignment="Center"
+                Margin="0,8,0,0"
+                Click="NewProfile_Click" />
         </StackPanel>
 
-        <Grid Grid.Row="3" ColumnSpacing="16" Margin="0,8,0,0" Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+        <Grid Grid.Row="3" ColumnSpacing="24" Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="400" />
             </Grid.ColumnDefinitions>
 
-            <ScrollViewer Grid.Column="0">
-                <StackPanel Spacing="12" HorizontalAlignment="Left">
-                    <!-- Deck face: the key grid sits on a dark rounded card that mirrors
-                         the physical device. -->
-                    <Border
-                        x:Name="DeckCard"
-                        Background="#FF1C1C1C"
-                        BorderBrush="#26FFFFFF"
-                        BorderThickness="1"
-                        CornerRadius="12"
-                        Padding="14"
-                        HorizontalAlignment="Left">
-                        <StackPanel Spacing="10">
-                            <GridView
-                                x:Name="KeyGrid"
-                                ItemsSource="{x:Bind ViewModel.Keys}"
-                                SelectionMode="Single"
-                                SelectionChanged="TargetList_SelectionChanged"
-                                Loaded="KeyGrid_Loaded"
-                                HorizontalAlignment="Left"
-                                ItemTemplate="{StaticResource KeyTileTemplate}"
-                                ItemContainerStyle="{StaticResource KeyTileContainerStyle}">
-                                <GridView.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="96" ItemHeight="96" />
-                                    </ItemsPanelTemplate>
-                                </GridView.ItemsPanel>
-                            </GridView>
+            <ScrollViewer Grid.Column="0" Padding="0,0,0,24">
+                <!-- Deck face: a dark card that mirrors the physical device. One
+                     border (the card's own), one grid (the 96px key pitch), one
+                     shared left edge for every element on the stage. -->
+                <Border
+                    x:Name="DeckCard"
+                    Background="{ThemeResource DeckFaceBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                    Padding="12"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top">
+                    <StackPanel Spacing="0">
+                        <GridView
+                            x:Name="KeyGrid"
+                            ItemsSource="{x:Bind ViewModel.Keys}"
+                            SelectionMode="Single"
+                            SelectionChanged="TargetList_SelectionChanged"
+                            Loaded="KeyGrid_Loaded"
+                            HorizontalAlignment="Left"
+                            ItemTemplate="{StaticResource KeyTileTemplate}"
+                            ItemContainerStyle="{StaticResource KeyTileContainerStyle}">
+                            <GridView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsWrapGrid Orientation="Horizontal" ItemWidth="96" ItemHeight="96" />
+                                </ItemsPanelTemplate>
+                            </GridView.ItemsPanel>
+                        </GridView>
 
-                            <!-- Touch screen: a mappable target that can carry a background
-                                 image and a command receiving tap events. -->
-                            <GridView
-                                x:Name="ScreenList"
-                                ItemsSource="{x:Bind ViewModel.ScreenTargets}"
-                                SelectionMode="Single"
-                                SelectionChanged="TargetList_SelectionChanged"
-                                ItemContainerStyle="{StaticResource KeyTileContainerStyle}"
-                                Visibility="{x:Bind ViewModel.ShowScreenStrip, Mode=OneWay}"
-                                HorizontalAlignment="Left">
-                                <GridView.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:KeyViewModel">
-                                        <Grid Width="374" Height="44" CornerRadius="6" Background="#FF141414" BorderBrush="#FF333333" BorderThickness="1">
-                                            <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Width="374" Height="44" Stretch="UniformToFill" />
-                                            <TextBlock Text="Touch screen (select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
-                                            <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#FFE8E8E8" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </GridView.ItemTemplate>
-                            </GridView>
+                        <!-- Touch screen: a mappable target that can carry a background
+                             image and a command receiving tap events. -->
+                        <ListView
+                            x:Name="ScreenList"
+                            ItemsSource="{x:Bind ViewModel.ScreenTargets}"
+                            SelectionMode="Single"
+                            SelectionChanged="TargetList_SelectionChanged"
+                            ItemContainerStyle="{StaticResource DeckStripContainerStyle}"
+                            Visibility="{x:Bind ViewModel.ShowScreenStrip, Mode=OneWay}"
+                            HorizontalAlignment="Left"
+                            Padding="0"
+                            ScrollViewer.VerticalScrollMode="Disabled"
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:KeyViewModel">
+                                    <Grid Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
+                                        <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                        <TextBlock Text="Touch screen (select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
+                                        <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
 
-                            <!-- Knobs: mappable targets; rotation and press events route to
-                                 the mapped command. -->
-                            <GridView
-                                x:Name="KnobList"
-                                ItemsSource="{x:Bind ViewModel.KnobTargets}"
-                                SelectionMode="Single"
-                                SelectionChanged="TargetList_SelectionChanged"
-                                ItemContainerStyle="{StaticResource KeyTileContainerStyle}"
-                                Visibility="{x:Bind ViewModel.ShowKnobs, Mode=OneWay}"
-                                HorizontalAlignment="Center">
-                                <GridView.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <ItemsStackPanel Orientation="Horizontal" />
-                                    </ItemsPanelTemplate>
-                                </GridView.ItemsPanel>
-                                <GridView.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:KeyViewModel">
-                                        <StackPanel Width="94" Spacing="4" HorizontalAlignment="Center" Padding="0,4">
-                                            <Ellipse Width="40" Height="40" Fill="#FF2B2B2B" Stroke="#FF4A4A4A" StrokeThickness="2" HorizontalAlignment="Center" />
-                                            <TextBlock Text="{x:Bind IndexLabel}" FontSize="10" Foreground="#99FFFFFF" HorizontalAlignment="Center" />
-                                            <TextBlock Text="{x:Bind Label, Mode=OneWay}" FontSize="10" Foreground="#FFE8E8E8" TextTrimming="CharacterEllipsis" TextAlignment="Center" MaxWidth="90" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </GridView.ItemTemplate>
-                            </GridView>
-                            <!-- Any-key slot: part of the deck stage, same strip pattern
-                                 as the touch screen. Runs on every key press. -->
-                            <ListView
-                                x:Name="CatchAllList"
-                                ItemsSource="{x:Bind ViewModel.CatchAllMappings}"
-                                SelectionMode="Single"
-                                SelectionChanged="TargetList_SelectionChanged"
-                                Padding="0"
-                                ScrollViewer.VerticalScrollMode="Disabled"
-                                ScrollViewer.VerticalScrollBarVisibility="Hidden">
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem">
-                                        <Setter Property="Background" Value="#FF141414" />
-                                        <Setter Property="BorderBrush" Value="#FF333333" />
-                                        <Setter Property="BorderThickness" Value="1" />
-                                        <Setter Property="CornerRadius" Value="6" />
-                                        <Setter Property="Margin" Value="0" />
-                                        <Setter Property="MinHeight" Value="40" />
-                                        <Setter Property="Padding" Value="0" />
-                                        <Setter Property="MinWidth" Value="0" />
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                                <ListView.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:KeyViewModel">
-                                        <Grid MinHeight="38">
-                                            <TextBlock Text="Any key (runs on every press, select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
-                                            <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#FFE8E8E8" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
+                        <!-- Knobs: mappable targets on the same 96px pitch as the keys;
+                             rotation and press events route to the mapped command. -->
+                        <GridView
+                            x:Name="KnobList"
+                            ItemsSource="{x:Bind ViewModel.KnobTargets}"
+                            SelectionMode="Single"
+                            SelectionChanged="TargetList_SelectionChanged"
+                            ItemContainerStyle="{StaticResource KeyTileContainerStyle}"
+                            Visibility="{x:Bind ViewModel.ShowKnobs, Mode=OneWay}"
+                            HorizontalAlignment="Left">
+                            <GridView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsWrapGrid Orientation="Horizontal" ItemWidth="96" />
+                                </ItemsPanelTemplate>
+                            </GridView.ItemsPanel>
+                            <GridView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:KeyViewModel">
+                                    <StackPanel Spacing="4" HorizontalAlignment="Center" Padding="0,4">
+                                        <Ellipse Width="48" Height="48" Fill="{ThemeResource DeckKeyBrush}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{x:Bind IndexLabel}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" Opacity="0.6" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{x:Bind Label, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" TextTrimming="CharacterEllipsis" TextAlignment="Center" MaxWidth="88" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridView.ItemTemplate>
+                        </GridView>
+
+                        <!-- Any-key slot: same strip pattern as the touch screen.
+                             Runs on every key press. -->
+                        <ListView
+                            x:Name="CatchAllList"
+                            ItemsSource="{x:Bind ViewModel.CatchAllMappings}"
+                            SelectionMode="Single"
+                            SelectionChanged="TargetList_SelectionChanged"
+                            ItemContainerStyle="{StaticResource DeckStripContainerStyle}"
+                            HorizontalAlignment="Left"
+                            Padding="0"
+                            ScrollViewer.VerticalScrollMode="Disabled"
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:KeyViewModel">
+                                    <Grid MinHeight="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
+                                        <TextBlock Text="Any key (runs on every press, select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
+                                        <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </Border>
             </ScrollViewer>
 
-            <!-- Key inspector: a seamless side pane on the page layer, separated by a
-                 hairline divider, with a contextual header naming the selected target. -->
-            <Grid Grid.Column="1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1,0,0,0" Padding="20,4,0,0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+            <!-- Key inspector: a grounded card on the same material as every other
+                 card, with a contextual header naming the selected target. -->
+            <Border
+                Grid.Column="1"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource OverlayCornerRadius}"
+                Padding="16"
+                VerticalAlignment="Top"
+                Margin="0,0,0,24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Margin="0,0,12,16">
-                    <StackPanel Spacing="2">
-                        <TextBlock Text="{x:Bind ViewModel.InspectorTitle, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock Text="{x:Bind ViewModel.InspectorSubtitle, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}" />
-                    </StackPanel>
-                    <Button
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Top"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Padding="6"
-                        Command="{x:Bind ViewModel.ClearSelectedKeyCommand}"
-                        Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}"
-                        ToolTipService.ToolTip="Clear this key"
-                        AutomationProperties.Name="Clear this key">
-                        <FontIcon Glyph="&#xE74D;" FontSize="14" />
-                    </Button>
-                </Grid>
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Bind ViewModel.InspectorTitle, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                            <TextBlock Text="{x:Bind ViewModel.InspectorSubtitle, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}" />
+                        </StackPanel>
+                        <Button
+                            Content="Clear key"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Command="{x:Bind ViewModel.ClearSelectedKeyCommand}"
+                            Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}"
+                            AutomationProperties.Name="Clear this key" />
+                    </Grid>
 
-                <ScrollViewer Grid.Row="1">
-                    <StackPanel Margin="0,0,12,8">
-                        <TextBlock
-                            Text="Select a key on the grid to configure it."
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Opacity="0.7"
-                            TextWrapping="Wrap"
-                            Visibility="{x:Bind ViewModel.HasNoSelectedKey, Mode=OneWay}" />
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel>
+                            <TextBlock
+                                Text="Select a key on the grid to configure it."
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Opacity="0.7"
+                                TextWrapping="Wrap"
+                                Visibility="{x:Bind ViewModel.HasNoSelectedKey, Mode=OneWay}" />
 
-                        <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}">
-                            <ComboBox
-                                Header="Plugin"
-                                HorizontalAlignment="Stretch"
-                                ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}"
-                                DisplayMemberPath="DisplayName"
-                                SelectedItem="{Binding SelectedPlugin, Mode=TwoWay}" />
+                            <StackPanel Spacing="24" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}">
+                                <ComboBox
+                                    Header="Plugin"
+                                    PlaceholderText="Choose a plugin"
+                                    HorizontalAlignment="Stretch"
+                                    ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}"
+                                    DisplayMemberPath="DisplayName"
+                                    SelectedItem="{Binding SelectedPlugin, Mode=TwoWay}" />
 
-                            <ComboBox
-                                Header="Command"
-                                HorizontalAlignment="Stretch"
-                                ItemsSource="{x:Bind ViewModel.AvailableCommands, Mode=OneWay}"
-                                DisplayMemberPath="DisplayName"
-                                SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" />
+                                <ComboBox
+                                    Header="Command"
+                                    PlaceholderText="Choose a command"
+                                    HorizontalAlignment="Stretch"
+                                    ItemsSource="{x:Bind ViewModel.AvailableCommands, Mode=OneWay}"
+                                    DisplayMemberPath="DisplayName"
+                                    SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" />
 
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="Button image" Style="{StaticResource BodyTextBlockStyle}" />
-                                <Grid ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Width="96" Height="96" CornerRadius="8" Background="{ThemeResource ControlFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
-                                        <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="96" Height="96" Stretch="UniformToFill" />
-                                    </Border>
-                                    <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                                        <TextBlock
-                                            Text="{x:Bind ViewModel.SelectedKey.ImageFileName, Mode=OneWay, FallbackValue=''}"
-                                            Style="{StaticResource CaptionTextBlockStyle}"
-                                            Opacity="0.6"
-                                            TextTrimming="CharacterEllipsis"
-                                            ToolTipService.ToolTip="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}"
-                                            Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Button Content="Browse" Click="BrowseKeyImage_Click" />
-                                            <Button
-                                                Content="Remove"
-                                                Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}"
+                                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.HasSelectedCommand, Mode=OneWay}">
+                                    <TextBlock Text="Button image" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="96" Height="96" CornerRadius="8" Background="{ThemeResource ControlFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                                            <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="96" Height="96" Stretch="UniformToFill" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock
+                                                Text="{x:Bind ViewModel.SelectedKey.ImageFileName, Mode=OneWay, FallbackValue=''}"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Opacity="0.6"
+                                                TextTrimming="CharacterEllipsis"
+                                                ToolTipService.ToolTip="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}"
                                                 Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Button Content="Browse" Click="BrowseKeyImage_Click" />
+                                                <Button
+                                                    Content="Remove"
+                                                    Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}"
+                                                    Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
+                                            </StackPanel>
                                         </StackPanel>
-                                    </StackPanel>
-                                </Grid>
-                            </StackPanel>
+                                    </Grid>
+                                </StackPanel>
 
-                            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.HasSelectedCommand, Mode=OneWay}">
-                                <TextBlock Text="Command settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                <TextBlock
-                                    Text="This command has no settings."
-                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                    Opacity="0.7"
-                                    Visibility="{x:Bind ViewModel.HasNoParameters, Mode=OneWay}" />
-                                <ItemsControl
-                                    ItemsSource="{x:Bind ViewModel.ParameterFields}"
-                                    ItemTemplateSelector="{StaticResource ParameterTemplates}" />
+                                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.HasSelectedCommand, Mode=OneWay}">
+                                    <TextBlock Text="Command settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock
+                                        Text="No settings. This command runs as-is."
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Opacity="0.7"
+                                        Visibility="{x:Bind ViewModel.HasNoParameters, Mode=OneWay}" />
+                                    <ItemsControl
+                                        ItemsSource="{x:Bind ViewModel.ParameterFields}"
+                                        ItemTemplateSelector="{StaticResource ParameterTemplates}" />
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
-            </Grid>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Page>

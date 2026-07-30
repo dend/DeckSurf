@@ -75,11 +75,13 @@ namespace DeckSurf.App
             Ioc.Default.GetRequiredService<AppSettingsService>().ApplySavedTheme();
 
             // The window has one fixed width, sized for the widest supported device
-            // (the XL's eight-column grid) plus the inspector pane; only height is
+            // (the XL's eight-column stage: 220 nav + 1 border + 56 rails + 796 deck
+            // card + 24 gap + 400 inspector = 1497), plus allowance for a reserved
+            // scrollbar when the system is set to always show them; only height is
             // user-resizable. Applied once the content tree can report its DPI scale.
             if (mainWindow.Content is FrameworkElement rootElement)
             {
-                rootElement.Loaded += (_, _) => windowService.LockWindowWidth(1448, 560);
+                rootElement.Loaded += (_, _) => windowService.LockWindowWidth(1520, 560);
             }
 
             mainWindow.Activate();

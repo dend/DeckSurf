@@ -37,17 +37,17 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="DevicesItem" Content="Devices" Tag="devices">
                     <NavigationViewItem.Icon>
-                        <ImageIcon Source="ms-appx:///Assets/Icons/control_knobs.png" />
+                        <FontIcon Glyph="&#xE7F4;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="EditorItem" Content="Editor" Tag="editor">
                     <NavigationViewItem.Icon>
-                        <ImageIcon Source="ms-appx:///Assets/Icons/joystick.png" />
+                        <FontIcon Glyph="&#xE70F;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="PluginsItem" Content="Plugins" Tag="plugins">
                     <NavigationViewItem.Icon>
-                        <ImageIcon Source="ms-appx:///Assets/Icons/puzzle_piece.png" />
+                        <FontIcon Glyph="&#xEA86;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
@@ -55,27 +55,27 @@
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem x:Name="SettingsItem" Content="Settings" Tag="settings">
                     <NavigationViewItem.Icon>
-                        <ImageIcon Source="ms-appx:///Assets/Icons/gear.png" />
+                        <FontIcon Glyph="&#xE713;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
 
             <NavigationView.PaneFooter>
-                <Border
-                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                    BorderThickness="0,1,0,0"
+                <!-- Caption type and spacing alone demote the status row; the dot is
+                     centered in a 16px slot so the label lines up with the navigation
+                     item labels above. -->
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    VerticalAlignment="Center"
                     Margin="8,0,8,4"
                     Padding="16,10,16,8"
                     ToolTipService.ToolTip="Profile runtime status. Start or stop it from the Editor.">
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <!-- The dot is centered in a 16px slot so the label lines up with
-                             the navigation item labels above. -->
-                        <Grid Width="16" VerticalAlignment="Center">
-                            <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
-                        </Grid>
-                        <TextBlock x:Name="RuntimeStatusText" Text="Stopped" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Border>
+                    <Grid Width="16" VerticalAlignment="Center">
+                        <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
+                    </Grid>
+                    <TextBlock x:Name="RuntimeStatusText" Text="Stopped" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                </StackPanel>
             </NavigationView.PaneFooter>
 
             <Border
