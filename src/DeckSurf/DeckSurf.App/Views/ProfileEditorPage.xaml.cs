@@ -74,6 +74,49 @@ namespace DeckSurf.App.Views
             CatchAllList.Width = pitchWidth;
         }
 
+        // Drag and drop swaps full mappings between two targets of the same kind:
+        // key to key, knob to knob. Strips and the any-key slot stay put.
+        private KeyViewModel? dragSource;
+
+        private void Target_DragStarting(UIElement sender, Microsoft.UI.Xaml.DragStartingEventArgs args)
+        {
+            if (sender is FrameworkElement { DataContext: KeyViewModel key }
+                && (key.Target == MappingTarget.Key || key.Target == MappingTarget.Knob)
+                && key.Index >= 0)
+            {
+                dragSource = key;
+                args.Data.RequestedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+            }
+            else
+            {
+                args.Cancel = true;
+            }
+        }
+
+        private void Target_DragOver(object sender, DragEventArgs e)
+        {
+            e.AcceptedOperation =
+                dragSource is not null
+                && sender is FrameworkElement { DataContext: KeyViewModel target }
+                && !ReferenceEquals(target, dragSource)
+                && target.Target == dragSource.Target
+                && target.Index >= 0
+                    ? Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move
+                    : Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
+        }
+
+        private void Target_Drop(object sender, DragEventArgs e)
+        {
+            if (dragSource is not null
+                && sender is FrameworkElement { DataContext: KeyViewModel target })
+            {
+                ViewModel.SwapTargets(dragSource, target);
+                e.Handled = true;
+            }
+
+            dragSource = null;
+        }
+
         // All target lists (keys, catch-alls, knobs, screen) share single-selection:
         // selecting in one clears the others and drives the inspector.
         private void TargetList_SelectionChanged(object sender, SelectionChangedEventArgs e)

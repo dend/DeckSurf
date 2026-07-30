@@ -90,7 +90,7 @@ namespace DeckSurf.App.Services
         }
 
         /// <summary>
-        /// Sets device brightness (0-100). Synchronous USB I/O — call off the UI thread.
+        /// Sets device brightness (0-100). Synchronous USB I/O - call off the UI thread.
         /// </summary>
         public void SetBrightness(string serial, int level)
         {
@@ -99,7 +99,7 @@ namespace DeckSurf.App.Services
 
         /// <summary>
         /// Briefly flashes all keys white so the user can tell devices apart.
-        /// Synchronous USB I/O — call off the UI thread.
+        /// Synchronous USB I/O - call off the UI thread.
         /// </summary>
         public void Identify(string serial)
         {

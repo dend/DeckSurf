@@ -153,7 +153,7 @@ namespace DeckSurf.Plugin.Barn.Helpers
 
         private static int GetMacOSCpuUsage()
         {
-            // Run top for two samples — the first is cumulative since boot,
+            // Run top for two samples - the first is cumulative since boot,
             // the second is the delta over the sampling interval.
             var psi = new ProcessStartInfo("top", "-l 2 -n 0 -s 1")
             {

@@ -381,12 +381,207 @@ namespace DeckSurf.App.Services
 
         private void HotReload(Session session, ConfigurationProfile profile)
         {
-            DisposeCommands(session);
+            // Incremental apply: editing one key must not blink the whole board.
+            // Mappings that did not change keep their live command instances and
+            // key faces; only the command types behind added, changed, or removed
+            // mappings are recycled, and only affected keys are blanked.
+            var oldMappings = BySlot(session.Profile.ButtonMap);
+            var newMappings = BySlot(profile.ButtonMap);
+
+            var affected = new List<CommandMapping>();
+            var typesToRecycle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (slot, oldMapping) in oldMappings)
+            {
+                if (!newMappings.TryGetValue(slot, out var newMapping))
+                {
+                    // Removed: blank the key it owned.
+                    BlankKey(session, oldMapping);
+                    NoteAffected(typesToRecycle, oldMapping);
+                }
+                else if (!MappingEquals(oldMapping, newMapping))
+                {
+                    BlankKey(session, oldMapping);
+                    NoteAffected(typesToRecycle, oldMapping);
+                    NoteAffected(typesToRecycle, newMapping);
+                    affected.Add(newMapping);
+                }
+            }
+
+            foreach (var (slot, newMapping) in newMappings)
+            {
+                if (!oldMappings.ContainsKey(slot))
+                {
+                    NoteAffected(typesToRecycle, newMapping);
+                    affected.Add(newMapping);
+                }
+            }
+
             session.Profile = profile;
-            session.Commands = LoadCommands(session.Device, session);
-            session.Device.ClearButtons();
-            ActivateMappings(session);
+
+            if (typesToRecycle.Count == 0)
+            {
+                Log(session, "Profile changes applied.");
+                return;
+            }
+
+            RecycleCommands(session, typesToRecycle);
+
+            // A recycled instance may also serve mappings that did not change;
+            // those must re-activate on the fresh instance or their keys go dead.
+            foreach (var mapping in profile.ButtonMap)
+            {
+                if (mapping.Command is not null
+                    && typesToRecycle.Contains(mapping.Command)
+                    && !affected.Contains(mapping))
+                {
+                    affected.Add(mapping);
+                }
+            }
+
+            foreach (var mapping in affected)
+            {
+                if (mapping.Target == MappingTarget.Screen)
+                {
+                    RenderScreenImage(session, mapping);
+                }
+
+                var command = FindCommand(session, mapping);
+                if (command is not null)
+                {
+                    try
+                    {
+                        command.ExecuteOnActivation(mapping, session.Device);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log(session, $"Activation of '{mapping.Command}' failed: {ex.Message}");
+                    }
+                }
+            }
+
             Log(session, "Profile changes applied.");
+        }
+
+        // Slots are occurrence-indexed because a profile can hold several
+        // mappings for the same target and index (the any-key catch-alls).
+        private static Dictionary<(MappingTarget Target, int Index, int Occurrence), CommandMapping> BySlot(IEnumerable<CommandMapping> mappings)
+        {
+            var occurrences = new Dictionary<(MappingTarget, int), int>();
+            var result = new Dictionary<(MappingTarget, int, int), CommandMapping>();
+            foreach (var mapping in mappings)
+            {
+                var slot = (mapping.Target, mapping.ButtonIndex);
+                occurrences[slot] = occurrences.TryGetValue(slot, out var count) ? count + 1 : 0;
+                result[(mapping.Target, mapping.ButtonIndex, occurrences[slot])] = mapping;
+            }
+
+            return result;
+        }
+
+        private static bool MappingEquals(CommandMapping a, CommandMapping b) =>
+            string.Equals(a.Plugin, b.Plugin, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(a.Command, b.Command, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(a.ButtonImagePath ?? string.Empty, b.ButtonImagePath ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+            && ArgumentsEqual(a.CommandArguments, b.CommandArguments);
+
+        private static bool ArgumentsEqual(CommandArguments a, CommandArguments b)
+        {
+            if (a.Count != b.Count)
+            {
+                return false;
+            }
+
+            foreach (var (key, value) in a)
+            {
+                if (!b.TryGetValue(key, out var other) || !string.Equals(value, other, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void NoteAffected(HashSet<string> types, CommandMapping mapping)
+        {
+            if (mapping.Command is not null)
+            {
+                types.Add(mapping.Command);
+            }
+        }
+
+        private void BlankKey(Session session, CommandMapping mapping)
+        {
+            if (mapping.Target != MappingTarget.Key || mapping.ButtonIndex < 0)
+            {
+                return;
+            }
+
+            try
+            {
+                session.Device.SetKey(
+                    mapping.ButtonIndex,
+                    ImageHelper.CreateBlankImage(session.Device.ButtonResolution, DeviceColor.Black));
+            }
+            catch (Exception ex)
+            {
+                Log(session, $"Key clear warning: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Disposes and recreates only the command instances whose types are
+        /// affected by a profile edit; every other instance keeps running.
+        /// </summary>
+        private void RecycleCommands(Session session, HashSet<string> commandTypes)
+        {
+            var rebuilt = new Dictionary<string, IReadOnlyList<IDeckSurfCommand>>();
+
+            foreach (var (pluginId, instances) in session.Commands)
+            {
+                var plugin = pluginService.Plugins.FirstOrDefault(p => string.Equals(p.Id, pluginId, StringComparison.OrdinalIgnoreCase));
+                var kept = new List<IDeckSurfCommand>();
+
+                foreach (var instance in instances)
+                {
+                    if (commandTypes.Contains(instance.GetType().Name))
+                    {
+                        try
+                        {
+                            instance.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log(session, $"Command dispose warning: {ex.Message}");
+                        }
+
+                        var freshType = plugin is null
+                            ? null
+                            : PluginLoader.GetCommandTypes(plugin.Plugin, session.Device.Model)
+                                .FirstOrDefault(t => t == instance.GetType());
+                        if (freshType is not null)
+                        {
+                            try
+                            {
+                                kept.Add((IDeckSurfCommand)Activator.CreateInstance(freshType)!);
+                            }
+                            catch (Exception ex)
+                            {
+                                Log(session, $"Command recreate warning: {ex.Message}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        kept.Add(instance);
+                    }
+                }
+
+                rebuilt[pluginId] = kept;
+            }
+
+            session.Commands = rebuilt;
         }
 
         private void RestartAllSessions()

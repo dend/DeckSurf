@@ -67,7 +67,14 @@
              container margin) so selection chrome hugs the tile. Fill-only; the
              deck card's border is the only outline on the stage. -->
         <DataTemplate x:Key="KeyTileTemplate" x:DataType="vm:KeyViewModel">
-            <Grid CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
+            <Grid
+                CornerRadius="8"
+                Background="{ThemeResource DeckKeyBrush}"
+                CanDrag="True"
+                AllowDrop="True"
+                DragStarting="Target_DragStarting"
+                DragOver="Target_DragOver"
+                Drop="Target_Drop">
                 <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
                 <!-- The live mirror of what the physical key is displaying right
                      now, drawn over the static profile image while a session runs. -->
@@ -155,9 +162,32 @@
             <StackPanel Margin="0,0,0,8" Spacing="4">
                 <ComboBox
                     Header="{x:Bind HeaderText}"
-                    PlaceholderText="Select…"
+                    PlaceholderText="Select..."
                     ItemsSource="{x:Bind Choices}"
                     SelectedItem="{Binding Value, Mode=TwoWay}"
+                    HorizontalAlignment="Stretch" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ParameterSecretTemplate" x:DataType="vm:ParameterFieldViewModel">
+            <StackPanel Margin="0,0,0,8" Spacing="4">
+                <PasswordBox
+                    Header="{x:Bind HeaderText}"
+                    Password="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Runtime-populated suggestions (e.g. OBS scene names). Editable so the
+             value can still be typed when the backing source is offline. -->
+        <DataTemplate x:Key="ParameterDynamicChoiceTemplate" x:DataType="vm:ParameterFieldViewModel">
+            <StackPanel Margin="0,0,0,8" Spacing="4">
+                <ComboBox
+                    Header="{x:Bind HeaderText}"
+                    IsEditable="True"
+                    ItemsSource="{x:Bind DynamicChoices}"
+                    Text="{Binding Value, Mode=TwoWay}"
                     HorizontalAlignment="Stretch" />
                 <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
             </StackPanel>
@@ -186,6 +216,8 @@
             NumberTemplate="{StaticResource ParameterNumberTemplate}"
             BooleanTemplate="{StaticResource ParameterBooleanTemplate}"
             ChoiceTemplate="{StaticResource ParameterChoiceTemplate}"
+            DynamicChoiceTemplate="{StaticResource ParameterDynamicChoiceTemplate}"
+            SecretTemplate="{StaticResource ParameterSecretTemplate}"
             FileTemplate="{StaticResource ParameterFileTemplate}"
             ImageTemplate="{StaticResource ParameterFileTemplate}" />
     </Page.Resources>
@@ -360,7 +392,15 @@
                             </GridView.ItemsPanel>
                             <GridView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:KeyViewModel">
-                                    <StackPanel Spacing="4" HorizontalAlignment="Center" Padding="0,4">
+                                    <StackPanel
+                                        Spacing="4"
+                                        HorizontalAlignment="Center"
+                                        Padding="0,4"
+                                        CanDrag="True"
+                                        AllowDrop="True"
+                                        DragStarting="Target_DragStarting"
+                                        DragOver="Target_DragOver"
+                                        Drop="Target_Drop">
                                         <Grid HorizontalAlignment="Center">
                                             <Ellipse Width="48" Height="48" Fill="{ThemeResource DeckKeyBrush}" />
                                             <Ellipse Width="48" Height="48" Stroke="{ThemeResource AccentFillColorDefaultBrush}" StrokeThickness="2" Visibility="{x:Bind IsSelected, Mode=OneWay}" />
@@ -527,6 +567,12 @@
                                     <ItemsControl
                                         ItemsSource="{x:Bind ViewModel.ParameterFields}"
                                         ItemTemplateSelector="{StaticResource ParameterTemplates}" />
+                                    <InfoBar
+                                        IsClosable="False"
+                                        IsOpen="{x:Bind ViewModel.HasCommandStatus, Mode=OneWay}"
+                                        Severity="{x:Bind ViewModel.CommandStatusSeverity, Mode=OneWay}"
+                                        Message="{x:Bind ViewModel.CommandStatusText, Mode=OneWay}"
+                                        Margin="0,4,0,0" />
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
