@@ -16,7 +16,6 @@ namespace DeckSurf.App.Services
         IReadOnlyList<CommandParameterAttribute> Parameters,
         IReadOnlyList<DeviceModel> CompatibleModels,
         string? IconPath,
-        string Monogram,
         string PluginName)
     {
         private static readonly int AllKnownModelCount = Enum.GetValues<DeviceModel>().Length;
@@ -28,8 +27,6 @@ namespace DeckSurf.App.Services
         public IReadOnlyList<ParameterRow> ParameterRows { get; } = BuildParameterRows(Parameters);
 
         public bool HasIcon => IconPath is not null;
-
-        public bool HasNoIcon => IconPath is null;
 
         /// <summary>
         /// Gets the author-declared icon source, or null when the command renders
@@ -47,27 +44,13 @@ namespace DeckSurf.App.Services
                 : CompatibleModels;
 
         /// <summary>
-        /// Gets the always-populated tile footer line. Silence never encodes
-        /// meaning: every tile states its compatibility in the same place.
+        /// Gets the compatibility pills for the detail flyout, the only surface
+        /// that states compatibility visually. Always populated: universal
+        /// commands carry one "All devices" pill.
         /// </summary>
-        public string CompatibilityText => RestrictedModels.Count switch
-        {
-            0 => "Works with all devices",
-            1 => $"Works with {ShortName(RestrictedModels[0])}",
-            2 => $"Works with {ShortName(RestrictedModels[0])} and {ShortName(RestrictedModels[1])}",
-            _ => $"Works with {ShortName(RestrictedModels[0])}, {ShortName(RestrictedModels[1])}, and {RestrictedModels.Count - 2} more",
-        };
-
-        /// <summary>
-        /// Gets the full-name compatibility value for the flyout's fact block.
-        /// </summary>
-        public string CompatibilityFull => RestrictedModels.Count == 0
-            ? "All devices"
-            : JoinWithAnd([.. RestrictedModels.Select(FullName)]);
-
-        public string DevicesToolTip => RestrictedModels.Count == 0
-            ? "Supported devices: all models"
-            : $"Supported devices: {string.Join(", ", RestrictedModels.Select(FullName))}";
+        public IReadOnlyList<string> CompatibilityPills => RestrictedModels.Count == 0
+            ? ["All devices"]
+            : [.. RestrictedModels.Select(FullName)];
 
         public bool HasParameters => Parameters.Count > 0;
 
@@ -144,42 +127,46 @@ namespace DeckSurf.App.Services
                 };
 
                 // Every token comes straight from the declared attribute data;
-                // nothing is inferred or embellished.
-                var meta = typeLabel;
-                if (p.Required)
-                {
-                    meta += ", required";
-                }
+                // nothing is inferred or embellished. A default matching a declared
+                // option is marked on that option's pill; a free-form default gets
+                // its own caption line so the value is never dropped.
+                IReadOnlyList<string> options = p.Choices is { Length: > 0 }
+                    ? [.. p.Choices.Select(c =>
+                        string.Equals(c, p.DefaultValue, StringComparison.OrdinalIgnoreCase) ? $"{c} (default)" : c)]
+                    : [];
 
-                if (!string.IsNullOrEmpty(p.DefaultValue))
-                {
-                    meta += $", default {p.DefaultValue}";
-                }
-
-                var options = p.Choices is { Length: > 0 }
-                    ? $"Options: {string.Join(", ", p.Choices)}"
+                var defaultLine = !string.IsNullOrEmpty(p.DefaultValue)
+                    && !(p.Choices?.Any(c => string.Equals(c, p.DefaultValue, StringComparison.OrdinalIgnoreCase)) ?? false)
+                    ? $"Default: {p.DefaultValue}"
                     : null;
 
                 return new ParameterRow(
                     p.DisplayName ?? p.Key,
-                    meta,
+                    typeLabel,
+                    p.Required,
                     options,
+                    defaultLine,
                     string.IsNullOrEmpty(p.Description) ? null : p.Description);
             })];
     }
 
     /// <summary>
     /// One declared command parameter, shaped for the detail flyout's form-preview
-    /// blocks. Optional lines stay null (not empty) so their TextBlocks collapse
-    /// via bool-to-Visibility x:Bind.
+    /// blocks: name with type and required pills, option pills, and optional
+    /// default and help lines that stay null (not empty) so their elements
+    /// collapse via bool-to-Visibility x:Bind.
     /// </summary>
     public sealed record ParameterRow(
         string Name,
-        string MetaLine,
-        string? OptionsLine,
+        string TypeLabel,
+        bool IsRequired,
+        IReadOnlyList<string> Options,
+        string? DefaultLine,
         string? Description)
     {
-        public bool HasOptions => OptionsLine is not null;
+        public bool HasOptions => Options.Count > 0;
+
+        public bool HasDefault => DefaultLine is not null;
 
         public bool HasDescription => Description is not null;
     }
@@ -357,8 +344,6 @@ namespace DeckSurf.App.Services
 
         private PluginInfo CreatePluginInfo(IDeckSurfPlugin plugin, string sourcePath)
         {
-            // First pass gathers metadata; monograms need sibling awareness (shared
-            // leading words carry no discriminating information within a section).
             var gathered = new List<(Type CommandType, string DisplayName, string Description)>();
 
             foreach (var commandType in PluginLoader.GetCommandTypes(plugin))
@@ -382,14 +367,11 @@ namespace DeckSurf.App.Services
                 gathered.Add((commandType, displayName, description));
             }
 
-            var monograms = DeriveMonograms(gathered);
             var pluginDisplayName = string.IsNullOrEmpty(plugin.Metadata.Name) ? plugin.Metadata.Id : plugin.Metadata.Name;
 
             var commands = new List<CommandInfo>();
-            for (var i = 0; i < gathered.Count; i++)
+            foreach (var (commandType, displayName, description) in gathered)
             {
-                var (commandType, displayName, description) = gathered[i];
-
                 var compatibleModels = commandType
                     .GetCustomAttributes(typeof(CompatibleWithAttribute), inherit: false)
                     .Cast<CompatibleWithAttribute>()
@@ -405,7 +387,6 @@ namespace DeckSurf.App.Services
                     CommandSchemaReader.GetParameters(commandType),
                     compatibleModels,
                     PluginLoader.GetCommandIconPath(commandType),
-                    monograms[i],
                     pluginDisplayName));
             }
 
@@ -419,60 +400,5 @@ namespace DeckSurf.App.Services
                 commands);
         }
 
-        /// <summary>
-        /// Derives the backlit-cap monogram for each command from its own name,
-        /// deterministically and total over arbitrary input. Leading words shared by
-        /// two or more sibling commands are dropped ("Show CPU usage" among other
-        /// "Show" commands yields CU); a name fully consumed by the drop falls back
-        /// to its undropped initials; an empty name falls back to the command type
-        /// name's first character. No cap can render empty.
-        /// </summary>
-        private static List<string> DeriveMonograms(List<(Type CommandType, string DisplayName, string Description)> commands)
-        {
-            var tokenLists = commands
-                .Select(c => (IReadOnlyList<string>)[.. c.DisplayName.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)])
-                .ToList();
-
-            // Iteratively drop leading tokens shared (case-insensitively) by two or
-            // more names still holding tokens at that depth.
-            var remaining = tokenLists.Select(t => t.ToList()).ToList();
-            while (true)
-            {
-                var sharedLeads = remaining
-                    .Where(t => t.Count > 0)
-                    .GroupBy(t => t[0], StringComparer.OrdinalIgnoreCase)
-                    .Where(g => g.Count() >= 2)
-                    .Select(g => g.Key)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                if (sharedLeads.Count == 0)
-                {
-                    break;
-                }
-
-                foreach (var tokens in remaining)
-                {
-                    if (tokens.Count > 0 && sharedLeads.Contains(tokens[0]))
-                    {
-                        tokens.RemoveAt(0);
-                    }
-                }
-            }
-
-            var monograms = new List<string>();
-            for (var i = 0; i < commands.Count; i++)
-            {
-                var source = remaining[i].Count > 0 ? remaining[i] : [.. tokenLists[i]];
-                var monogram = string.Concat(source.Take(2).Select(w => char.ToUpperInvariant(w[0])));
-                if (monogram.Length == 0)
-                {
-                    monogram = char.ToUpperInvariant(commands[i].CommandType.Name[0]).ToString();
-                }
-
-                monograms.Add(monogram);
-            }
-
-            return monograms;
-        }
     }
 }

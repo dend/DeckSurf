@@ -26,7 +26,9 @@ namespace DeckSurf.App.ViewModels
 
         public string DisplayName => Definition.DisplayName ?? Definition.Key;
 
-        public string HeaderText => Definition.Required ? $"{DisplayName} (required)" : DisplayName;
+        // The Windows forms convention for required fields: an asterisk suffix,
+        // not a parenthetical.
+        public string HeaderText => Definition.Required ? $"{DisplayName} *" : DisplayName;
 
         public string Description => Definition.Description ?? string.Empty;
 

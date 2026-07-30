@@ -9,11 +9,6 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- The backlit monogram legend on undeclared command caps: the user's
-                 accent, doubly lightened so it stays legible on the always-dark key.
-                 References the system accent ramp, never a literal color. -->
-            <SolidColorBrush x:Key="DeckMonogramBrush" Color="{ThemeResource SystemAccentColorLight2}" />
-
             <!-- The deck face is deliberately dark in both themes: it mirrors the
                  physical hardware. These are the only literal colors in the app;
                  every other brush is a system ThemeResource. -->

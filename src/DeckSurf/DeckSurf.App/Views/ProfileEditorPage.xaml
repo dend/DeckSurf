@@ -12,6 +12,57 @@
     KeyboardAcceleratorPlacementMode="Hidden">
 
     <Page.Resources>
+        <!-- The image-picker key cap. The default Button hover swaps in the
+             theme's control background, which turns the always-dark cap near
+             white in light theme and drowns the dashed hint; instead, hover and
+             press wash the cap with a faint DeckTextBrush overlay, so feedback
+             reads as the key lighting up, identically in both themes. -->
+        <Style x:Key="KeyCapPickerStyle" TargetType="Button">
+            <Setter Property="Background" Value="{ThemeResource DeckKeyBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid CornerRadius="{TemplateBinding CornerRadius}" Background="{TemplateBinding Background}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="HoverWash.Opacity" Value="0.08" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="HoverWash.Opacity" Value="0.14" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Presenter.Opacity" Value="0.5" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter
+                                x:Name="Presenter"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}" />
+                            <Border
+                                x:Name="HoverWash"
+                                Background="{ThemeResource DeckTextBrush}"
+                                Opacity="0"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                IsHitTestVisible="False" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Key tile: fills its 96px cell (88px visible inside the uniform 4px
              container margin) so selection chrome hugs the tile. Fill-only; the
              deck card's border is the only outline on the stage. -->
@@ -414,12 +465,9 @@
                                          with a dashed outline, a filled cap shows the image, and
                                          clicking either opens the file picker. -->
                                     <Button
+                                        Style="{StaticResource KeyCapPickerStyle}"
                                         Width="96"
                                         Height="96"
-                                        Padding="0"
-                                        CornerRadius="8"
-                                        BorderThickness="0"
-                                        Background="{ThemeResource DeckKeyBrush}"
                                         HorizontalAlignment="Left"
                                         Click="BrowseKeyImage_Click"
                                         ToolTipService.ToolTip="Choose an image for this key"

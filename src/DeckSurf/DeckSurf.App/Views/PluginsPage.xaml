@@ -25,11 +25,11 @@
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
-            <!-- 112, not the spec's 108: that budget was an exact fit
-                 (16+20+4+32+4+16+16) and DPI rounding stole the description's
-                 second line. 4px of slack preserves the two-line intent. -->
+            <!-- 92: padding 32 + title 20 + spacing 4 + two caption lines 32,
+                 plus 4px slack against DPI rounding. Compatibility and settings
+                 moved to the flyout, so the tile carries no footer row. -->
             <Setter Property="Padding" Value="16" />
-            <Setter Property="Height" Value="112" />
+            <Setter Property="Height" Value="92" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -81,11 +81,17 @@
             </Setter>
         </Style>
 
+        <!-- A metadata pill: neutral fill, caption secondary text, fully rounded. -->
+        <DataTemplate x:Key="PillTemplate" x:DataType="x:String">
+            <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="12" Padding="10,3">
+                <TextBlock Text="{x:Bind}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Border>
+        </DataTemplate>
+
         <!-- Command tile: one variant for every command. The 44px key cap carries
-             identity: author-declared artwork when the plugin ships an icon, else
-             the command's monogram lit in the user's accent, the backlit legend of
-             a powered key awaiting art. The footer compatibility line is always
-             populated; silence never encodes meaning. -->
+             identity when the plugin author declared artwork, and stays a clean
+             blank key otherwise. Compatibility and settings live in the flyout;
+             the tile face is name and description only. -->
         <DataTemplate x:Key="CommandTileTemplate" x:DataType="services:CommandInfo">
             <Button
                 Style="{StaticResource CommandTileStyle}"
@@ -99,24 +105,16 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
+                    <!-- The command's key cap: declared artwork when the plugin ships
+                         an icon, otherwise a clean blank key. -->
                     <Grid Grid.RowSpan="2" Width="44" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}" VerticalAlignment="Top">
                         <Image Width="28" Height="28" Stretch="Uniform" Visibility="{x:Bind HasIcon}">
                             <Image.Source>
                                 <BitmapImage UriSource="{x:Bind IconUri}" DecodePixelWidth="56" />
                             </Image.Source>
                         </Image>
-                        <TextBlock
-                            Text="{x:Bind Monogram}"
-                            Visibility="{x:Bind HasNoIcon}"
-                            Foreground="{StaticResource DeckMonogramBrush}"
-                            FontSize="15"
-                            FontWeight="SemiBold"
-                            CharacterSpacing="50"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center" />
                     </Grid>
 
                     <TextBlock
@@ -134,13 +132,6 @@
                         MaxLines="2"
                         TextTrimming="CharacterEllipsis"
                         VerticalAlignment="Top" />
-                    <TextBlock
-                        Grid.Row="2"
-                        Grid.ColumnSpan="2"
-                        Text="{x:Bind CompatibilityText}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        ToolTipService.ToolTip="{x:Bind DevicesToolTip}" />
                 </Grid>
                 <Button.Flyout>
                     <Flyout Placement="Bottom">
@@ -149,6 +140,10 @@
                                 <Setter Property="Padding" Value="16" />
                                 <Setter Property="MinWidth" Value="360" />
                                 <Setter Property="MaxWidth" Value="420" />
+                                <!-- Long lines wrap; the presenter's ScrollViewer must
+                                     never pan sideways. -->
+                                <Setter Property="ScrollViewer.HorizontalScrollMode" Value="Disabled" />
+                                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
                             </Style>
                         </Flyout.FlyoutPresenterStyle>
                         <!-- The detail surface shares the app's one grammar: the same
@@ -167,15 +162,6 @@
                                             <BitmapImage UriSource="{x:Bind IconUri}" DecodePixelWidth="56" />
                                         </Image.Source>
                                     </Image>
-                                    <TextBlock
-                                        Text="{x:Bind Monogram}"
-                                        Visibility="{x:Bind HasNoIcon}"
-                                        Foreground="{StaticResource DeckMonogramBrush}"
-                                        FontSize="15"
-                                        FontWeight="SemiBold"
-                                        CharacterSpacing="50"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center" />
                                 </Grid>
                                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
@@ -191,9 +177,13 @@
                                 TextWrapping="Wrap"
                                 Margin="0,16,0,0" />
 
-                            <StackPanel Spacing="2" Margin="0,16,0,0">
+                            <StackPanel Spacing="6" Margin="0,16,0,0">
                                 <TextBlock Text="Works with" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                <TextBlock Text="{x:Bind CompatibilityFull}" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                                <ItemsRepeater ItemsSource="{x:Bind CompatibilityPills}" ItemTemplate="{StaticResource PillTemplate}">
+                                    <ItemsRepeater.Layout>
+                                        <LinedFlowLayout ItemsStretch="None" ItemsJustification="Start" MinItemSpacing="6" LineSpacing="6" />
+                                    </ItemsRepeater.Layout>
+                                </ItemsRepeater>
                             </StackPanel>
 
                             <StackPanel Margin="0,16,0,0">
@@ -212,10 +202,25 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="services:ParameterRow">
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyTextBlockStyle}" />
-                                                <TextBlock Text="{x:Bind MetaLine}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                <TextBlock Text="{x:Bind OptionsLine}" Visibility="{x:Bind HasOptions}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <!-- Name anchors the row; type and required read as
+                                                 pills, options as a pill row, so the schema scans
+                                                 instead of reading like prose. -->
+                                            <StackPanel Spacing="6">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
+                                                        <TextBlock Text="{x:Bind TypeLabel}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    </Border>
+                                                    <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="12" Padding="10,3" VerticalAlignment="Center" Visibility="{x:Bind IsRequired}">
+                                                        <TextBlock Text="Required" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                                    </Border>
+                                                </StackPanel>
+                                                <ItemsRepeater ItemsSource="{x:Bind Options}" ItemTemplate="{StaticResource PillTemplate}" Visibility="{x:Bind HasOptions}">
+                                                    <ItemsRepeater.Layout>
+                                                        <LinedFlowLayout ItemsStretch="None" ItemsJustification="Start" MinItemSpacing="6" LineSpacing="6" />
+                                                    </ItemsRepeater.Layout>
+                                                </ItemsRepeater>
+                                                <TextBlock Text="{x:Bind DefaultLine}" Visibility="{x:Bind HasDefault}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                                 <TextBlock Text="{x:Bind Description}" Visibility="{x:Bind HasDescription}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                             </StackPanel>
                                         </DataTemplate>
@@ -299,7 +304,7 @@
                                         <UniformGridLayout
                                             Orientation="Horizontal"
                                             MinItemWidth="236"
-                                            MinItemHeight="112"
+                                            MinItemHeight="92"
                                             MinColumnSpacing="8"
                                             MinRowSpacing="8"
                                             ItemsStretch="Fill" />
