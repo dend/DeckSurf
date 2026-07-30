@@ -21,6 +21,7 @@ namespace DeckSurf.App.ViewModels
 
         private bool loadingKey;
         private bool loadingProfile;
+        private bool refreshingProfiles;
         private bool dirty;
 
         public ProfileEditorViewModel(
@@ -190,26 +191,33 @@ namespace DeckSurf.App.ViewModels
         /// </summary>
         public void RefreshProfiles()
         {
-            var current = SelectedProfileName;
-            ProfileNames.Clear();
-            foreach (var name in profileService.ListProfiles())
+            // Clearing the bound list makes the ComboBox push a null selection
+            // mid-refresh; suppress selection handling until the list is rebuilt.
+            refreshingProfiles = true;
+            try
             {
-                if (ProfileBelongsToSelectedDevice(name))
+                var current = SelectedProfileName;
+                ProfileNames.Clear();
+                foreach (var name in profileService.ListProfiles())
                 {
-                    ProfileNames.Add(name);
+                    if (ProfileBelongsToSelectedDevice(name))
+                    {
+                        ProfileNames.Add(name);
+                    }
                 }
+
+                SelectedProfileName = current is not null && ProfileNames.Contains(current)
+                    ? current
+                    : ProfileNames.FirstOrDefault();
+            }
+            finally
+            {
+                refreshingProfiles = false;
             }
 
-            if (current is not null && ProfileNames.Contains(current))
-            {
-                SelectedProfileName = current;
-            }
-            else
-            {
-                SelectedProfileName = ProfileNames.FirstOrDefault();
-            }
-
+            LoadProfile(SelectedProfileName);
             OnPropertyChanged(nameof(HasNoProfiles));
+            OnPropertyChanged(nameof(CanStart));
         }
 
         private bool ProfileBelongsToSelectedDevice(string name)
@@ -235,6 +243,11 @@ namespace DeckSurf.App.ViewModels
 
         partial void OnSelectedProfileNameChanged(string? value)
         {
+            if (refreshingProfiles)
+            {
+                return;
+            }
+
             LoadProfile(value);
             OnPropertyChanged(nameof(CanStart));
         }
@@ -482,7 +495,6 @@ namespace DeckSurf.App.ViewModels
                 CatchAllMappings.Clear();
                 KnobTargets.Clear();
                 ScreenTargets.Clear();
-                SelectedDevice = null;
 
                 if (name is null)
                 {
@@ -529,8 +541,6 @@ namespace DeckSurf.App.ViewModels
                         profileDeviceSerial = connected.Serial;
                     }
                 }
-
-                SelectedDevice = connected;
 
                 var (columns, rows) = connected is not null
                     ? (connected.ButtonColumns, connected.ButtonRows)

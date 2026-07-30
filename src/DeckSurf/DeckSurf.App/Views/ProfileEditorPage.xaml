@@ -118,30 +118,13 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <CommandBar Grid.Row="0" DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Background="Transparent" IsOpen="False">
             <CommandBar.Content>
-                <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                    <TextBlock Text="Editor" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
-                    <ComboBox
-                        MinWidth="220"
-                        VerticalAlignment="Center"
-                        Header="Device"
-                        PlaceholderText="No devices connected"
-                        IsEnabled="{x:Bind ViewModel.HasDevices, Mode=OneWay}"
-                        ItemsSource="{x:Bind ViewModel.ConnectedDevices}"
-                        DisplayMemberPath="DisplayText"
-                        SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" />
-                    <ComboBox
-                        MinWidth="180"
-                        VerticalAlignment="Center"
-                        Header="Profile"
-                        PlaceholderText="Select a profile"
-                        ItemsSource="{x:Bind ViewModel.ProfileNames}"
-                        SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
-                </StackPanel>
+                <TextBlock Text="Editor" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
             </CommandBar.Content>
 
             <AppBarButton Label="New" Click="NewProfile_Click">
@@ -210,8 +193,26 @@
             </AppBarButton>
         </CommandBar>
 
+        <!-- Scope row: which device is being edited, and which of its profiles. -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="0,0,0,4">
+            <ComboBox
+                MinWidth="240"
+                Header="Device"
+                PlaceholderText="No devices connected"
+                IsEnabled="{x:Bind ViewModel.HasDevices, Mode=OneWay}"
+                ItemsSource="{x:Bind ViewModel.ConnectedDevices}"
+                DisplayMemberPath="DisplayText"
+                SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" />
+            <ComboBox
+                MinWidth="200"
+                Header="Profile"
+                PlaceholderText="Select a profile"
+                ItemsSource="{x:Bind ViewModel.ProfileNames}"
+                SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
+        </StackPanel>
+
         <InfoBar
-            Grid.Row="1"
+            Grid.Row="2"
             IsOpen="{x:Bind ViewModel.HasStatus, Mode=OneWay}"
             Severity="Error"
             IsClosable="False"
@@ -219,7 +220,7 @@
 
         <!-- First-run empty state -->
         <StackPanel
-            Grid.Row="2"
+            Grid.Row="3"
             Spacing="12"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
@@ -241,7 +242,7 @@
             </Button>
         </StackPanel>
 
-        <Grid Grid.Row="2" ColumnSpacing="16" Margin="0,8,0,0" Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+        <Grid Grid.Row="3" ColumnSpacing="16" Margin="0,8,0,0" Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="340" />
