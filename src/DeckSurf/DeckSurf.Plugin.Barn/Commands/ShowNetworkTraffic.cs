@@ -17,7 +17,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         private readonly List<long> _history = new();
         private readonly object _historyLock = new();
 
-        public string Name => "Show Network Traffic";
+        public string Name => "Show network traffic";
         public string Description => "Displays live network upload/download speeds on a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)

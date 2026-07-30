@@ -49,6 +49,9 @@ namespace DeckSurf.App.ViewModels
                 {
                     SelectedDevice = deviceService.Devices.FirstOrDefault();
                 }
+
+                OnPropertyChanged(nameof(HasDevices));
+                OnPropertyChanged(nameof(CanStart));
             });
 
             SelectedDevice = deviceService.Devices.FirstOrDefault();
@@ -119,6 +122,15 @@ namespace DeckSurf.App.ViewModels
         public bool HasProfile => !string.IsNullOrEmpty(SelectedProfileName);
 
         public bool HasNoProfiles => ProfileNames.Count == 0;
+
+        public bool HasDevices => deviceService.Devices.Count > 0;
+
+        /// <summary>
+        /// Gets a value indicating whether the runtime can start: a profile is loaded
+        /// and its device is connected. Prevents the primary action from failing
+        /// after the fact.
+        /// </summary>
+        public bool CanStart => HasProfile && SelectedDevice is not null;
 
         public bool HasSelectedKey => SelectedKey is not null;
 
@@ -224,11 +236,13 @@ namespace DeckSurf.App.ViewModels
         partial void OnSelectedProfileNameChanged(string? value)
         {
             LoadProfile(value);
+            OnPropertyChanged(nameof(CanStart));
         }
 
         partial void OnSelectedDeviceChanged(DeviceSummary? value)
         {
             OnPropertyChanged(nameof(AvailableCommands));
+            OnPropertyChanged(nameof(CanStart));
 
             // Switching the device switches the editing scope: the profile list
             // reloads for that device. The loaded profile is never retargeted.
@@ -546,6 +560,9 @@ namespace DeckSurf.App.ViewModels
 
                     target.PluginId = mapping.Plugin;
                     target.CommandId = mapping.Command;
+                    target.CommandDisplayName = mapping.Plugin is null || mapping.Command is null
+                        ? null
+                        : pluginService.GetCommand(mapping.Plugin, mapping.Command)?.DisplayName;
                     target.CommandArguments = mapping.CommandArguments;
                     target.ImagePath = mapping.ButtonImagePath;
                 }
@@ -679,6 +696,7 @@ namespace DeckSurf.App.ViewModels
 
             SelectedKey.PluginId = SelectedPlugin?.Id;
             SelectedKey.CommandId = SelectedCommand?.Id;
+            SelectedKey.CommandDisplayName = SelectedCommand?.DisplayName;
 
             if (ParameterFields.Count > 0)
             {

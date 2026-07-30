@@ -10,7 +10,7 @@ namespace DeckSurf.Plugin.Barn.Commands
 {
     class SnakeGame : IDeckSurfCommand
     {
-        public string Name => "Snake Game";
+        public string Name => "Snake game";
 
         public string Description => "Plays a game of snake on the Stream Deck button grid.";
 

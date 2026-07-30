@@ -25,7 +25,7 @@
             x:Name="RootNavigation"
             Grid.Row="1"
             IsBackButtonVisible="Collapsed"
-            IsSettingsVisible="True"
+            IsSettingsVisible="False"
             PaneDisplayMode="Left"
             OpenPaneLength="220"
             SelectionChanged="RootNavigation_SelectionChanged">
@@ -52,10 +52,27 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="SettingsItem" Content="Settings" Tag="settings">
+                    <NavigationViewItem.Icon>
+                        <ImageIcon Source="ms-appx:///Assets/Icons/gear.png" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+
             <NavigationView.PaneFooter>
-                <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Margin="8,0,8,4" Padding="12,10,12,8">
+                <Border
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                    BorderThickness="0,1,0,0"
+                    Margin="8,0,8,4"
+                    Padding="16,10,16,8"
+                    ToolTipService.ToolTip="Profile runtime status. Start or stop it from the Editor.">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
+                        <!-- The dot is centered in a 16px slot so the label lines up with
+                             the navigation item labels above. -->
+                        <Grid Width="16" VerticalAlignment="Center">
+                            <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
+                        </Grid>
                         <TextBlock x:Name="RuntimeStatusText" Text="Stopped" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" VerticalAlignment="Center" />
                     </StackPanel>
                 </Border>

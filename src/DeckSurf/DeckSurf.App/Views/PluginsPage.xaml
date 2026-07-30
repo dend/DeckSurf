@@ -16,12 +16,12 @@
                 <CommandBar.Content>
                     <TextBlock Text="Plugins" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
                 </CommandBar.Content>
-                <AppBarButton Label="Rescan" Command="{x:Bind ViewModel.RescanCommand}" ToolTipService.ToolTip="Rescan all plugin folders">
+                <AppBarButton Label="Refresh" Command="{x:Bind ViewModel.RescanCommand}" ToolTipService.ToolTip="Scan all plugin folders again">
                     <AppBarButton.Icon>
                         <FontIcon Glyph="&#xE72C;" />
                     </AppBarButton.Icon>
                 </AppBarButton>
-                <AppBarButton Label="Plugins folder" Command="{x:Bind ViewModel.OpenPluginsFolderCommand}" ToolTipService.ToolTip="Open the plugins folder">
+                <AppBarButton Label="Plugin folder" Command="{x:Bind ViewModel.OpenPluginsFolderCommand}" ToolTipService.ToolTip="Open the built-in plugin folder">
                     <AppBarButton.Icon>
                         <FontIcon Glyph="&#xE838;" />
                     </AppBarButton.Icon>

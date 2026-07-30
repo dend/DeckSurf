@@ -79,8 +79,10 @@ namespace DeckSurf.App.Views
 
             KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
 
-            // Strips inside the deck card span the full key grid width.
-            CatchAllList.Width = KeyGrid.Width;
+            // Strips inside the deck card align with the visible tile faces: tiles are
+            // 86px centered in 96px slots, so the faces sit 5px inside the grid edges.
+            CatchAllList.Width = (ViewModel.GridColumns * TileSlotWidth) - 10;
+            CatchAllList.HorizontalAlignment = HorizontalAlignment.Center;
         }
 
         // All target lists (keys, catch-alls, knobs, screen) share single-selection:

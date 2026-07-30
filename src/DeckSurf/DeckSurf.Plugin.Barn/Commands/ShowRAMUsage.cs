@@ -17,7 +17,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         private readonly List<int> _history = new();
         private readonly object _historyLock = new();
 
-        public string Name => "Show RAM Usage";
+        public string Name => "Show RAM usage";
         public string Description => "Displays live RAM usage percentage on a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)

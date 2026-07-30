@@ -39,16 +39,13 @@ namespace DeckSurf.App
         private void RootNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             Type pageType;
-            if (args.IsSettingsSelected)
-            {
-                pageType = typeof(Views.SettingsPage);
-            }
-            else if (args.SelectedItem is NavigationViewItem { Tag: string tag })
+            if (args.SelectedItem is NavigationViewItem { Tag: string tag })
             {
                 pageType = tag switch
                 {
                     "editor" => typeof(Views.ProfileEditorPage),
                     "plugins" => typeof(Views.PluginsPage),
+                    "settings" => typeof(Views.SettingsPage),
                     _ => typeof(Views.DevicesPage),
                 };
             }

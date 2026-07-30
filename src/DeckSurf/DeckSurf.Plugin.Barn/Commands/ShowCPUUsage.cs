@@ -17,7 +17,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         private readonly List<int> _history = new();
         private readonly object _historyLock = new();
 
-        public string Name => "Show CPU Usage";
+        public string Name => "Show CPU usage";
         public string Description => "Displays live CPU usage percentage on a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)

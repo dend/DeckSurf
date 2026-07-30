@@ -36,6 +36,15 @@ namespace DeckSurf.App.ViewModels
         [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
         public partial string? CommandId { get; set; }
 
+        /// <summary>
+        /// Gets or sets the command's friendly display name; tiles fall back to the
+        /// raw command id only when the plugin is not loaded.
+        /// </summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Label))]
+        [NotifyPropertyChangedFor(nameof(TitleText))]
+        public partial string? CommandDisplayName { get; set; }
+
         [ObservableProperty]
         public partial string? CommandArguments { get; set; }
 
@@ -56,13 +65,29 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasMapping => !string.IsNullOrEmpty(PluginId) && !string.IsNullOrEmpty(CommandId);
 
-        public string Label => CommandId ?? string.Empty;
+        public string Label => CommandDisplayName ?? CommandId ?? string.Empty;
 
         /// <summary>
-        /// Gets the list-row title for hardware targets: the mapped command, or a
-        /// placeholder when nothing is assigned yet.
+        /// Gets the strip title for hardware targets: the target's identity plus the
+        /// mapped command, or a placeholder when nothing is assigned yet.
         /// </summary>
-        public string TitleText => HasMapping ? Label : "Not configured";
+        public string TitleText
+        {
+            get
+            {
+                if (!HasMapping)
+                {
+                    return "Not configured";
+                }
+
+                return Target switch
+                {
+                    MappingTarget.Screen => $"Touch screen: {Label}",
+                    _ when Index == -1 => $"Any key: {Label}",
+                    _ => Label,
+                };
+            }
+        }
 
         /// <summary>
         /// Gets a value indicating whether the tile shows its text label. Hidden when a

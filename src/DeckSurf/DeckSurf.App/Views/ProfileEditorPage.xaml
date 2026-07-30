@@ -114,7 +114,7 @@
             ImageTemplate="{StaticResource ParameterFileTemplate}" />
     </Page.Resources>
 
-    <Grid Padding="28,16,28,24" RowSpacing="8">
+    <Grid Padding="28,20,28,24" RowSpacing="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -123,20 +123,22 @@
 
         <CommandBar Grid.Row="0" DefaultLabelPosition="Right" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Background="Transparent" IsOpen="False">
             <CommandBar.Content>
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                    <TextBlock Text="Editor" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
                     <ComboBox
                         MinWidth="220"
                         VerticalAlignment="Center"
-                        PlaceholderText="Device"
-                        ToolTipService.ToolTip="Device you are editing; each device has its own profiles"
+                        Header="Device"
+                        PlaceholderText="No devices connected"
+                        IsEnabled="{x:Bind ViewModel.HasDevices, Mode=OneWay}"
                         ItemsSource="{x:Bind ViewModel.ConnectedDevices}"
                         DisplayMemberPath="DisplayText"
                         SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" />
                     <ComboBox
                         MinWidth="180"
                         VerticalAlignment="Center"
+                        Header="Profile"
                         PlaceholderText="Select a profile"
-                        ToolTipService.ToolTip="Profiles for the selected device"
                         ItemsSource="{x:Bind ViewModel.ProfileNames}"
                         SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}" />
                 </StackPanel>
@@ -191,10 +193,11 @@
             <AppBarButton
                 Label="Start"
                 Command="{x:Bind ViewModel.ToggleRuntimeCommand}"
-                IsEnabled="{x:Bind ViewModel.HasProfile, Mode=OneWay}"
+                IsEnabled="{x:Bind ViewModel.CanStart, Mode=OneWay}"
+                ToolTipService.ToolTip="Start the runtime on the selected profile; requires its device to be connected"
                 Visibility="{x:Bind ViewModel.IsNotRunning, Mode=OneWay}">
                 <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE768;" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                    <FontIcon Glyph="&#xE768;" />
                 </AppBarButton.Icon>
             </AppBarButton>
             <AppBarButton
@@ -202,7 +205,7 @@
                 Command="{x:Bind ViewModel.ToggleRuntimeCommand}"
                 Visibility="{x:Bind ViewModel.IsRunning, Mode=OneWay}">
                 <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE71A;" Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
+                    <FontIcon Glyph="&#xE71A;" />
                 </AppBarButton.Icon>
             </AppBarButton>
         </CommandBar>
@@ -285,10 +288,10 @@
                                 HorizontalAlignment="Left">
                                 <GridView.ItemTemplate>
                                     <DataTemplate x:DataType="vm:KeyViewModel">
-                                        <Grid Width="376" Height="44" CornerRadius="6" Background="#FF141414" BorderBrush="#FF333333" BorderThickness="1">
-                                            <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Width="376" Height="44" Stretch="UniformToFill" />
+                                        <Grid Width="374" Height="44" CornerRadius="6" Background="#FF141414" BorderBrush="#FF333333" BorderThickness="1">
+                                            <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Width="374" Height="44" Stretch="UniformToFill" />
                                             <TextBlock Text="Touch screen (select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
-                                            <TextBlock Text="{x:Bind Label, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#FFE8E8E8" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                            <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#FFE8E8E8" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
                                         </Grid>
                                     </DataTemplate>
                                 </GridView.ItemTemplate>
@@ -335,7 +338,7 @@
                                         <Setter Property="BorderBrush" Value="#FF333333" />
                                         <Setter Property="BorderThickness" Value="1" />
                                         <Setter Property="CornerRadius" Value="6" />
-                                        <Setter Property="Margin" Value="0,0,0,4" />
+                                        <Setter Property="Margin" Value="0" />
                                         <Setter Property="MinHeight" Value="40" />
                                         <Setter Property="Padding" Value="0" />
                                         <Setter Property="MinWidth" Value="0" />

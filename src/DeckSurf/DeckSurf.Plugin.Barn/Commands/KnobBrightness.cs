@@ -12,7 +12,7 @@ namespace DeckSurf.Plugin.Barn.Commands
         private int _level = 60;
         private int _lastNonZeroLevel = 60;
 
-        public string Name => "Knob Brightness";
+        public string Name => "Knob brightness";
 
         public string Description => "Adjusts device brightness with a knob: rotate to change, press to toggle the backlight.";
 

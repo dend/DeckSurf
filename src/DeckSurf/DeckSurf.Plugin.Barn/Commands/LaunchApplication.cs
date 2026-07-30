@@ -12,7 +12,7 @@ namespace DeckSurf.Plugin.Barn.Commands
     [CommandParameter("path", CommandParameterType.FilePath, DisplayName = "Application path", Description = "Executable, document, or URL to open when the button is pressed.", Required = true)]
     class LaunchApplication : IDeckSurfCommand
     {
-        public string Name => "Launch Application";
+        public string Name => "Launch application";
         public string Description => "Launches an application from a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
