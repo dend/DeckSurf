@@ -9,6 +9,49 @@
     Title="DeckSurf">
 
     <Grid>
+        <Grid.Resources>
+            <!-- The runtime status row: shaped like a navigation item so it
+                 belongs to the pane, quiet until hovered, and clicking it opens
+                 Activity, where the details live. -->
+            <Style x:Key="RuntimeStatusButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="16,0" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Root.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Root.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <ContentPresenter
+                                    Content="{TemplateBinding Content}"
+                                    Padding="{TemplateBinding Padding}"
+                                    HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalContentAlignment="Center" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -66,21 +109,22 @@
             </NavigationView.FooterMenuItems>
 
             <NavigationView.PaneFooter>
-                <!-- Caption type and spacing alone demote the status row; the dot is
-                     centered in a 16px slot so the label lines up with the navigation
-                     item labels above. -->
-                <StackPanel
-                    Orientation="Horizontal"
-                    Spacing="8"
-                    VerticalAlignment="Center"
-                    Margin="8,0,8,4"
-                    Padding="16,10,16,8"
-                    ToolTipService.ToolTip="Profile runtime status. Start or stop it from the Editor.">
-                    <Grid Width="16" VerticalAlignment="Center">
-                        <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
-                    </Grid>
-                    <TextBlock x:Name="RuntimeStatusText" Text="Stopped" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                </StackPanel>
+                <!-- The dot sits in the 16px slot where a nav glyph would, so the
+                     label shares the item grammar; hover carries the per-device
+                     detail and clicking opens Activity. -->
+                <Button
+                    x:Name="RuntimeStatusButton"
+                    Style="{StaticResource RuntimeStatusButtonStyle}"
+                    Margin="4,0,4,4"
+                    Click="RuntimeStatus_Click"
+                    AutomationProperties.Name="Runtime status, opens Activity">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Grid Width="16" VerticalAlignment="Center">
+                            <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
+                        </Grid>
+                        <TextBlock x:Name="RuntimeStatusText" Text="Idle" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </NavigationView.PaneFooter>
 
             <Border

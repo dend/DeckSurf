@@ -63,22 +63,35 @@ namespace DeckSurf.App
         }
 
         // The runtime is automatic: while a device is connected, its active profile
-        // runs on it. The dot informs; there is nothing to start or stop.
+        // runs on it. The dot informs, hover carries which profile runs where, and
+        // the click opens Activity.
         private void UpdateRuntimeStatus(RuntimeService runtimeService)
         {
             var activeSessions = runtimeService.ActiveSessions;
+            string toolTip;
             if (activeSessions.Count > 0)
             {
                 RuntimeStatusDot.Fill = (Brush)Application.Current.Resources["SystemFillColorSuccessBrush"];
                 RuntimeStatusText.Text = activeSessions.Count == 1
                     ? $"Active on {activeSessions[0].DeviceName}"
                     : $"Active on {activeSessions.Count} devices";
+                toolTip = string.Join(
+                    Environment.NewLine,
+                    activeSessions.Select(s => $"{s.ProfileName} on {s.DeviceName}"));
             }
             else
             {
                 RuntimeStatusDot.Fill = (Brush)Application.Current.Resources["SystemFillColorNeutralBrush"];
                 RuntimeStatusText.Text = "Idle";
+                toolTip = "No profiles running. Connect a device, or choose a profile in the editor.";
             }
+
+            ToolTipService.SetToolTip(RuntimeStatusButton, toolTip);
+        }
+
+        private void RuntimeStatus_Click(object sender, RoutedEventArgs e)
+        {
+            RootNavigation.SelectedItem = ActivityItem;
         }
     }
 }
