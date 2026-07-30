@@ -6,23 +6,6 @@ using DeckSurf.SDK.Util;
 namespace DeckSurf.App.Services
 {
     /// <summary>
-    /// A single entry in the runtime activity log, attributed to the profile and
-    /// device it came from when the source is a running session.
-    /// </summary>
-    public sealed record ActivityEntry(DateTime Timestamp, string? ProfileName, string? DeviceName, string Message)
-    {
-        public string TimeText => Timestamp.ToString("HH:mm:ss");
-
-        public string SourceText => (ProfileName, DeviceName) switch
-        {
-            (null, null) => "System",
-            (null, var device) => device!,
-            (var profile, null) => profile!,
-            var (profile, device) => $"{profile} on {device}",
-        };
-    }
-
-    /// <summary>
     /// A live frame written to a key on a running device, mirrored for on-screen
     /// previews. Image bytes are as passed to the device, before device-specific
     /// encoding, so they decode with standard imaging APIs.
@@ -58,17 +41,13 @@ namespace DeckSurf.App.Services
 
             DeviceManager.DeviceListChanged += OnDeviceListChanged;
             pluginService.PluginsChanged += (_, _) => Task.Run(RestartAllSessions);
+            appSettings.DeviceEnablementChanged += (_, _) => Task.Run(Sync);
         }
 
         /// <summary>
         /// Raised when sessions start or stop. Raised on arbitrary threads.
         /// </summary>
         public event EventHandler? StateChanged;
-
-        /// <summary>
-        /// Raised for every runtime event. Raised on arbitrary threads.
-        /// </summary>
-        public event EventHandler<ActivityEntry>? ActivityLogged;
 
         /// <summary>
         /// Raised whenever a running session writes an image to a key, so the
@@ -191,6 +170,12 @@ namespace DeckSurf.App.Services
                 foreach (var (serial, _) in connected)
                 {
                     if (string.IsNullOrEmpty(serial))
+                    {
+                        continue;
+                    }
+
+                    // A disabled device stays connected but runs nothing.
+                    if (!appSettings.IsDeviceEnabled(serial))
                     {
                         continue;
                     }
@@ -795,9 +780,10 @@ namespace DeckSurf.App.Services
             Sync();
         }
 
-        private void Log(Session? session, string message)
+        private static void Log(Session? session, string message)
         {
-            ActivityLogged?.Invoke(this, new ActivityEntry(DateTime.Now, session?.ProfileName, session?.Device.Name, message));
+            var source = session is null ? "runtime" : $"{session.ProfileName} on {session.Device.Name}";
+            System.Diagnostics.Debug.WriteLine($"[{source}] {message}");
         }
 
         private sealed class Session(string serial, string profileName, ConfigurationProfile profile, ConnectedDevice device)

@@ -48,7 +48,6 @@ namespace DeckSurf.App
                 {
                     "editor" => typeof(Views.ProfileEditorPage),
                     "plugins" => typeof(Views.PluginsPage),
-                    "activity" => typeof(Views.ActivityPage),
                     "settings" => typeof(Views.SettingsPage),
                     _ => typeof(Views.DevicesPage),
                 };
@@ -65,9 +64,9 @@ namespace DeckSurf.App
             }
         }
 
-        // The runtime is automatic: while a device is connected, its active profile
-        // runs on it. The dot informs, hover carries which profile runs where, and
-        // the click opens Activity.
+        // The runtime is automatic: while a device is connected and enabled, its
+        // active profile runs on it. The dot informs, hover carries which profile
+        // runs where, and the click opens Devices.
         private void UpdateRuntimeStatus(RuntimeService runtimeService)
         {
             var activeSessions = runtimeService.ActiveSessions;
@@ -94,7 +93,7 @@ namespace DeckSurf.App
 
         private void RuntimeStatus_Click(object sender, RoutedEventArgs e)
         {
-            RootNavigation.SelectedItem = ActivityItem;
+            RootNavigation.SelectedItem = DevicesItem;
         }
     }
 }

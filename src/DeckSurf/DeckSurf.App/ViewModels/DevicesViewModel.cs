@@ -3,60 +3,45 @@ using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeckSurf.App.Services;
-using Microsoft.UI.Xaml;
 
 namespace DeckSurf.App.ViewModels
 {
     /// <summary>
-    /// One row of the miniature deck rendering on a device card.
-    /// </summary>
-    public sealed record KeyRowViewModel(IReadOnlyList<KeyCellViewModel> Cells);
-
-    /// <summary>
-    /// One key cap in the miniature deck rendering; carries its own geometry so
-    /// the cell DataTemplate binds within its own DataType scope.
-    /// </summary>
-    public sealed record KeyCellViewModel(double Size, CornerRadius Corner);
-
-    /// <summary>
-    /// One connected device with its own controls; every connected device is shown
-    /// simultaneously with independent brightness and identify actions.
+    /// One connected device card: enablement, active profile, and brightness.
+    /// Every connected device is shown simultaneously with independent controls.
     /// </summary>
     public partial class DeviceItemViewModel : ObservableObject
     {
         private readonly DeviceService deviceService;
         private readonly Action<string?> reportStatus;
+        private readonly Action<string, bool> setEnabled;
+        private readonly Action<string, string> setActiveProfile;
         private readonly bool applyBrightnessOnChange;
+        private readonly bool applyEnabledOnChange;
+        private bool applyProfileOnChange;
         private bool applyingBrightness;
         private int? pendingBrightness;
 
-        public DeviceItemViewModel(DeviceService deviceService, DeviceSummary device, Action<string?> reportStatus)
+        public DeviceItemViewModel(
+            DeviceService deviceService,
+            DeviceSummary device,
+            Action<string?> reportStatus,
+            bool isEnabled,
+            Action<string, bool> setEnabled,
+            Action<string, string> setActiveProfile)
         {
             this.deviceService = deviceService;
             this.reportStatus = reportStatus;
+            this.setEnabled = setEnabled;
+            this.setActiveProfile = setActiveProfile;
             Device = device;
             Brightness = 60;
+            IsEnabled = isEnabled;
 
-            // Hero geometry: the miniature's pitch is derived from the hero region
-            // (content box ~152px tall, ~500px wide) so the rendering commands the
-            // region on every model, capped at 64 so small devices read as
-            // small-but-close rather than inflated.
-            var reserved = (HasScreen ? 22 : 0) + (HasKnobs ? 26 : 0);
-            var pitch = Math.Min(64, Math.Min((152 - reserved) / device.ButtonRows, 500 / device.ButtonColumns));
-            var cellSize = pitch - 4;
-            var corner = new CornerRadius(cellSize >= 40 ? 8 : 4);
-            MiniGridWidth = (device.ButtonColumns * pitch) - 4;
-            ScreenStripWidth = HasTouchKeys ? MiniGridWidth - 44 : MiniGridWidth;
-
-            var cells = Enumerable.Range(0, device.ButtonColumns)
-                .Select(_ => new KeyCellViewModel(cellSize, corner))
-                .ToList();
-            KeyRows = [.. Enumerable.Range(0, device.ButtonRows).Select(_ => new KeyRowViewModel(cells))];
-            KnobCells = [.. Enumerable.Range(0, device.KnobCount)];
-
-            // Only user-driven slider changes write to the device; the initial
-            // value above must not.
+            // Only user-driven changes write to the device or settings; the
+            // initial values above must not.
             applyBrightnessOnChange = true;
+            applyEnabledOnChange = true;
         }
 
         public DeviceSummary Device { get; }
@@ -66,34 +51,80 @@ namespace DeckSurf.App.ViewModels
         public string Name => Device.Name;
 
         /// <summary>
-        /// Gets the miniature key grid rows. Per-cell view models exist so the cell
-        /// DataTemplate's x:Bind scopes to its own DataType; per-device sizing
-        /// cannot compile from an Int32-typed template.
+        /// Gets or sets a value indicating whether the runtime drives this device.
+        /// Turning a device off stops its profile and hides it from the editor;
+        /// the connection itself stays.
         /// </summary>
-        public IReadOnlyList<KeyRowViewModel> KeyRows { get; }
-
-        public IReadOnlyList<int> KnobCells { get; }
-
-        public double MiniGridWidth { get; }
+        [ObservableProperty]
+        public partial bool IsEnabled { get; set; }
 
         /// <summary>
-        /// Gets the screen strip width. On touch-key devices the strip is flanked
-        /// by two 14px touch caps with 8px gaps, so the full row spans exactly
-        /// <see cref="MiniGridWidth"/> and no element protrudes past the key grid.
+        /// Gets the profiles that belong to this device. Selecting one makes it
+        /// the active profile and the runtime brings it up immediately.
         /// </summary>
-        public double ScreenStripWidth { get; }
+        public ObservableCollection<string> ProfileNames { get; } = [];
 
-        public bool HasScreen => Device.IsScreenSupported;
+        public bool HasProfiles => ProfileNames.Count > 0;
 
-        public bool HasKnobs => Device.KnobCount > 0;
+        public bool HasNoProfiles => ProfileNames.Count == 0;
 
-        public bool HasTouchKeys => Device.TouchButtonCount > 0;
+        [ObservableProperty]
+        public partial string? SelectedProfileName { get; set; }
 
-        public string KeyCountText => (Device.ButtonColumns * Device.ButtonRows).ToString();
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsNotRunning))]
+        public partial bool IsRunning { get; set; }
 
-        public string KnobCountText => Device.KnobCount.ToString();
+        public bool IsNotRunning => !IsRunning;
 
-        public string TouchKeyCountText => Device.TouchButtonCount.ToString();
+        partial void OnIsEnabledChanged(bool value)
+        {
+            if (applyEnabledOnChange)
+            {
+                setEnabled(Serial, value);
+            }
+        }
+
+        partial void OnSelectedProfileNameChanged(string? value)
+        {
+            if (applyProfileOnChange && value is not null)
+            {
+                setActiveProfile(Serial, value);
+            }
+        }
+
+        /// <summary>
+        /// Replaces the profile list and selection from stored state, without
+        /// re-announcing the selection as a user choice.
+        /// </summary>
+        public void SetProfiles(IReadOnlyList<string> names, string? active)
+        {
+            applyProfileOnChange = false;
+
+            if (!names.SequenceEqual(ProfileNames, StringComparer.OrdinalIgnoreCase))
+            {
+                ProfileNames.Clear();
+                foreach (var name in names)
+                {
+                    ProfileNames.Add(name);
+                }
+
+                OnPropertyChanged(nameof(HasProfiles));
+                OnPropertyChanged(nameof(HasNoProfiles));
+            }
+
+            // Selection must be the exact list instance or the ComboBox rejects it.
+            SelectedProfileName = ProfileNames.FirstOrDefault(n => string.Equals(n, active, StringComparison.OrdinalIgnoreCase));
+            applyProfileOnChange = true;
+        }
+
+        /// <summary>
+        /// Recomputes the running indicator from the runtime's session snapshot.
+        /// </summary>
+        public void UpdateStatus(IReadOnlyList<(string Serial, string ProfileName, string DeviceName)> sessions)
+        {
+            IsRunning = IsEnabled && sessions.Any(s => string.Equals(s.Serial, Serial, StringComparison.OrdinalIgnoreCase));
+        }
 
         [ObservableProperty]
         public partial double Brightness { get; set; }
@@ -161,11 +192,31 @@ namespace DeckSurf.App.ViewModels
     public partial class DevicesViewModel : ObservableObject
     {
         private readonly DeviceService deviceService;
+        private readonly AppSettingsService appSettings;
+        private readonly RuntimeService runtimeService;
+        private readonly ProfileService profileService;
 
-        public DevicesViewModel(DeviceService deviceService)
+        public DevicesViewModel(
+            DeviceService deviceService,
+            AppSettingsService appSettings,
+            RuntimeService runtimeService,
+            ProfileService profileService,
+            WindowService windowService)
         {
             this.deviceService = deviceService;
+            this.appSettings = appSettings;
+            this.runtimeService = runtimeService;
+            this.profileService = profileService;
             deviceService.Devices.CollectionChanged += OnDevicesChanged;
+
+            // Session changes carry both the running indicator and, when a
+            // profile was activated elsewhere (the editor), a new selection.
+            runtimeService.StateChanged += (_, _) => windowService.PostToUIThread(() =>
+            {
+                RefreshProfiles();
+                UpdateStatuses();
+            });
+
             SyncItems();
         }
 
@@ -184,6 +235,20 @@ namespace DeckSurf.App.ViewModels
         public partial string? StatusMessage { get; set; }
 
         public bool HasStatus => !string.IsNullOrEmpty(StatusMessage);
+
+        /// <summary>
+        /// Re-reads each device's profile list and active selection from storage;
+        /// called when returning to the page so editor-side changes show up.
+        /// </summary>
+        public void RefreshProfiles()
+        {
+            foreach (var item in Items)
+            {
+                item.SetProfiles(
+                    ProfilesForSerial(item.Serial),
+                    appSettings.ActiveProfiles.TryGetValue(item.Serial, out var active) ? active : null);
+            }
+        }
 
         [RelayCommand]
         private void Refresh() => deviceService.Refresh();
@@ -210,12 +275,59 @@ namespace DeckSurf.App.ViewModels
             {
                 if (!Items.Any(i => string.Equals(i.Serial, device.Serial, StringComparison.OrdinalIgnoreCase)))
                 {
-                    Items.Add(new DeviceItemViewModel(deviceService, device, message => StatusMessage = message));
+                    Items.Add(new DeviceItemViewModel(
+                        deviceService,
+                        device,
+                        message => StatusMessage = message,
+                        appSettings.IsDeviceEnabled(device.Serial),
+                        OnDeviceEnabledChanged,
+                        OnActiveProfileChanged));
                 }
             }
 
+            RefreshProfiles();
+            UpdateStatuses();
             OnPropertyChanged(nameof(HasNoDevices));
             OnPropertyChanged(nameof(HasDevices));
+        }
+
+        private void OnDeviceEnabledChanged(string serial, bool enabled)
+        {
+            // Persisting the choice nudges the runtime to reconcile; the status
+            // recomputes now for the disable case and again when sessions settle.
+            appSettings.SetDeviceEnabled(serial, enabled);
+            UpdateStatuses();
+        }
+
+        private void OnActiveProfileChanged(string serial, string profileName)
+        {
+            // Off the UI thread: activating a profile opens the device and paints
+            // every key, which is blocking USB work.
+            _ = Task.Run(() => runtimeService.SetActiveProfile(serial, profileName));
+        }
+
+        private void UpdateStatuses()
+        {
+            var sessions = runtimeService.ActiveSessions;
+            foreach (var item in Items)
+            {
+                item.UpdateStatus(sessions);
+            }
+        }
+
+        private List<string> ProfilesForSerial(string serial)
+        {
+            var matches = new List<string>();
+            foreach (var name in profileService.ListProfiles())
+            {
+                var profile = profileService.GetProfile(name);
+                if (profile is not null && string.Equals(profile.DeviceSerial, serial, StringComparison.OrdinalIgnoreCase))
+                {
+                    matches.Add(name);
+                }
+            }
+
+            return matches;
         }
     }
 }

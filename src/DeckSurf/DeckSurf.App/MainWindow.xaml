@@ -12,7 +12,7 @@
         <Grid.Resources>
             <!-- The runtime status row: shaped like a navigation item so it
                  belongs to the pane, quiet until hovered, and clicking it opens
-                 Activity, where the details live. -->
+                 Devices, where the per-device state lives. -->
             <Style x:Key="RuntimeStatusButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
@@ -93,11 +93,6 @@
                         <FontIcon Glyph="&#xEA86;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="ActivityItem" Content="Activity" Tag="activity">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE81C;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>
@@ -111,13 +106,13 @@
             <NavigationView.PaneFooter>
                 <!-- The dot sits in the 16px slot where a nav glyph would, so the
                      label shares the item grammar; hover carries the per-device
-                     detail and clicking opens Activity. -->
+                     detail and clicking opens Devices. -->
                 <Button
                     x:Name="RuntimeStatusButton"
                     Style="{StaticResource RuntimeStatusButtonStyle}"
                     Margin="4,0,4,4"
                     Click="RuntimeStatus_Click"
-                    AutomationProperties.Name="Runtime status, opens Activity">
+                    AutomationProperties.Name="Runtime status, opens Devices">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Grid Width="16" VerticalAlignment="Center">
                             <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" Fill="{ThemeResource SystemFillColorNeutralBrush}" />

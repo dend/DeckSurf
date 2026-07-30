@@ -54,7 +54,6 @@ namespace DeckSurf.App
                     .AddSingleton<ViewModels.DevicesViewModel>()
                     .AddSingleton<ViewModels.PluginsViewModel>()
                     .AddSingleton<ViewModels.ProfileEditorViewModel>()
-                    .AddSingleton<ViewModels.ActivityViewModel>()
                     .BuildServiceProvider());
         }
 

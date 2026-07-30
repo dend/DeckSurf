@@ -22,6 +22,11 @@ namespace DeckSurf.App.Services
             Load();
         }
 
+        /// <summary>
+        /// Raised when a device is enabled or disabled. Raised on the caller's thread.
+        /// </summary>
+        public event EventHandler? DeviceEnablementChanged;
+
         public ElementTheme Theme { get; private set; } = ElementTheme.Default;
 
         /// <summary>
@@ -35,6 +40,34 @@ namespace DeckSurf.App.Services
         /// its active profile runs on it automatically.
         /// </summary>
         public Dictionary<string, string> ActiveProfiles { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Gets the serials of devices the user has turned off. A disabled device
+        /// keeps its connection but the runtime leaves it alone: no profile runs
+        /// on it and the editor does not offer it.
+        /// </summary>
+        public HashSet<string> DisabledDevices { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public bool IsDeviceEnabled(string serial) =>
+            !string.IsNullOrWhiteSpace(serial) && !DisabledDevices.Contains(serial);
+
+        /// <summary>
+        /// Enables or disables a device and persists the choice.
+        /// </summary>
+        public void SetDeviceEnabled(string serial, bool enabled)
+        {
+            if (string.IsNullOrWhiteSpace(serial))
+            {
+                return;
+            }
+
+            var changed = enabled ? DisabledDevices.Remove(serial) : DisabledDevices.Add(serial);
+            if (changed)
+            {
+                Save();
+                DeviceEnablementChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
 
         /// <summary>
         /// Records the active profile for a device and persists the choice.
@@ -150,6 +183,14 @@ namespace DeckSurf.App.Services
                             ActiveProfiles[serial] = profile;
                         }
                     }
+
+                    foreach (var serial in settings.DisabledDevices ?? [])
+                    {
+                        if (!string.IsNullOrWhiteSpace(serial))
+                        {
+                            DisabledDevices.Add(serial);
+                        }
+                    }
                 }
             }
             catch (Exception)
@@ -168,6 +209,7 @@ namespace DeckSurf.App.Services
                     Theme = Theme.ToString(),
                     PluginDirectories = [.. PluginDirectories],
                     ActiveProfiles = new Dictionary<string, string>(ActiveProfiles),
+                    DisabledDevices = [.. DisabledDevices],
                 }));
             }
             catch (Exception)
@@ -183,6 +225,8 @@ namespace DeckSurf.App.Services
             public List<string>? PluginDirectories { get; set; }
 
             public Dictionary<string, string>? ActiveProfiles { get; set; }
+
+            public List<string>? DisabledDevices { get; set; }
         }
     }
 }

@@ -49,142 +49,114 @@
                     <ItemsRepeater.Layout>
                         <UniformGridLayout
                             Orientation="Horizontal"
-                            MinItemWidth="560"
-                            MinColumnSpacing="8"
-                            MinRowSpacing="8"
+                            MinItemWidth="360"
+                            MinColumnSpacing="12"
+                            MinRowSpacing="12"
                             ItemsStretch="Fill" />
                     </ItemsRepeater.Layout>
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="vm:DeviceItemViewModel">
-                            <!-- One device = one card with the hardware as the hero: a
-                                 miniature of the real layout (keys, screen, knobs)
-                                 scaled to command the hero region on every model, with
-                                 identity, facts, and controls grounded below. -->
+                            <!-- One device = one compact card, gallery style: identity
+                                 and enablement up top, the active profile as the
+                                 centerpiece, brightness below, serial as a footnote. -->
                             <Border
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 BorderThickness="1"
-                                CornerRadius="{StaticResource OverlayCornerRadius}">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="*" />
-                                    </Grid.RowDefinitions>
+                                CornerRadius="{StaticResource OverlayCornerRadius}"
+                                Padding="20,16,20,16">
+                                <StackPanel Spacing="16">
+                                    <!-- Identity row: name left, the enable switch right.
+                                         Off means the runtime leaves the device alone; the
+                                         connection stays. -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
+                                        <ToggleSwitch
+                                            Grid.Column="1"
+                                            IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
+                                            OnContent=""
+                                            OffContent=""
+                                            MinWidth="0"
+                                            Margin="0,0,-12,0"
+                                            VerticalAlignment="Center"
+                                            ToolTipService.ToolTip="On runs the device's active profile, off leaves the device alone and hides it from the editor"
+                                            AutomationProperties.Name="Device enabled" />
+                                    </Grid>
 
-                                    <Border Background="{ThemeResource DeckFaceBrush}" CornerRadius="8,8,0,0" Padding="24" Height="200">
-                                        <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <!-- Nested ItemsControls, not ItemsRepeater: each cell
-                                                 template binds its own KeyCellViewModel geometry,
-                                                 which is what makes per-device pitch compile. -->
-                                            <ItemsControl ItemsSource="{x:Bind KeyRows}" HorizontalAlignment="Center">
-                                                <ItemsControl.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <StackPanel Spacing="4" />
-                                                    </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:KeyRowViewModel">
-                                                        <ItemsControl ItemsSource="{x:Bind Cells}">
-                                                            <ItemsControl.ItemsPanel>
-                                                                <ItemsPanelTemplate>
-                                                                    <StackPanel Orientation="Horizontal" Spacing="4" />
-                                                                </ItemsPanelTemplate>
-                                                            </ItemsControl.ItemsPanel>
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate x:DataType="vm:KeyCellViewModel">
-                                                                    <Border Width="{x:Bind Size}" Height="{x:Bind Size}" CornerRadius="{x:Bind Corner}" Background="{ThemeResource DeckKeyBrush}" />
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <!-- The screen row always spans exactly the key grid's
-                                                 width; on touch-key devices two 14px caps flank a
-                                                 shortened strip (14 + 8 + strip + 8 + 14). -->
-                                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Visibility="{x:Bind HasScreen}">
-                                                <Border Width="14" Height="14" CornerRadius="4" Background="{ThemeResource DeckKeyBrush}" Visibility="{x:Bind HasTouchKeys}" />
-                                                <Border
-                                                    Height="14"
-                                                    Width="{x:Bind ScreenStripWidth}"
-                                                    CornerRadius="4"
-                                                    Background="{ThemeResource DeckKeyBrush}" />
-                                                <Border Width="14" Height="14" CornerRadius="4" Background="{ThemeResource DeckKeyBrush}" Visibility="{x:Bind HasTouchKeys}" />
-                                            </StackPanel>
-                                            <ItemsControl ItemsSource="{x:Bind KnobCells}" HorizontalAlignment="Center" Visibility="{x:Bind HasKnobs}">
-                                                <ItemsControl.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <StackPanel Orientation="Horizontal" Spacing="16" />
-                                                    </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="x:Int32">
-                                                        <Ellipse Width="18" Height="18" Fill="{ThemeResource DeckKeyBrush}" />
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <StackPanel Grid.Row="1" Padding="16">
-                                        <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}" />
-
-                                        <!-- Facts row: label over value, only what a user scans
-                                             for. The miniature above shows the layout itself. -->
-                                        <StackPanel Orientation="Horizontal" Spacing="24" Margin="0,16,0,0">
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Serial" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                <TextBlock Text="{x:Bind Serial}" Style="{StaticResource BodyTextBlockStyle}" IsTextSelectionEnabled="True" />
-                                            </StackPanel>
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Keys" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                <TextBlock Text="{x:Bind KeyCountText}" Style="{StaticResource BodyTextBlockStyle}" />
-                                            </StackPanel>
-                                            <StackPanel Spacing="2" Visibility="{x:Bind HasKnobs}">
-                                                <TextBlock Text="Knobs" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                <TextBlock Text="{x:Bind KnobCountText}" Style="{StaticResource BodyTextBlockStyle}" />
-                                            </StackPanel>
-                                            <StackPanel Spacing="2" Visibility="{x:Bind HasTouchKeys}">
-                                                <TextBlock Text="Touch keys" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                <TextBlock Text="{x:Bind TouchKeyCountText}" Style="{StaticResource BodyTextBlockStyle}" />
-                                            </StackPanel>
-                                        </StackPanel>
-
-                                        <StackPanel Spacing="2" Margin="0,16,0,0">
-                                            <TextBlock Text="Brightness" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <Grid ColumnSpacing="8">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <!-- x:Bind, not Binding: ItemsRepeater does not flow
-                                                     DataContext to its realized templates. The view
-                                                     model applies value changes to the device. -->
-                                                <Slider
-                                                    Minimum="0"
-                                                    Maximum="100"
-                                                    StepFrequency="5"
-                                                    Value="{x:Bind Brightness, Mode=TwoWay}"
-                                                    ToolTipService.ToolTip="Brightness, applies immediately"
-                                                    AutomationProperties.Name="Brightness"
-                                                    VerticalAlignment="Center" />
-                                                <TextBlock
-                                                    Grid.Column="1"
-                                                    Text="{x:Bind BrightnessText, Mode=OneWay}"
-                                                    MinWidth="40"
-                                                    TextAlignment="Right"
-                                                    VerticalAlignment="Center" />
-                                                <Button
-                                                    Grid.Column="2"
-                                                    Content="Flash keys"
-                                                    Command="{x:Bind IdentifyCommand}"
-                                                    ToolTipService.ToolTip="Flashes all keys white so you can tell devices apart"
-                                                    VerticalAlignment="Center" />
+                                    <!-- The active profile is the card's working control:
+                                         picking one switches the device right here. The dot
+                                         reports whether it is live on the hardware. -->
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Profile" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <Grid ColumnSpacing="10" Visibility="{x:Bind HasProfiles, Mode=OneWay}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Width="8" VerticalAlignment="Center">
+                                                <Ellipse Width="8" Height="8" Fill="{ThemeResource SystemFillColorSuccessBrush}" Visibility="{x:Bind IsRunning, Mode=OneWay}" />
+                                                <Ellipse Width="8" Height="8" Fill="{ThemeResource SystemFillColorNeutralBrush}" Visibility="{x:Bind IsNotRunning, Mode=OneWay}" />
                                             </Grid>
-                                        </StackPanel>
+                                            <ComboBox
+                                                Grid.Column="1"
+                                                ItemsSource="{x:Bind ProfileNames}"
+                                                SelectedItem="{x:Bind SelectedProfileName, Mode=TwoWay}"
+                                                IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
+                                                PlaceholderText="Choose a profile"
+                                                HorizontalAlignment="Stretch"
+                                                AutomationProperties.Name="Active profile" />
+                                        </Grid>
+                                        <TextBlock
+                                            Text="No profiles for this device yet. Create one in the editor."
+                                            Style="{StaticResource BodyTextBlockStyle}"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            TextWrapping="Wrap"
+                                            Visibility="{x:Bind HasNoProfiles, Mode=OneWay}" />
                                     </StackPanel>
-                                </Grid>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Brightness" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <!-- x:Bind, not Binding: ItemsRepeater does not flow
+                                                 DataContext to its realized templates. The view
+                                                 model applies value changes to the device. -->
+                                            <Slider
+                                                Minimum="0"
+                                                Maximum="100"
+                                                StepFrequency="5"
+                                                Value="{x:Bind Brightness, Mode=TwoWay}"
+                                                ToolTipService.ToolTip="Brightness, applies immediately"
+                                                AutomationProperties.Name="Brightness"
+                                                VerticalAlignment="Center" />
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                Text="{x:Bind BrightnessText, Mode=OneWay}"
+                                                MinWidth="40"
+                                                TextAlignment="Right"
+                                                VerticalAlignment="Center" />
+                                            <Button
+                                                Grid.Column="2"
+                                                Content="Flash keys"
+                                                Command="{x:Bind IdentifyCommand}"
+                                                ToolTipService.ToolTip="Flashes all keys white so you can tell devices apart"
+                                                VerticalAlignment="Center" />
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="Serial" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="{x:Bind Serial}" Style="{StaticResource CaptionTextBlockStyle}" IsTextSelectionEnabled="True" />
+                                    </StackPanel>
+                                </StackPanel>
                             </Border>
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>

@@ -12,5 +12,14 @@ namespace DeckSurf.App.Views
         }
 
         public DevicesViewModel ViewModel { get; } = Ioc.Default.GetRequiredService<DevicesViewModel>();
+
+        protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+
+            // Profiles may have been created, renamed, or activated in the
+            // editor since the page was last shown.
+            ViewModel.RefreshProfiles();
+        }
     }
 }
