@@ -321,49 +321,54 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Any-key mappings live in the same visual language: tiles that run
-                         on every key press, edited through the same inspector. -->
-                    <Border
-                        x:Name="AnyKeyCard"
-                        Background="#FF1C1C1C"
-                        BorderBrush="#26FFFFFF"
-                        BorderThickness="1"
-                        CornerRadius="12"
-                        Padding="14,10,14,14"
-                        HorizontalAlignment="Left"
-                        Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Runs on every key press" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#99FFFFFF" />
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <GridView
-                                    x:Name="CatchAllList"
-                                    ItemsSource="{x:Bind ViewModel.CatchAllMappings}"
-                                    SelectionMode="Single"
-                                    SelectionChanged="TargetList_SelectionChanged"
-                                    ItemTemplate="{StaticResource KeyTileTemplate}"
-                                    ItemContainerStyle="{StaticResource KeyTileContainerStyle}"
-                                    VerticalAlignment="Center">
-                                    <GridView.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <ItemsStackPanel Orientation="Horizontal" />
-                                        </ItemsPanelTemplate>
-                                    </GridView.ItemsPanel>
-                                </GridView>
-                                <Button
-                                    Width="86"
-                                    Height="86"
-                                    Background="Transparent"
-                                    BorderBrush="#40FFFFFF"
-                                    BorderThickness="1"
-                                    CornerRadius="8"
-                                    Command="{x:Bind ViewModel.AddCatchAllCommand}"
-                                    ToolTipService.ToolTip="Add an any-key mapping"
-                                    AutomationProperties.Name="Add an any-key mapping">
-                                    <FontIcon Glyph="&#xE710;" FontSize="16" Foreground="#99FFFFFF" />
-                                </Button>
+                    <!-- Any-key commands: a compact list of mappings that fire on every
+                         key press, edited through the same inspector. Usually zero or one. -->
+                    <StackPanel x:Name="AnyKeySection" Spacing="4" HorizontalAlignment="Left" Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
+                        <Grid Margin="4,4,0,0">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Any-key commands" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Text="Run when any key on the deck is pressed." Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
+                            <Button
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Command="{x:Bind ViewModel.AddCatchAllCommand}"
+                                AutomationProperties.Name="Add an any-key command">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE710;" FontSize="13" />
+                                    <TextBlock Text="Add" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <ListView
+                            x:Name="CatchAllList"
+                            ItemsSource="{x:Bind ViewModel.CatchAllMappings}"
+                            SelectionMode="Single"
+                            SelectionChanged="TargetList_SelectionChanged"
+                            ScrollViewer.VerticalScrollMode="Disabled"
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                                    <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                    <Setter Property="CornerRadius" Value="6" />
+                                    <Setter Property="Margin" Value="0,0,0,4" />
+                                    <Setter Property="MinHeight" Value="40" />
+                                    <Setter Property="Padding" Value="12,6" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:KeyViewModel">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Image Source="ms-appx:///Assets/Icons/high_voltage.png" Width="16" Height="16" VerticalAlignment="Center" />
+                                        <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
 

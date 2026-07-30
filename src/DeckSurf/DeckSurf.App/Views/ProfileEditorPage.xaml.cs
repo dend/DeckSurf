@@ -78,18 +78,22 @@ namespace DeckSurf.App.Views
             }
 
             KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
+
+            // The any-key section aligns with the deck card's width so the column
+            // reads as one stage (grid width + card padding + border).
+            AnyKeySection.Width = KeyGrid.Width + 30;
         }
 
         // All target lists (keys, catch-alls, knobs, screen) share single-selection:
         // selecting in one clears the others and drives the inspector.
         private void TargetList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is not GridView active)
+            if (sender is not ListViewBase active)
             {
                 return;
             }
 
-            GridView[] allLists = [KeyGrid, CatchAllList, KnobList, ScreenList];
+            ListViewBase[] allLists = [KeyGrid, CatchAllList, KnobList, ScreenList];
 
             if (active.SelectedItem is KeyViewModel key)
             {

@@ -189,9 +189,16 @@ namespace DeckSurf.App.ViewModels
             }
         }
 
-        partial void OnSelectedKeyChanged(KeyViewModel? value)
+        partial void OnSelectedKeyChanged(KeyViewModel? oldValue, KeyViewModel? newValue)
         {
-            LoadInspectorFromKey(value);
+            // Abandoned, never-configured catch-all entries are placeholders with no
+            // meaning; drop them as soon as the selection moves on.
+            if (oldValue is { Index: -1 } previous && !previous.HasMapping && CatchAllMappings.Contains(previous))
+            {
+                CatchAllMappings.Remove(previous);
+            }
+
+            LoadInspectorFromKey(newValue);
         }
 
         partial void OnSelectedPluginChanged(PluginInfo? value)
@@ -301,6 +308,14 @@ namespace DeckSurf.App.ViewModels
         [RelayCommand]
         private void AddCatchAll()
         {
+            // Reuse an existing unconfigured entry instead of stacking empty ones.
+            var unconfigured = CatchAllMappings.FirstOrDefault(k => !k.HasMapping);
+            if (unconfigured is not null)
+            {
+                SelectedKey = unconfigured;
+                return;
+            }
+
             var catchAll = new KeyViewModel(-1);
             CatchAllMappings.Add(catchAll);
             SelectedKey = catchAll;

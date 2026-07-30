@@ -31,6 +31,7 @@ namespace DeckSurf.App.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasMapping))]
         [NotifyPropertyChangedFor(nameof(Label))]
+        [NotifyPropertyChangedFor(nameof(TitleText))]
         [NotifyPropertyChangedFor(nameof(ShowLabel))]
         [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
         public partial string? CommandId { get; set; }
@@ -56,6 +57,12 @@ namespace DeckSurf.App.ViewModels
         public bool HasMapping => !string.IsNullOrEmpty(PluginId) && !string.IsNullOrEmpty(CommandId);
 
         public string Label => CommandId ?? string.Empty;
+
+        /// <summary>
+        /// Gets the list-row title for hardware targets: the mapped command, or a
+        /// placeholder when nothing is assigned yet.
+        /// </summary>
+        public string TitleText => HasMapping ? Label : "Not configured";
 
         /// <summary>
         /// Gets a value indicating whether the tile shows its text label. Hidden when a
