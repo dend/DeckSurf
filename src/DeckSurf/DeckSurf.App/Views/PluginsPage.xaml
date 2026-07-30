@@ -68,9 +68,9 @@
                                 <DataTemplate x:DataType="services:CommandInfo">
                                     <tk:SettingsCard
                                         Header="{x:Bind DisplayName}"
-                                        Description="{x:Bind Description}"
-                                        IsClickEnabled="True"
-                                        Click="CommandCard_Click" />
+                                        Description="{x:Bind Description}">
+                                        <Button Content="Details" Click="CommandCard_Click" />
+                                    </tk:SettingsCard>
                                 </DataTemplate>
                             </tk:SettingsExpander.ItemTemplate>
                         </tk:SettingsExpander>

@@ -9,6 +9,20 @@ using Windows.Storage.Pickers;
 
 namespace DeckSurf.App.Views
 {
+    /// <summary>
+    /// One plugin lookup folder row; built-in locations cannot be removed.
+    /// </summary>
+    public sealed class PluginFolderRow
+    {
+        public string Path { get; set; } = string.Empty;
+
+        public bool IsBuiltIn { get; set; }
+
+        public string Note => IsBuiltIn ? "Built-in location" : "Custom folder";
+
+        public Visibility RemoveVisibility => IsBuiltIn ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     public sealed partial class SettingsPage : Page
     {
         private readonly AppSettingsService appSettings = Ioc.Default.GetRequiredService<AppSettingsService>();
@@ -31,19 +45,32 @@ namespace DeckSurf.App.Views
 
             ThemeSelector.SelectedItem ??= ThemeSelector.Items[0];
             initializingTheme = false;
+
+            RebuildFolderRows();
         }
 
         public string ProfilesPath { get; } = Ioc.Default.GetRequiredService<ProfileService>().ProfilesRootPath;
 
-        public ObservableCollection<string> CustomFolders => appSettings.PluginDirectories;
-
-        public string BuiltInPathsText { get; } =
-            "Built-in locations are always scanned: " +
-            string.Join("; ", Ioc.Default.GetRequiredService<PluginService>().BuiltInDirectories.Select(d => Path.Combine(d, "plugins")));
+        public ObservableCollection<PluginFolderRow> FolderRows { get; } = [];
 
         public string AboutText { get; } =
             $"Version {Assembly.GetExecutingAssembly().GetName().Version}, " +
             $"SDK {typeof(DeckSurf.SDK.Core.DeviceManager).Assembly.GetName().Version}";
+
+        private void RebuildFolderRows()
+        {
+            FolderRows.Clear();
+
+            foreach (var directory in pluginService.BuiltInDirectories)
+            {
+                FolderRows.Add(new PluginFolderRow { Path = Path.Combine(directory, "plugins"), IsBuiltIn = true });
+            }
+
+            foreach (var directory in appSettings.PluginDirectories)
+            {
+                FolderRows.Add(new PluginFolderRow { Path = directory, IsBuiltIn = false });
+            }
+        }
 
         private void ThemeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -67,15 +94,17 @@ namespace DeckSurf.App.Views
             var folder = await picker.PickSingleFolderAsync();
             if (folder is not null && appSettings.AddPluginDirectory(folder.Path))
             {
+                RebuildFolderRows();
                 pluginService.Reload();
             }
         }
 
         private void RemovePluginFolder_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement { DataContext: string path })
+            if (sender is FrameworkElement { DataContext: PluginFolderRow { IsBuiltIn: false } row })
             {
-                appSettings.RemovePluginDirectory(path);
+                appSettings.RemovePluginDirectory(row.Path);
+                RebuildFolderRows();
                 pluginService.Reload();
             }
         }

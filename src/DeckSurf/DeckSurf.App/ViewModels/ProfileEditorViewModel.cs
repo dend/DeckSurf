@@ -125,6 +125,8 @@ namespace DeckSurf.App.ViewModels
 
         public bool HasParameters => ParameterFields.Count > 0;
 
+        public bool HasSelectedCommand => SelectedCommand is not null;
+
         public bool HasNoParameters => SelectedCommand is not null && ParameterFields.Count == 0;
 
         public bool HasStatus => !string.IsNullOrEmpty(StatusMessage);
@@ -191,9 +193,12 @@ namespace DeckSurf.App.ViewModels
 
         partial void OnSelectedKeyChanged(KeyViewModel? oldValue, KeyViewModel? newValue)
         {
-            // Abandoned, never-configured catch-all entries are placeholders with no
-            // meaning; drop them as soon as the selection moves on.
-            if (oldValue is { Index: -1 } previous && !previous.HasMapping && CatchAllMappings.Contains(previous))
+            // One any-key slot is always present; surplus entries that were abandoned
+            // without a command assignment are dropped when the selection moves on.
+            if (oldValue is { Index: -1 } previous
+                && !previous.HasMapping
+                && CatchAllMappings.Count > 1
+                && CatchAllMappings.Contains(previous))
             {
                 CatchAllMappings.Remove(previous);
             }
@@ -214,6 +219,7 @@ namespace DeckSurf.App.ViewModels
         partial void OnSelectedCommandChanged(CommandInfo? value)
         {
             OnPropertyChanged(nameof(InspectorSubtitle));
+            OnPropertyChanged(nameof(HasSelectedCommand));
 
             if (!loadingKey)
             {
@@ -290,9 +296,9 @@ namespace DeckSurf.App.ViewModels
                 return;
             }
 
-            // Clearing an any-key tile removes it entirely; an unmapped catch-all
-            // has no meaning and would be dropped on save anyway.
-            if (SelectedKey.Index == -1)
+            // Surplus any-key entries are removed outright; the last slot is only
+            // cleared so the deck always shows one.
+            if (SelectedKey.Index == -1 && CatchAllMappings.Count > 1)
             {
                 CatchAllMappings.Remove(SelectedKey);
                 SelectedKey = null;
@@ -303,23 +309,6 @@ namespace DeckSurf.App.ViewModels
             SelectedKey.Clear();
             dirty = true;
             LoadInspectorFromKey(SelectedKey);
-        }
-
-        [RelayCommand]
-        private void AddCatchAll()
-        {
-            // Reuse an existing unconfigured entry instead of stacking empty ones.
-            var unconfigured = CatchAllMappings.FirstOrDefault(k => !k.HasMapping);
-            if (unconfigured is not null)
-            {
-                SelectedKey = unconfigured;
-                return;
-            }
-
-            var catchAll = new KeyViewModel(-1);
-            CatchAllMappings.Add(catchAll);
-            SelectedKey = catchAll;
-            dirty = true;
         }
 
         [RelayCommand]
@@ -513,6 +502,12 @@ namespace DeckSurf.App.ViewModels
                     target.CommandId = mapping.Command;
                     target.CommandArguments = mapping.CommandArguments;
                     target.ImagePath = mapping.ButtonImagePath;
+                }
+
+                // The deck always shows one any-key slot; it is only saved once mapped.
+                if (CatchAllMappings.Count == 0)
+                {
+                    CatchAllMappings.Add(new KeyViewModel(-1));
                 }
 
                 dirty = false;

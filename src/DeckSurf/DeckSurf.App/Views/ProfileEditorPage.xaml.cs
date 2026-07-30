@@ -78,6 +78,9 @@ namespace DeckSurf.App.Views
             }
 
             KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
+
+            // Strips inside the deck card span the full key grid width.
+            CatchAllList.Width = KeyGrid.Width;
         }
 
         // All target lists (keys, catch-alls, knobs, screen) share single-selection:

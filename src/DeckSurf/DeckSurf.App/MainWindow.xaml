@@ -53,10 +53,12 @@
             </NavigationView.MenuItems>
 
             <NavigationView.PaneFooter>
-                <StackPanel Orientation="Horizontal" Spacing="8" Margin="16,0,0,12" VerticalAlignment="Center">
-                    <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
-                    <TextBlock x:Name="RuntimeStatusText" Text="Stopped" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" VerticalAlignment="Center" />
-                </StackPanel>
+                <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Margin="8,0,8,4" Padding="12,10,12,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
+                        <TextBlock x:Name="RuntimeStatusText" Text="Stopped" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.8" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
             </NavigationView.PaneFooter>
 
             <Border

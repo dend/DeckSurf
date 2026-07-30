@@ -319,59 +319,40 @@
                                     </DataTemplate>
                                 </GridView.ItemTemplate>
                             </GridView>
+                            <!-- Any-key slot: part of the deck stage, same strip pattern
+                                 as the touch screen. Runs on every key press. -->
+                            <ListView
+                                x:Name="CatchAllList"
+                                ItemsSource="{x:Bind ViewModel.CatchAllMappings}"
+                                SelectionMode="Single"
+                                SelectionChanged="TargetList_SelectionChanged"
+                                Padding="0"
+                                ScrollViewer.VerticalScrollMode="Disabled"
+                                ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="Background" Value="#FF141414" />
+                                        <Setter Property="BorderBrush" Value="#FF333333" />
+                                        <Setter Property="BorderThickness" Value="1" />
+                                        <Setter Property="CornerRadius" Value="6" />
+                                        <Setter Property="Margin" Value="0,0,0,4" />
+                                        <Setter Property="MinHeight" Value="40" />
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="MinWidth" Value="0" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:KeyViewModel">
+                                        <Grid MinHeight="38">
+                                            <TextBlock Text="Any key (runs on every press, select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
+                                            <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#FFE8E8E8" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </StackPanel>
                     </Border>
-
-                    <!-- Any-key commands: a compact list of mappings that fire on every
-                         key press, edited through the same inspector. Usually zero or one. -->
-                    <StackPanel
-                        x:Name="AnyKeySection"
-                        Spacing="4"
-                        HorizontalAlignment="Left"
-                        Width="{Binding ElementName=DeckCard, Path=ActualWidth, Mode=OneWay}"
-                        Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
-                        <Grid Margin="4,4,0,0">
-                            <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <TextBlock Text="Any-key commands" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                <TextBlock Text="Run when any key on the deck is pressed." Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
-                            </StackPanel>
-                            <Button
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Command="{x:Bind ViewModel.AddCatchAllCommand}"
-                                AutomationProperties.Name="Add an any-key command">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon Glyph="&#xE710;" FontSize="13" />
-                                    <TextBlock Text="Add" />
-                                </StackPanel>
-                            </Button>
-                        </Grid>
-                        <ListView
-                            x:Name="CatchAllList"
-                            ItemsSource="{x:Bind ViewModel.CatchAllMappings}"
-                            SelectionMode="Single"
-                            SelectionChanged="TargetList_SelectionChanged"
-                            ScrollViewer.VerticalScrollMode="Disabled"
-                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
-                                    <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
-                                    <Setter Property="BorderThickness" Value="1" />
-                                    <Setter Property="CornerRadius" Value="6" />
-                                    <Setter Property="Margin" Value="0,0,0,4" />
-                                    <Setter Property="MinHeight" Value="40" />
-                                    <Setter Property="Padding" Value="12,6" />
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate x:DataType="vm:KeyViewModel">
-                                    <TextBlock Text="{x:Bind TitleText, Mode=OneWay}" VerticalAlignment="Center" />
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
 
@@ -428,26 +409,34 @@
 
                             <StackPanel Spacing="8">
                                 <TextBlock Text="Button image" Style="{StaticResource BodyTextBlockStyle}" />
-                                <Border Width="96" Height="96" CornerRadius="8" Background="{ThemeResource ControlFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" HorizontalAlignment="Left">
-                                    <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="96" Height="96" Stretch="UniformToFill" />
-                                </Border>
-                                <TextBlock
-                                    Text="{x:Bind ViewModel.SelectedKey.ImageFileName, Mode=OneWay, FallbackValue=''}"
-                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                    Opacity="0.6"
-                                    TextTrimming="CharacterEllipsis"
-                                    ToolTipService.ToolTip="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}"
-                                    Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button Content="Browse" Click="BrowseKeyImage_Click" />
-                                    <Button
-                                        Content="Remove"
-                                        Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}"
-                                        Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
-                                </StackPanel>
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="96" Height="96" CornerRadius="8" Background="{ThemeResource ControlFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                                        <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="96" Height="96" Stretch="UniformToFill" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock
+                                            Text="{x:Bind ViewModel.SelectedKey.ImageFileName, Mode=OneWay, FallbackValue=''}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Opacity="0.6"
+                                            TextTrimming="CharacterEllipsis"
+                                            ToolTipService.ToolTip="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}"
+                                            Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button Content="Browse" Click="BrowseKeyImage_Click" />
+                                            <Button
+                                                Content="Remove"
+                                                Command="{x:Bind ViewModel.ClearSelectedKeyImageCommand}"
+                                                Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
 
-                            <StackPanel Spacing="12">
+                            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.HasSelectedCommand, Mode=OneWay}">
                                 <TextBlock Text="Command settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                 <TextBlock
                                     Text="This command has no settings."

@@ -51,7 +51,7 @@ namespace DeckSurf.App.Views
                 panel.Children.Add(new TextBlock
                 {
                     Text = "Settings",
-                    Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
+                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 });
 
                 foreach (var parameter in command.Parameters)
