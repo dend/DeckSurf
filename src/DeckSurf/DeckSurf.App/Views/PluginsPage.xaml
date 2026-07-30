@@ -285,25 +285,14 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="services:PluginInfo">
                             <StackPanel Margin="0,0,0,24">
-                                <!-- Plugin name with its metadata stacked beneath:
-                                     the author reads as prose, the version as a
-                                     pill, so data looks like data. -->
-                                <StackPanel Spacing="4" Margin="0,0,0,8" ToolTipService.ToolTip="{x:Bind HeaderToolTip}">
-                                    <TextBlock
-                                        Text="{x:Bind DisplayName}"
-                                        Style="{StaticResource SubtitleTextBlockStyle}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock
-                                            Text="{x:Bind Author}"
-                                            Style="{StaticResource CaptionTextBlockStyle}"
-                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                            TextTrimming="CharacterEllipsis"
-                                            VerticalAlignment="Center" />
-                                        <Border Background="{ThemeResource ControlFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
-                                            <TextBlock Text="{x:Bind VersionText}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                        </Border>
-                                    </StackPanel>
-                                </StackPanel>
+                                <!-- The section header is the plugin's name, nothing
+                                     else; author, version, and identity are detail,
+                                     carried by the hover tooltip. -->
+                                <TextBlock
+                                    Text="{x:Bind DisplayName}"
+                                    Style="{StaticResource SubtitleTextBlockStyle}"
+                                    Margin="0,0,0,8"
+                                    ToolTipService.ToolTip="{x:Bind HeaderToolTip}" />
                                 <ItemsRepeater
                                     ItemsSource="{x:Bind Commands}"
                                     ItemTemplate="{StaticResource CommandTileTemplate}">

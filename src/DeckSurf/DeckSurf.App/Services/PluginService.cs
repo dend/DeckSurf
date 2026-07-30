@@ -185,15 +185,11 @@ namespace DeckSurf.App.Services
         IReadOnlyList<CommandInfo> Commands)
     {
         /// <summary>
-        /// Gets the version as pill text; a comma-joined sentence read like prose
-        /// where metadata was wanted.
+        /// Gets the plugin metadata for the section-header tooltip. Author,
+        /// version, and assembly identity are plugin detail, not browse content;
+        /// the header itself carries only the name.
         /// </summary>
-        public string VersionText => $"v{Version}";
-
-        /// <summary>
-        /// Gets the developer identity, shown only in the section-header tooltip.
-        /// </summary>
-        public string HeaderToolTip => Id;
+        public string HeaderToolTip => $"{Author}{Environment.NewLine}Version {Version}{Environment.NewLine}{Id}";
     }
 
     /// <summary>
