@@ -30,10 +30,10 @@
                 Margin="0,64,0,0"
                 MaxWidth="420"
                 Visibility="{x:Bind ViewModel.HasNoDevices, Mode=OneWay}">
-                <FontIcon Glyph="&#xE772;" FontSize="44" Foreground="#FF60CDFF" Opacity="0.5" HorizontalAlignment="Center" />
+                <Image Source="ms-appx:///Assets/Icons/control_knobs.png" Width="56" Height="56" HorizontalAlignment="Center" />
                 <TextBlock Text="No Stream Deck found" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
                 <TextBlock
-                    Text="Connect a device over USB. If one is already connected, close the Elgato Stream Deck software — it holds exclusive access."
+                    Text="Connect a device over USB. If one is already connected, close the Elgato Stream Deck software, which holds exclusive access to the device."
                     Style="{StaticResource BodyTextBlockStyle}"
                     Opacity="0.7"
                     TextWrapping="Wrap"
@@ -57,19 +57,19 @@
                                 IsExpanded="True"
                                 HorizontalAlignment="Stretch">
                                 <tk:SettingsExpander.HeaderIcon>
-                                    <FontIcon Glyph="&#xE772;" Foreground="#FF60CDFF" />
+                                    <ImageIcon Source="ms-appx:///Assets/Icons/control_knobs.png" />
                                 </tk:SettingsExpander.HeaderIcon>
 
                                 <tk:SettingsExpander.Items>
                                     <tk:SettingsCard Header="Layout" Description="{x:Bind LayoutText}">
                                         <tk:SettingsCard.HeaderIcon>
-                                            <FontIcon Glyph="&#xF0E2;" Foreground="#FF9A6CFF" />
+                                            <ImageIcon Source="ms-appx:///Assets/Icons/straight_ruler.png" />
                                         </tk:SettingsCard.HeaderIcon>
                                     </tk:SettingsCard>
 
                                     <tk:SettingsCard Header="Brightness" Description="Applies immediately to the device backlight.">
                                         <tk:SettingsCard.HeaderIcon>
-                                            <FontIcon Glyph="&#xE706;" Foreground="#FFFFC83D" />
+                                            <ImageIcon Source="ms-appx:///Assets/Icons/light_bulb.png" />
                                         </tk:SettingsCard.HeaderIcon>
                                         <StackPanel Orientation="Horizontal" Spacing="12">
                                             <Slider
@@ -85,7 +85,7 @@
 
                                     <tk:SettingsCard Header="Identify" Description="Flashes all keys white so you can tell devices apart.">
                                         <tk:SettingsCard.HeaderIcon>
-                                            <FontIcon Glyph="&#xE945;" Foreground="#FF6CCB5F" />
+                                            <ImageIcon Source="ms-appx:///Assets/Icons/high_voltage.png" />
                                         </tk:SettingsCard.HeaderIcon>
                                         <Button Content="Flash keys" Command="{x:Bind IdentifyCommand}" />
                                     </tk:SettingsCard>

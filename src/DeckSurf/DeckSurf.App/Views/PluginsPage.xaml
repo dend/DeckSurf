@@ -34,7 +34,7 @@
                 Margin="0,64,0,0"
                 MaxWidth="420"
                 Visibility="{x:Bind ViewModel.HasNoPlugins, Mode=OneWay}">
-                <FontIcon Glyph="&#xEA86;" FontSize="44" Foreground="#FF00B7C3" Opacity="0.5" HorizontalAlignment="Center" />
+                <Image Source="ms-appx:///Assets/Icons/puzzle_piece.png" Width="56" Height="56" HorizontalAlignment="Center" />
                 <TextBlock Text="No plugins found" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
                 <TextBlock
                     Text="Place plugin folders inside the plugins directory next to the application. Plugin assemblies follow the DeckSurf.Plugin.*.dll naming convention."
@@ -62,13 +62,13 @@
                             ItemsSource="{x:Bind Commands}"
                             Margin="0,0,0,8">
                             <tk:SettingsExpander.HeaderIcon>
-                                <FontIcon Glyph="&#xEA86;" Foreground="#FF00B7C3" />
+                                <ImageIcon Source="ms-appx:///Assets/Icons/puzzle_piece.png" />
                             </tk:SettingsExpander.HeaderIcon>
                             <tk:SettingsExpander.ItemTemplate>
                                 <DataTemplate x:DataType="services:CommandInfo">
                                     <tk:SettingsCard Header="{x:Bind DisplayName}" Description="{x:Bind Description}">
                                         <tk:SettingsCard.HeaderIcon>
-                                            <FontIcon Glyph="&#xE945;" FontSize="16" Foreground="#FF60CDFF" />
+                                            <ImageIcon Source="ms-appx:///Assets/Icons/high_voltage.png" />
                                         </tk:SettingsCard.HeaderIcon>
                                         <TextBlock Text="{x:Bind MetaText}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" />
                                     </tk:SettingsCard>

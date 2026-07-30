@@ -221,7 +221,7 @@
             VerticalAlignment="Center"
             MaxWidth="440"
             Visibility="{x:Bind ViewModel.HasNoProfiles, Mode=OneWay}">
-            <FontIcon Glyph="&#xF0E2;" FontSize="44" Opacity="0.35" HorizontalAlignment="Center" />
+            <Image Source="ms-appx:///Assets/Icons/joystick.png" Width="56" Height="56" HorizontalAlignment="Center" />
             <TextBlock Text="Set up your Stream Deck" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
             <TextBlock
                 Text="A profile maps plugin commands to your device's keys. Create one, click a key on the grid, and pick what it should do."
@@ -285,7 +285,7 @@
                                     <DataTemplate x:DataType="vm:KeyViewModel">
                                         <Grid Width="376" Height="44" CornerRadius="6" Background="#FF141414" BorderBrush="#FF333333" BorderThickness="1">
                                             <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Width="376" Height="44" Stretch="UniformToFill" />
-                                            <TextBlock Text="Touch screen — select to configure" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
+                                            <TextBlock Text="Touch screen (select to configure)" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#66FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowPlaceholder, Mode=OneWay}" />
                                             <TextBlock Text="{x:Bind Label, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#FFE8E8E8" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ShowLabel, Mode=OneWay}" />
                                         </Grid>
                                     </DataTemplate>
@@ -332,7 +332,7 @@
                         HorizontalAlignment="Left"
                         Visibility="{x:Bind ViewModel.HasProfile, Mode=OneWay}">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Any key — runs on every press" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#99FFFFFF" />
+                            <TextBlock Text="Runs on every key press" Style="{StaticResource CaptionTextBlockStyle}" Foreground="#99FFFFFF" />
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <GridView
                                     x:Name="CatchAllList"

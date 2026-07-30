@@ -42,7 +42,7 @@ namespace DeckSurf.App.Views
             string.Join("; ", Ioc.Default.GetRequiredService<PluginService>().BuiltInDirectories.Select(d => Path.Combine(d, "plugins")));
 
         public string AboutText { get; } =
-            $"Version {Assembly.GetExecutingAssembly().GetName().Version} · " +
+            $"Version {Assembly.GetExecutingAssembly().GetName().Version}, " +
             $"SDK {typeof(DeckSurf.SDK.Core.DeviceManager).Assembly.GetName().Version}";
 
         private void ThemeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)

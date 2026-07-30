@@ -37,17 +37,17 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="DevicesItem" Content="Devices" Tag="devices">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE772;" />
+                        <ImageIcon Source="ms-appx:///Assets/Icons/control_knobs.png" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="EditorItem" Content="Editor" Tag="editor">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xF0E2;" />
+                        <ImageIcon Source="ms-appx:///Assets/Icons/joystick.png" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="PluginsItem" Content="Plugins" Tag="plugins">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xEA86;" />
+                        <ImageIcon Source="ms-appx:///Assets/Icons/puzzle_piece.png" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>

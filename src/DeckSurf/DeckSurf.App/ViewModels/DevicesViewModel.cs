@@ -29,7 +29,7 @@ namespace DeckSurf.App.ViewModels
 
         public string Name => Device.Name;
 
-        public string Subtitle => $"{Device.Model} · {Device.Serial}";
+        public string Subtitle => $"{Device.Model}, serial {Device.Serial}";
 
         public string LayoutText
         {
@@ -51,8 +51,16 @@ namespace DeckSurf.App.ViewModels
                     extras.Add($"{Device.TouchButtonCount} touch keys");
                 }
 
-                var layout = $"{Device.ButtonColumns} x {Device.ButtonRows} keys @ {Device.ButtonResolution}px";
-                return extras.Count == 0 ? layout : $"{layout} · {string.Join(", ", extras)}";
+                var layout = $"{Device.ButtonColumns} x {Device.ButtonRows} keys at {Device.ButtonResolution}px";
+                var extrasText = extras.Count switch
+                {
+                    0 => null,
+                    1 => extras[0],
+                    2 => $"{extras[0]} and {extras[1]}",
+                    _ => string.Join(", ", extras[..^1]) + $", and {extras[^1]}",
+                };
+
+                return extrasText is null ? layout : $"{layout}, with {extrasText}";
             }
         }
 

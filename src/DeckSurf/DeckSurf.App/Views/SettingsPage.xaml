@@ -19,7 +19,7 @@
 
             <tk:SettingsCard Header="App theme" Description="Changes apply immediately.">
                 <tk:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE790;" Foreground="#FF9A6CFF" />
+                    <ImageIcon Source="ms-appx:///Assets/Icons/artist_palette.png" />
                 </tk:SettingsCard.HeaderIcon>
                 <ComboBox x:Name="ThemeSelector" MinWidth="160" SelectionChanged="ThemeSelector_SelectionChanged">
                     <ComboBoxItem Content="Use system setting" Tag="Default" />
@@ -30,7 +30,7 @@
 
             <tk:SettingsCard Header="Profiles folder" Description="{x:Bind ProfilesPath}">
                 <tk:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE8B7;" Foreground="#FFFFC83D" />
+                    <ImageIcon Source="ms-appx:///Assets/Icons/file_folder.png" />
                 </tk:SettingsCard.HeaderIcon>
                 <Button Content="Open" Click="OpenProfilesFolder_Click" />
             </tk:SettingsCard>
@@ -41,7 +41,7 @@
                 IsExpanded="True"
                 ItemsSource="{x:Bind CustomFolders}">
                 <tk:SettingsExpander.HeaderIcon>
-                    <FontIcon Glyph="&#xEA86;" Foreground="#FF00B7C3" />
+                    <ImageIcon Source="ms-appx:///Assets/Icons/puzzle_piece.png" />
                 </tk:SettingsExpander.HeaderIcon>
                 <Button Click="AddPluginFolder_Click" AutomationProperties.Name="Add plugin folder">
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -62,7 +62,7 @@
 
             <tk:SettingsCard Header="DeckSurf" Description="{x:Bind AboutText}" Margin="0,16,0,0">
                 <tk:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE946;" Foreground="#FF60CDFF" />
+                    <ImageIcon Source="ms-appx:///Assets/Icons/pig_face.png" />
                 </tk:SettingsCard.HeaderIcon>
                 <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/dend/decksurf" />
             </tk:SettingsCard>

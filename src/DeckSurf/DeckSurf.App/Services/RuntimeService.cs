@@ -436,7 +436,7 @@ namespace DeckSurf.App.Services
                 resumeProfileName = profileToResume;
             }
 
-            Log("Device disconnected — runtime stopped. Will resume when it returns.");
+            Log("Device disconnected. The runtime stopped and will resume when the device returns.");
             StateChanged?.Invoke(this, EventArgs.Empty);
         }
 
@@ -456,7 +456,7 @@ namespace DeckSurf.App.Services
             try
             {
                 Start(profileName);
-                Log($"Device reconnected — resumed profile '{profileName}'.");
+                Log($"Device reconnected. Resumed profile '{profileName}'.");
             }
             catch (Exception ex)
             {

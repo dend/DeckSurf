@@ -21,7 +21,7 @@ namespace DeckSurf.App.Services
         bool IsKnobSupported,
         int TouchButtonCount)
     {
-        public string DisplayText => $"{Name} · {Serial}";
+        public string DisplayText => $"{Name} ({Serial})";
     }
 
     /// <summary>

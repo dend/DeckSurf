@@ -30,7 +30,7 @@ namespace DeckSurf.App.Services
             ? "No settings"
             : "Settings: " + string.Join(", ", Parameters.Select(p => p.DisplayName ?? p.Key));
 
-        public string MetaText => $"{ModelsText} · {ParametersText}";
+        public string MetaText => $"{ModelsText} ({ParametersText})";
     }
 
     /// <summary>
@@ -47,8 +47,8 @@ namespace DeckSurf.App.Services
     {
         // Avoid repeating the id when no distinct display name is set.
         public string Subtitle => string.Equals(DisplayName, Id, StringComparison.Ordinal)
-            ? $"v{Version} · {Author}"
-            : $"{Id} · v{Version} · {Author}";
+            ? $"Version {Version} by {Author}"
+            : $"{Id}, version {Version} by {Author}";
     }
 
     /// <summary>
