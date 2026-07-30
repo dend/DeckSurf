@@ -21,5 +21,43 @@ namespace DeckSurf.App.Views
             // editor since the page was last shown.
             ViewModel.RefreshProfiles();
         }
+
+        // Tag carries the item view model; ItemsRepeater templates do not flow
+        // DataContext, so the binding is explicit.
+        private async void RenameDevice_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            if (sender is not Microsoft.UI.Xaml.FrameworkElement { Tag: DeviceItemViewModel item })
+            {
+                return;
+            }
+
+            var nameBox = new TextBox
+            {
+                Text = item.Nickname ?? string.Empty,
+                PlaceholderText = item.Name,
+                SelectionStart = item.Nickname?.Length ?? 0,
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = "Device nickname",
+                Content = nameBox,
+                PrimaryButtonText = "Save",
+                SecondaryButtonText = "Clear",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = XamlRoot,
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                ViewModel.SetNickname(item, nameBox.Text);
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
+                ViewModel.SetNickname(item, null);
+            }
+        }
     }
 }

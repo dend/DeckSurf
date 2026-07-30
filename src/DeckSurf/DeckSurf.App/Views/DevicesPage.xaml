@@ -73,14 +73,35 @@
                                     <!-- Identity row: name left, the enable switch right.
                                          Off means the runtime leaves the device alone; the
                                          connection stays. -->
-                                    <Grid>
+                                    <Grid ColumnSpacing="4">
                                         <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
-                                        <ToggleSwitch
+                                        <StackPanel Spacing="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                            <TextBlock
+                                                Text="{x:Bind Name}"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Visibility="{x:Bind HasNickname, Mode=OneWay}" />
+                                        </StackPanel>
+                                        <Button
                                             Grid.Column="1"
+                                            Tag="{x:Bind}"
+                                            Click="RenameDevice_Click"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Padding="6"
+                                            VerticalAlignment="Center"
+                                            ToolTipService.ToolTip="Give this device a nickname"
+                                            AutomationProperties.Name="Rename device">
+                                            <FontIcon Glyph="&#xE70F;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </Button>
+                                        <ToggleSwitch
+                                            Grid.Column="3"
                                             IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
                                             OnContent=""
                                             OffContent=""
@@ -118,11 +139,13 @@
                                                 Grid.Column="2"
                                                 Command="{x:Bind OpenEditorCommand}"
                                                 IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
-                                                Padding="8"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Padding="6"
                                                 VerticalAlignment="Center"
                                                 ToolTipService.ToolTip="Open this profile in the editor"
                                                 AutomationProperties.Name="Open in editor">
-                                                <FontIcon Glyph="&#xE70F;" FontSize="16" />
+                                                <FontIcon Glyph="&#xE8A7;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                             </Button>
                                         </Grid>
                                         <TextBlock
@@ -177,11 +200,27 @@
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                     BorderThickness="0,1,0,0"
                                     CornerRadius="0,0,8,8"
-                                    Padding="20,8,20,8">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                    Padding="20,4,12,4">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
                                         <TextBlock Text="Serial" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Text="{x:Bind Serial}" Style="{StaticResource CaptionTextBlockStyle}" IsTextSelectionEnabled="True" VerticalAlignment="Center" />
-                                    </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{x:Bind Serial}" Style="{StaticResource CaptionTextBlockStyle}" IsTextSelectionEnabled="True" VerticalAlignment="Center" />
+                                        <Button
+                                            Grid.Column="2"
+                                            Command="{x:Bind CopySerialCommand}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Padding="6"
+                                            VerticalAlignment="Center"
+                                            ToolTipService.ToolTip="Copy serial"
+                                            AutomationProperties.Name="Copy serial">
+                                            <FontIcon Glyph="&#xE8C8;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </Button>
+                                    </Grid>
                                 </Border>
                                 </Grid>
                             </Border>

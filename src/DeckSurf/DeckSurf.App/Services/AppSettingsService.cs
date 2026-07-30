@@ -52,6 +52,47 @@ namespace DeckSurf.App.Services
             !string.IsNullOrWhiteSpace(serial) && !DisabledDevices.Contains(serial);
 
         /// <summary>
+        /// Gets user-given device nicknames per serial, for telling identical
+        /// models apart.
+        /// </summary>
+        public Dictionary<string, string> DeviceNicknames { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public string? GetDeviceNickname(string serial) =>
+            !string.IsNullOrWhiteSpace(serial) && DeviceNicknames.TryGetValue(serial, out var nickname) ? nickname : null;
+
+        /// <summary>
+        /// Sets or clears (null or whitespace) a device's nickname and persists it.
+        /// </summary>
+        public void SetDeviceNickname(string serial, string? nickname)
+        {
+            if (string.IsNullOrWhiteSpace(serial))
+            {
+                return;
+            }
+
+            var trimmed = string.IsNullOrWhiteSpace(nickname) ? null : nickname.Trim();
+
+            if (trimmed is null)
+            {
+                if (!DeviceNicknames.Remove(serial))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                if (string.Equals(GetDeviceNickname(serial), trimmed, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                DeviceNicknames[serial] = trimmed;
+            }
+
+            Save();
+        }
+
+        /// <summary>
         /// Enables or disables a device and persists the choice.
         /// </summary>
         public void SetDeviceEnabled(string serial, bool enabled)
@@ -191,6 +232,14 @@ namespace DeckSurf.App.Services
                             DisabledDevices.Add(serial);
                         }
                     }
+
+                    foreach (var (serial, nickname) in settings.DeviceNicknames ?? [])
+                    {
+                        if (!string.IsNullOrWhiteSpace(serial) && !string.IsNullOrWhiteSpace(nickname))
+                        {
+                            DeviceNicknames[serial] = nickname;
+                        }
+                    }
                 }
             }
             catch (Exception)
@@ -210,6 +259,7 @@ namespace DeckSurf.App.Services
                     PluginDirectories = [.. PluginDirectories],
                     ActiveProfiles = new Dictionary<string, string>(ActiveProfiles),
                     DisabledDevices = [.. DisabledDevices],
+                    DeviceNicknames = new Dictionary<string, string>(DeviceNicknames),
                 }));
             }
             catch (Exception)
@@ -227,6 +277,8 @@ namespace DeckSurf.App.Services
             public Dictionary<string, string>? ActiveProfiles { get; set; }
 
             public List<string>? DisabledDevices { get; set; }
+
+            public Dictionary<string, string>? DeviceNicknames { get; set; }
         }
     }
 }

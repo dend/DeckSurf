@@ -7,7 +7,8 @@ using Microsoft.UI.Dispatching;
 namespace DeckSurf.App.Services
 {
     /// <summary>
-    /// Snapshot of a connected device's identity and capabilities.
+    /// Snapshot of a connected device's identity and capabilities. The nickname
+    /// is the user's own label for the device, for telling identical models apart.
     /// </summary>
     public sealed record DeviceSummary(
         string Name,
@@ -20,9 +21,10 @@ namespace DeckSurf.App.Services
         bool IsScreenSupported,
         bool IsKnobSupported,
         int KnobCount,
-        int TouchButtonCount)
+        int TouchButtonCount,
+        string? Nickname = null)
     {
-        public string DisplayText => $"{Name} ({Serial})";
+        public string DisplayText => Nickname is null ? $"{Name} ({Serial})" : $"{Nickname} ({Name})";
     }
 
     /// <summary>
@@ -32,11 +34,13 @@ namespace DeckSurf.App.Services
     public sealed class DeviceService : IDisposable
     {
         private readonly RuntimeService runtimeService;
+        private readonly AppSettingsService appSettings;
         private DispatcherQueue? dispatcherQueue;
 
-        public DeviceService(RuntimeService runtimeService)
+        public DeviceService(RuntimeService runtimeService, AppSettingsService appSettings)
         {
             this.runtimeService = runtimeService;
+            this.appSettings = appSettings;
         }
 
         /// <summary>
@@ -69,7 +73,8 @@ namespace DeckSurf.App.Services
                         device.IsScreenSupported,
                         device.IsKnobSupported,
                         device.KnobCount,
-                        device.TouchButtonCount));
+                        device.TouchButtonCount,
+                        appSettings.GetDeviceNickname(device.Serial)));
                 }
             }
             catch (Exception)
@@ -81,10 +86,38 @@ namespace DeckSurf.App.Services
 
             RunOnUIThread(() =>
             {
-                Devices.Clear();
+                // Reconcile in place. Clearing and refilling would recreate every
+                // bound card and combo, dropping transient state like an open
+                // dropdown or a selection mid-push; untouched devices must not
+                // see any collection event at all.
+                for (var i = Devices.Count - 1; i >= 0; i--)
+                {
+                    if (!summaries.Any(s => string.Equals(s.Serial, Devices[i].Serial, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        Devices.RemoveAt(i);
+                    }
+                }
+
                 foreach (var summary in summaries)
                 {
-                    Devices.Add(summary);
+                    var index = -1;
+                    for (var i = 0; i < Devices.Count; i++)
+                    {
+                        if (string.Equals(Devices[i].Serial, summary.Serial, StringComparison.OrdinalIgnoreCase))
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+
+                    if (index < 0)
+                    {
+                        Devices.Add(summary);
+                    }
+                    else if (Devices[index] != summary)
+                    {
+                        Devices[index] = summary;
+                    }
                 }
             });
         }

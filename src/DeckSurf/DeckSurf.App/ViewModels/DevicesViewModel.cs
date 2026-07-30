@@ -54,6 +54,19 @@ namespace DeckSurf.App.ViewModels
         public string Name => Device.Name;
 
         /// <summary>
+        /// Gets or sets the user's label for this device, for telling identical
+        /// models apart. Null means the model name stands alone.
+        /// </summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(DisplayName))]
+        [NotifyPropertyChangedFor(nameof(HasNickname))]
+        public partial string? Nickname { get; set; }
+
+        public string DisplayName => string.IsNullOrEmpty(Nickname) ? Name : Nickname;
+
+        public bool HasNickname => !string.IsNullOrEmpty(Nickname);
+
+        /// <summary>
         /// Gets or sets a value indicating whether the runtime drives this device.
         /// Turning a device off stops its profile and hides it from the editor;
         /// the connection itself stays.
@@ -181,6 +194,14 @@ namespace DeckSurf.App.ViewModels
         private void OpenEditor() => openEditor(Serial, SelectedProfileName);
 
         [RelayCommand]
+        private void CopySerial()
+        {
+            var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            package.SetText(Serial);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+        }
+
+        [RelayCommand]
         private async Task IdentifyAsync()
         {
             try
@@ -290,7 +311,10 @@ namespace DeckSurf.App.ViewModels
                         appSettings.IsDeviceEnabled(device.Serial),
                         OnDeviceEnabledChanged,
                         OnActiveProfileChanged,
-                        OnOpenEditor));
+                        OnOpenEditor)
+                    {
+                        Nickname = appSettings.GetDeviceNickname(device.Serial),
+                    });
                 }
             }
 
@@ -306,6 +330,17 @@ namespace DeckSurf.App.ViewModels
             // recomputes now for the disable case and again when sessions settle.
             appSettings.SetDeviceEnabled(serial, enabled);
             UpdateStatuses();
+        }
+
+        /// <summary>
+        /// Applies a nickname (null or whitespace clears it), persists it, and
+        /// refreshes the device list so the editor's combo picks up the label.
+        /// </summary>
+        public void SetNickname(DeviceItemViewModel item, string? nickname)
+        {
+            appSettings.SetDeviceNickname(item.Serial, nickname);
+            item.Nickname = appSettings.GetDeviceNickname(item.Serial);
+            deviceService.Refresh();
         }
 
         private void OnOpenEditor(string serial, string? profileName)
