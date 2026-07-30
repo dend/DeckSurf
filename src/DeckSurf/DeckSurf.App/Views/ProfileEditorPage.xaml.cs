@@ -13,10 +13,6 @@ namespace DeckSurf.App.Views
         // Logical width of one key tile slot; matches ItemsWrapGrid.ItemWidth.
         private const int TileSlotWidth = 96;
 
-        // Chrome around the grid: nav pane (220), page padding (48), deck card padding,
-        // column gap, and the key-configuration inspector in its expanded state.
-        private const int NonGridWidth = 760;
-
         public ProfileEditorPage()
         {
             InitializeComponent();
@@ -66,9 +62,9 @@ namespace DeckSurf.App.Views
         }
 
         // The editor grid must always show exactly the device's column count so the
-        // on-screen arrangement matches the physical key layout. The grid gets a hard
-        // width (slots are a fixed 96px) so it can never re-wrap, and the window
-        // cannot shrink below one full row of keys plus the expanded inspector.
+        // on-screen arrangement matches the physical key layout; the grid gets a hard
+        // width (slots are a fixed 96px) so it can never re-wrap. The window itself is
+        // width-locked at startup for the widest supported layout.
         private void ApplyGridColumns()
         {
             if (ViewModel.GridColumns <= 0)
@@ -82,10 +78,6 @@ namespace DeckSurf.App.Views
             }
 
             KeyGrid.Width = (ViewModel.GridColumns * TileSlotWidth) + 4;
-
-            Ioc.Default.GetRequiredService<WindowService>().SetMinimumSize(
-                (ViewModel.GridColumns * TileSlotWidth) + NonGridWidth,
-                560);
         }
 
         // All target lists (keys, catch-alls, knobs, screen) share single-selection:

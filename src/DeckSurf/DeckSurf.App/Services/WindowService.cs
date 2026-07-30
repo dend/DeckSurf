@@ -47,18 +47,25 @@ namespace DeckSurf.App.Services
         }
 
         /// <summary>
-        /// Constrains how small the window can be resized, in logical (DPI-independent)
-        /// pixels. Used to keep the editor's key grid from underflowing.
+        /// Locks the window to a fixed width sized for the largest supported device
+        /// layout, in logical (DPI-independent) pixels. Height stays user-resizable
+        /// above the given minimum; maximize is disabled since width cannot grow.
         /// </summary>
-        public void SetMinimumSize(int logicalWidth, int logicalHeight)
+        public void LockWindowWidth(int logicalWidth, int minLogicalHeight)
         {
             RunOnUIThread(() =>
             {
                 if (MainWindow?.AppWindow?.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
                 {
                     var scale = MainWindow.Content?.XamlRoot?.RasterizationScale ?? 1.0;
-                    presenter.PreferredMinimumWidth = (int)(logicalWidth * scale);
-                    presenter.PreferredMinimumHeight = (int)(logicalHeight * scale);
+                    var physicalWidth = (int)(logicalWidth * scale);
+
+                    presenter.PreferredMinimumWidth = physicalWidth;
+                    presenter.PreferredMaximumWidth = physicalWidth;
+                    presenter.PreferredMinimumHeight = (int)(minLogicalHeight * scale);
+                    presenter.IsMaximizable = false;
+
+                    MainWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32(physicalWidth, MainWindow.AppWindow.Size.Height));
                 }
             });
         }
