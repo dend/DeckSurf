@@ -63,9 +63,13 @@
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 BorderThickness="1"
-                                CornerRadius="{StaticResource OverlayCornerRadius}"
-                                Padding="20,16,20,16">
-                                <StackPanel Spacing="16">
+                                CornerRadius="{StaticResource OverlayCornerRadius}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                <StackPanel Spacing="16" Padding="20,16,20,16">
                                     <!-- Identity row: name left, the enable switch right.
                                          Off means the runtime leaves the device alone; the
                                          connection stays. -->
@@ -96,6 +100,7 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <Grid Width="8" VerticalAlignment="Center">
                                                 <Ellipse Width="8" Height="8" Fill="{ThemeResource SystemFillColorSuccessBrush}" Visibility="{x:Bind IsRunning, Mode=OneWay}" />
@@ -109,6 +114,16 @@
                                                 PlaceholderText="Choose a profile"
                                                 HorizontalAlignment="Stretch"
                                                 AutomationProperties.Name="Active profile" />
+                                            <Button
+                                                Grid.Column="2"
+                                                Command="{x:Bind OpenEditorCommand}"
+                                                IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
+                                                Padding="8"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="Open this profile in the editor"
+                                                AutomationProperties.Name="Open in editor">
+                                                <FontIcon Glyph="&#xE70F;" FontSize="16" />
+                                            </Button>
                                         </Grid>
                                         <TextBlock
                                             Text="No profiles for this device yet. Create one in the editor."
@@ -152,11 +167,23 @@
                                         </Grid>
                                     </StackPanel>
 
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="Serial" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                        <TextBlock Text="{x:Bind Serial}" Style="{StaticResource CaptionTextBlockStyle}" IsTextSelectionEnabled="True" />
-                                    </StackPanel>
                                 </StackPanel>
+
+                                <!-- Footnote strip: the serial lives on its own quiet
+                                     surface at the card's base, separated by a hairline. -->
+                                <Border
+                                    Grid.Row="1"
+                                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="0,1,0,0"
+                                    CornerRadius="0,0,8,8"
+                                    Padding="20,8,20,8">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="Serial" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{x:Bind Serial}" Style="{StaticResource CaptionTextBlockStyle}" IsTextSelectionEnabled="True" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>

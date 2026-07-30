@@ -36,6 +36,19 @@ namespace DeckSurf.App
             runtimeService.StateChanged += (_, _) => DispatcherQueue.TryEnqueue(() => UpdateRuntimeStatus(runtimeService));
             UpdateRuntimeStatus(runtimeService);
 
+            // Pages jump between sections through the window service; the shell
+            // owns the navigation view, so the mapping lives here.
+            Ioc.Default.GetRequiredService<WindowService>().NavigationRequested += (_, tag) =>
+            {
+                RootNavigation.SelectedItem = tag switch
+                {
+                    "editor" => EditorItem,
+                    "plugins" => PluginsItem,
+                    "settings" => SettingsItem,
+                    _ => DevicesItem,
+                };
+            };
+
             RootNavigation.SelectedItem = DevicesItem;
         }
 

@@ -16,6 +16,7 @@ namespace DeckSurf.App.ViewModels
         private readonly Action<string?> reportStatus;
         private readonly Action<string, bool> setEnabled;
         private readonly Action<string, string> setActiveProfile;
+        private readonly Action<string, string?> openEditor;
         private readonly bool applyBrightnessOnChange;
         private readonly bool applyEnabledOnChange;
         private bool applyProfileOnChange;
@@ -28,12 +29,14 @@ namespace DeckSurf.App.ViewModels
             Action<string?> reportStatus,
             bool isEnabled,
             Action<string, bool> setEnabled,
-            Action<string, string> setActiveProfile)
+            Action<string, string> setActiveProfile,
+            Action<string, string?> openEditor)
         {
             this.deviceService = deviceService;
             this.reportStatus = reportStatus;
             this.setEnabled = setEnabled;
             this.setActiveProfile = setActiveProfile;
+            this.openEditor = openEditor;
             Device = device;
             Brightness = 60;
             IsEnabled = isEnabled;
@@ -175,6 +178,9 @@ namespace DeckSurf.App.ViewModels
         }
 
         [RelayCommand]
+        private void OpenEditor() => openEditor(Serial, SelectedProfileName);
+
+        [RelayCommand]
         private async Task IdentifyAsync()
         {
             try
@@ -195,6 +201,7 @@ namespace DeckSurf.App.ViewModels
         private readonly AppSettingsService appSettings;
         private readonly RuntimeService runtimeService;
         private readonly ProfileService profileService;
+        private readonly WindowService windowService;
 
         public DevicesViewModel(
             DeviceService deviceService,
@@ -207,6 +214,7 @@ namespace DeckSurf.App.ViewModels
             this.appSettings = appSettings;
             this.runtimeService = runtimeService;
             this.profileService = profileService;
+            this.windowService = windowService;
             deviceService.Devices.CollectionChanged += OnDevicesChanged;
 
             // Session changes carry both the running indicator and, when a
@@ -281,7 +289,8 @@ namespace DeckSurf.App.ViewModels
                         message => StatusMessage = message,
                         appSettings.IsDeviceEnabled(device.Serial),
                         OnDeviceEnabledChanged,
-                        OnActiveProfileChanged));
+                        OnActiveProfileChanged,
+                        OnOpenEditor));
                 }
             }
 
@@ -297,6 +306,14 @@ namespace DeckSurf.App.ViewModels
             // recomputes now for the disable case and again when sessions settle.
             appSettings.SetDeviceEnabled(serial, enabled);
             UpdateStatuses();
+        }
+
+        private void OnOpenEditor(string serial, string? profileName)
+        {
+            CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default
+                .GetRequiredService<ProfileEditorViewModel>()
+                .OpenFor(serial, profileName);
+            windowService.RequestNavigation("editor");
         }
 
         private void OnActiveProfileChanged(string serial, string profileName)

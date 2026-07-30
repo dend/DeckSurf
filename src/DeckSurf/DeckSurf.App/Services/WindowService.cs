@@ -9,6 +9,12 @@ namespace DeckSurf.App.Services
     /// </summary>
     public sealed class WindowService
     {
+        /// <summary>
+        /// Raised when a page asks the shell to switch sections; the payload is
+        /// the navigation tag ("devices", "editor", "plugins", "settings").
+        /// </summary>
+        public event EventHandler<string>? NavigationRequested;
+
         public Window? MainWindow { get; private set; }
 
         public DispatcherQueue? DispatcherQueue { get; private set; }
@@ -55,6 +61,14 @@ namespace DeckSurf.App.Services
             {
                 queue.TryEnqueue(() => action());
             }
+        }
+
+        /// <summary>
+        /// Asks the shell to show the section with the given navigation tag.
+        /// </summary>
+        public void RequestNavigation(string tag)
+        {
+            RunOnUIThread(() => NavigationRequested?.Invoke(this, tag));
         }
 
         /// <summary>
