@@ -38,6 +38,26 @@ namespace DeckSurf.App.Services
         }
 
         /// <summary>
+        /// Queues an action on the UI thread even when already there. Use from
+        /// collection-changed handlers whose reaction must not run until every
+        /// other subscriber (bound controls included) has processed the change:
+        /// running inline can, for example, push a SelectedItem into a ComboBox
+        /// whose items view has not seen the addition yet, which throws.
+        /// </summary>
+        public void PostToUIThread(Action action)
+        {
+            var queue = DispatcherQueue;
+            if (queue is null)
+            {
+                action();
+            }
+            else
+            {
+                queue.TryEnqueue(() => action());
+            }
+        }
+
+        /// <summary>
         /// Associates a WinRT picker with the main window, which is required for
         /// pickers to work in unpackaged apps.
         /// </summary>

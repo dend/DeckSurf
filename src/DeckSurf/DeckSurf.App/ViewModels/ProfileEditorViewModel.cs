@@ -49,8 +49,10 @@ namespace DeckSurf.App.ViewModels
 
             // Editing is scoped to a device; pick the first connected one. Setting
             // SelectedDevice refreshes the profile list; without devices, refresh
-            // explicitly so all profiles stay reachable.
-            deviceService.Devices.CollectionChanged += (_, _) => windowService.RunOnUIThread(() =>
+            // explicitly so all profiles stay reachable. Posted, never inline: this
+            // handler runs before the bound Device ComboBox sees the collection
+            // change, and pushing a not-yet-known SelectedItem into it throws.
+            deviceService.Devices.CollectionChanged += (_, _) => windowService.PostToUIThread(() =>
             {
                 if (SelectedDevice is null || !deviceService.Devices.Contains(SelectedDevice))
                 {
