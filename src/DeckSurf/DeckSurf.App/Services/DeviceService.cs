@@ -19,6 +19,7 @@ namespace DeckSurf.App.Services
         int ButtonResolution,
         bool IsScreenSupported,
         bool IsKnobSupported,
+        int KnobCount,
         int TouchButtonCount)
     {
         public string DisplayText => $"{Name} ({Serial})";
@@ -67,6 +68,7 @@ namespace DeckSurf.App.Services
                         device.ButtonResolution,
                         device.IsScreenSupported,
                         device.IsKnobSupported,
+                        device.KnobCount,
                         device.TouchButtonCount));
                 }
             }

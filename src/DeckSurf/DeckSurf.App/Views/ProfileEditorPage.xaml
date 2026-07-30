@@ -64,7 +64,7 @@
                 <TextBox
                     Header="{x:Bind HeaderText}"
                     Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
             </StackPanel>
         </DataTemplate>
 
@@ -77,7 +77,7 @@
                     SpinButtonPlacementMode="Inline"
                     SmallChange="1"
                     Value="{Binding NumberValue, Mode=TwoWay}" />
-                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
             </StackPanel>
         </DataTemplate>
 
@@ -86,7 +86,7 @@
                 <ToggleSwitch
                     Header="{x:Bind HeaderText}"
                     IsOn="{Binding BoolValue, Mode=TwoWay}" />
-                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
             </StackPanel>
         </DataTemplate>
 
@@ -98,7 +98,7 @@
                     ItemsSource="{x:Bind Choices}"
                     SelectedItem="{Binding Value, Mode=TwoWay}"
                     HorizontalAlignment="Stretch" />
-                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
             </StackPanel>
         </DataTemplate>
 
@@ -115,7 +115,7 @@
                         Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <Button Grid.Column="1" Content="Browse" Click="BrowseParameterFile_Click" />
                 </Grid>
-                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
+                <TextBlock Text="{x:Bind Description}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Visibility="{x:Bind HasDescription}" />
             </StackPanel>
         </DataTemplate>
 
@@ -173,13 +173,13 @@
                             <Grid Width="420" MaxHeight="340">
                                 <TextBlock
                                     Text="No runtime events yet."
-                                    Opacity="0.6"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                     Margin="4"
                                     Visibility="{x:Bind ViewModel.HasNoRuntimeLog, Mode=OneWay}" />
                                 <ListView ItemsSource="{x:Bind ViewModel.RuntimeLog}" SelectionMode="None">
                                     <ListView.ItemTemplate>
                                         <DataTemplate x:DataType="x:String">
-                                            <TextBlock Text="{x:Bind}" FontFamily="Consolas" FontSize="12" Opacity="0.85" />
+                                            <TextBlock Text="{x:Bind}" FontFamily="Consolas" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                     <ListView.ItemContainerStyle>
@@ -257,7 +257,7 @@
             <TextBlock
                 Text="A profile maps plugin commands to your device's keys. Create one, click a key on the grid, and pick what it should do."
                 Style="{StaticResource BodyTextBlockStyle}"
-                Opacity="0.7"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                 TextWrapping="Wrap"
                 TextAlignment="Center" />
             <Button
@@ -399,7 +399,7 @@
                     <Grid Grid.Row="0" Margin="0,0,0,16">
                         <StackPanel Spacing="4">
                             <TextBlock Text="{x:Bind ViewModel.InspectorTitle, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
-                            <TextBlock Text="{x:Bind ViewModel.InspectorSubtitle, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}" />
+                            <TextBlock Text="{x:Bind ViewModel.InspectorSubtitle, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="{x:Bind ViewModel.HasSelectedKey, Mode=OneWay}" />
                         </StackPanel>
                         <Button
                             Content="Clear key"
@@ -415,7 +415,7 @@
                             <TextBlock
                                 Text="Select a key on the grid to configure it."
                                 Style="{StaticResource CaptionTextBlockStyle}"
-                                Opacity="0.7"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 TextWrapping="Wrap"
                                 Visibility="{x:Bind ViewModel.HasNoSelectedKey, Mode=OneWay}" />
 
@@ -443,14 +443,16 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Border Grid.Column="0" Width="96" Height="96" CornerRadius="8" Background="{ThemeResource ControlFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                                        <!-- The preview is literally a key cap: the same primitive
+                                             as the Devices heroes and Plugins tiles. -->
+                                        <Border Grid.Column="0" Width="96" Height="96" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
                                             <Image Source="{x:Bind ViewModel.SelectedKey.PreviewImage, Mode=OneWay}" Width="96" Height="96" Stretch="UniformToFill" />
                                         </Border>
                                         <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                                             <TextBlock
                                                 Text="{x:Bind ViewModel.SelectedKey.ImageFileName, Mode=OneWay, FallbackValue=''}"
                                                 Style="{StaticResource CaptionTextBlockStyle}"
-                                                Opacity="0.6"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                 TextTrimming="CharacterEllipsis"
                                                 ToolTipService.ToolTip="{x:Bind ViewModel.SelectedKey.ImagePath, Mode=OneWay, FallbackValue=''}"
                                                 Visibility="{x:Bind ViewModel.SelectedKey.HasPreviewImage, Mode=OneWay, FallbackValue=Collapsed}" />
@@ -470,7 +472,7 @@
                                     <TextBlock
                                         Text="No settings. This command runs as-is."
                                         Style="{StaticResource CaptionTextBlockStyle}"
-                                        Opacity="0.7"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Visibility="{x:Bind ViewModel.HasNoParameters, Mode=OneWay}" />
                                     <ItemsControl
                                         ItemsSource="{x:Bind ViewModel.ParameterFields}"

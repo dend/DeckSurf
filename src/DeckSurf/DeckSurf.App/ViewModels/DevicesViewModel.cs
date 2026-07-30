@@ -3,9 +3,21 @@ using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeckSurf.App.Services;
+using Microsoft.UI.Xaml;
 
 namespace DeckSurf.App.ViewModels
 {
+    /// <summary>
+    /// One row of the miniature deck rendering on a device card.
+    /// </summary>
+    public sealed record KeyRowViewModel(IReadOnlyList<KeyCellViewModel> Cells);
+
+    /// <summary>
+    /// One key cap in the miniature deck rendering; carries its own geometry so
+    /// the cell DataTemplate binds within its own DataType scope.
+    /// </summary>
+    public sealed record KeyCellViewModel(double Size, CornerRadius Corner);
+
     /// <summary>
     /// One connected device with its own controls; every connected device is shown
     /// simultaneously with independent brightness and identify actions.
@@ -14,6 +26,7 @@ namespace DeckSurf.App.ViewModels
     {
         private readonly DeviceService deviceService;
         private readonly Action<string?> reportStatus;
+        private readonly bool applyBrightnessOnChange;
         private bool applyingBrightness;
         private int? pendingBrightness;
 
@@ -23,6 +36,27 @@ namespace DeckSurf.App.ViewModels
             this.reportStatus = reportStatus;
             Device = device;
             Brightness = 60;
+
+            // Hero geometry: the miniature's pitch is derived from the hero region
+            // (content box ~152px tall, ~500px wide) so the rendering commands the
+            // region on every model, capped at 64 so small devices read as
+            // small-but-close rather than inflated.
+            var reserved = (HasScreen ? 22 : 0) + (HasKnobs ? 26 : 0);
+            var pitch = Math.Min(64, Math.Min((152 - reserved) / device.ButtonRows, 500 / device.ButtonColumns));
+            var cellSize = pitch - 4;
+            var corner = new CornerRadius(cellSize >= 40 ? 8 : 4);
+            MiniGridWidth = (device.ButtonColumns * pitch) - 4;
+            ScreenStripWidth = HasTouchKeys ? MiniGridWidth - 44 : MiniGridWidth;
+
+            var cells = Enumerable.Range(0, device.ButtonColumns)
+                .Select(_ => new KeyCellViewModel(cellSize, corner))
+                .ToList();
+            KeyRows = [.. Enumerable.Range(0, device.ButtonRows).Select(_ => new KeyRowViewModel(cells))];
+            KnobCells = [.. Enumerable.Range(0, device.KnobCount)];
+
+            // Only user-driven slider changes write to the device; the initial
+            // value above must not.
+            applyBrightnessOnChange = true;
         }
 
         public DeviceSummary Device { get; }
@@ -31,42 +65,35 @@ namespace DeckSurf.App.ViewModels
 
         public string Name => Device.Name;
 
-        // The full identity in one sentence; the redundant Layout row was folded in
-        // here so the expander says everything once.
-        public string Subtitle => $"{Device.Model}, serial {Device.Serial}, {LayoutText}";
+        /// <summary>
+        /// Gets the miniature key grid rows. Per-cell view models exist so the cell
+        /// DataTemplate's x:Bind scopes to its own DataType; per-device sizing
+        /// cannot compile from an Int32-typed template.
+        /// </summary>
+        public IReadOnlyList<KeyRowViewModel> KeyRows { get; }
 
-        public string LayoutText
-        {
-            get
-            {
-                List<string> extras = [];
-                if (Device.IsScreenSupported)
-                {
-                    extras.Add("screen");
-                }
+        public IReadOnlyList<int> KnobCells { get; }
 
-                if (Device.IsKnobSupported)
-                {
-                    extras.Add("knobs");
-                }
+        public double MiniGridWidth { get; }
 
-                if (Device.TouchButtonCount > 0)
-                {
-                    extras.Add($"{Device.TouchButtonCount} touch keys");
-                }
+        /// <summary>
+        /// Gets the screen strip width. On touch-key devices the strip is flanked
+        /// by two 14px touch caps with 8px gaps, so the full row spans exactly
+        /// <see cref="MiniGridWidth"/> and no element protrudes past the key grid.
+        /// </summary>
+        public double ScreenStripWidth { get; }
 
-                var layout = $"{Device.ButtonColumns} x {Device.ButtonRows} keys at {Device.ButtonResolution}px";
-                var extrasText = extras.Count switch
-                {
-                    0 => null,
-                    1 => extras[0],
-                    2 => $"{extras[0]} and {extras[1]}",
-                    _ => string.Join(", ", extras[..^1]) + $", and {extras[^1]}",
-                };
+        public bool HasScreen => Device.IsScreenSupported;
 
-                return extrasText is null ? layout : $"{layout}, with {extrasText}";
-            }
-        }
+        public bool HasKnobs => Device.KnobCount > 0;
+
+        public bool HasTouchKeys => Device.TouchButtonCount > 0;
+
+        public string KeyCountText => (Device.ButtonColumns * Device.ButtonRows).ToString();
+
+        public string KnobCountText => Device.KnobCount.ToString();
+
+        public string TouchKeyCountText => Device.TouchButtonCount.ToString();
 
         [ObservableProperty]
         public partial double Brightness { get; set; }
@@ -76,6 +103,11 @@ namespace DeckSurf.App.ViewModels
         partial void OnBrightnessChanged(double value)
         {
             OnPropertyChanged(nameof(BrightnessText));
+
+            if (applyBrightnessOnChange)
+            {
+                _ = ApplyBrightnessAsync();
+            }
         }
 
         [RelayCommand]

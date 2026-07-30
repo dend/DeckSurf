@@ -12,9 +12,9 @@
     <Page.Resources>
 
         <!-- =====================================================================
-             Command tile: Windows Settings-homepage card grammar. Every command is
-             one 116px clickable tile; its spec sheet lives in a flyout, so details
-             cost zero vertical pixels.
+             Command tile: the Gallery tile anatomy with the key cap as the identity
+             container. Every command is one clickable tile whose detail lives in a
+             flyout sharing the same grammar.
              Known WinUI limitation, accepted: ThemeResource values inside VSM
              setters do not re-resolve during a live theme switch while the state is
              active. Only the transient PointerOver/Pressed states are affected; the
@@ -25,8 +25,11 @@
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
+            <!-- 112, not the spec's 108: that budget was an exact fit
+                 (16+20+4+32+4+16+16) and DPI rounding stole the description's
+                 second line. 4px of slack preserves the two-line intent. -->
             <Setter Property="Padding" Value="16" />
-            <Setter Property="Height" Value="116" />
+            <Setter Property="Height" Value="112" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -78,130 +81,52 @@
             </Setter>
         </Style>
 
-        <!-- The one chip: neutral fill, caption secondary text, radius 4, no border.
-             A chip renders only when compatibility is restricted; silence means
-             universal. -->
-        <DataTemplate x:Key="DeviceChipTemplate" x:DataType="x:String">
-            <Border
-                Background="{ThemeResource ControlFillColorDefaultBrush}"
-                CornerRadius="{StaticResource ControlCornerRadius}"
-                Padding="8,2"
-                VerticalAlignment="Center">
-                <TextBlock
-                    Text="{x:Bind}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            </Border>
-        </DataTemplate>
-
-        <ItemsPanelTemplate x:Key="HorizontalChipsPanel">
-            <StackPanel Orientation="Horizontal" Spacing="8" />
-        </ItemsPanelTemplate>
-
-        <!-- Choice value chip; the default value is marked in words: "value (default)".
-             Same neutral colorway as every other chip. -->
-        <DataTemplate x:Key="ChoiceChipTemplate" x:DataType="services:ChoiceChip">
-            <Border
-                Background="{ThemeResource ControlFillColorDefaultBrush}"
-                CornerRadius="{StaticResource ControlCornerRadius}"
-                Padding="8,2">
-                <TextBlock
-                    Text="{x:Bind DisplayLabel}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            </Border>
-        </DataTemplate>
-
-        <!-- One parameter = one spec block: name + type/required badges, choice
-             chips, default badge, help text. Every block opens with a hairline top
-             rule; under the flyout header the first rule doubles, deliberately, as
-             the header separator. -->
-        <DataTemplate x:Key="ParameterBlockTemplate" x:DataType="services:ParameterRow">
-            <StackPanel
-                Padding="16"
-                Spacing="8"
-                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                BorderThickness="0,1,0,0">
-                <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        Text="{x:Bind Name}"
-                        Style="{StaticResource BodyStrongTextBlockStyle}"
-                        TextTrimming="CharacterEllipsis"
-                        VerticalAlignment="Center" />
-                    <Border
-                        Grid.Column="1"
-                        Background="{ThemeResource ControlFillColorDefaultBrush}"
-                        CornerRadius="{StaticResource ControlCornerRadius}"
-                        Padding="8,2"
-                        VerticalAlignment="Center">
-                        <TextBlock
-                            Text="{x:Bind TypeLabel}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Column="2"
-                        Visibility="{x:Bind IsRequired}"
-                        Background="{ThemeResource ControlFillColorDefaultBrush}"
-                        CornerRadius="{StaticResource ControlCornerRadius}"
-                        Padding="8,2"
-                        VerticalAlignment="Center">
-                        <TextBlock
-                            Text="Required"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    </Border>
-                </Grid>
-                <ItemsRepeater
-                    Visibility="{x:Bind HasChoices}"
-                    ItemsSource="{x:Bind ChoiceChips}"
-                    ItemTemplate="{StaticResource ChoiceChipTemplate}"
-                    AutomationProperties.Name="Choices">
-                    <ItemsRepeater.Layout>
-                        <LinedFlowLayout ItemsStretch="None" ItemsJustification="Start" MinItemSpacing="8" LineSpacing="8" />
-                    </ItemsRepeater.Layout>
-                </ItemsRepeater>
-                <TextBlock
-                    Visibility="{x:Bind HasStandaloneDefault}"
-                    Text="{x:Bind DefaultBadge}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                <TextBlock
-                    Visibility="{x:Bind HasDescription}"
-                    Text="{x:Bind Description}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    TextWrapping="Wrap" />
-            </StackPanel>
-        </DataTemplate>
-
-        <!-- Command tile: ONE variant for every command. Parameterized commands get
-             the spec sheet; the rest get full description + devices + a quiet
-             "no settings" row, so clicking is never a dead end, every command is
-             keyboard-focusable, and truncated tile text is always reachable
-             without hover. -->
+        <!-- Command tile: one variant for every command. The 44px key cap carries
+             identity: author-declared artwork when the plugin ships an icon, else
+             the command's monogram lit in the user's accent, the backlit legend of
+             a powered key awaiting art. The footer compatibility line is always
+             populated; silence never encodes meaning. -->
         <DataTemplate x:Key="CommandTileTemplate" x:DataType="services:CommandInfo">
             <Button
                 Style="{StaticResource CommandTileStyle}"
                 AutomationProperties.Name="{x:Bind AccessibleName}"
                 ToolTipService.ToolTip="{x:Bind DescriptionToolTip}">
-                <Grid RowSpacing="4">
+                <Grid ColumnSpacing="8" RowSpacing="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
+
+                    <Grid Grid.RowSpan="2" Width="44" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}" VerticalAlignment="Top">
+                        <Image Width="28" Height="28" Stretch="Uniform" Visibility="{x:Bind HasIcon}">
+                            <Image.Source>
+                                <BitmapImage UriSource="{x:Bind IconUri}" DecodePixelWidth="56" />
+                            </Image.Source>
+                        </Image>
+                        <TextBlock
+                            Text="{x:Bind Monogram}"
+                            Visibility="{x:Bind HasNoIcon}"
+                            Foreground="{StaticResource DeckMonogramBrush}"
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            CharacterSpacing="50"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                    </Grid>
+
                     <TextBlock
+                        Grid.Column="1"
                         Text="{x:Bind DisplayName}"
                         Style="{StaticResource BodyStrongTextBlockStyle}"
                         TextTrimming="CharacterEllipsis" />
                     <TextBlock
                         Grid.Row="1"
+                        Grid.Column="1"
                         Text="{x:Bind Description}"
                         Style="{StaticResource CaptionTextBlockStyle}"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -209,84 +134,93 @@
                         MaxLines="2"
                         TextTrimming="CharacterEllipsis"
                         VerticalAlignment="Top" />
-                    <Grid Grid.Row="2" ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <!-- TileChips caps at 2 chips + a "+N" overflow chip and is
-                             empty for universal commands; the tooltip and the flyout
-                             carry the full device list. -->
-                        <ItemsControl
-                            ItemsSource="{x:Bind TileChips}"
-                            ItemTemplate="{StaticResource DeviceChipTemplate}"
-                            ItemsPanel="{StaticResource HorizontalChipsPanel}"
-                            VerticalAlignment="Center"
-                            ToolTipService.ToolTip="{x:Bind DevicesToolTip}"
-                            AutomationProperties.Name="Supported devices" />
-                        <TextBlock
-                            Grid.Column="1"
-                            Text="{x:Bind SettingsSummary}"
-                            Visibility="{x:Bind HasParameters}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            VerticalAlignment="Center" />
-                        <TextBlock
-                            Grid.Column="1"
-                            Text="No settings"
-                            Visibility="{x:Bind HasNoParameters}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            VerticalAlignment="Center" />
-                    </Grid>
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.ColumnSpan="2"
+                        Text="{x:Bind CompatibilityText}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        ToolTipService.ToolTip="{x:Bind DevicesToolTip}" />
                 </Grid>
                 <Button.Flyout>
                     <Flyout Placement="Bottom">
                         <Flyout.FlyoutPresenterStyle>
-                            <!-- Property-only restyle: the presenter keeps its
-                                 built-in template, ScrollViewer, background and
-                                 shadow, so long schemas scroll natively. -->
                             <Style TargetType="FlyoutPresenter">
-                                <Setter Property="Padding" Value="0" />
-                                <Setter Property="MinWidth" Value="380" />
-                                <Setter Property="MaxWidth" Value="480" />
+                                <Setter Property="Padding" Value="16" />
+                                <Setter Property="MinWidth" Value="360" />
+                                <Setter Property="MaxWidth" Value="420" />
                             </Style>
                         </Flyout.FlyoutPresenterStyle>
+                        <!-- The detail surface shares the app's one grammar: the same
+                             key cap that was clicked, fact blocks like the Devices
+                             card, and parameter previews mirroring the editor form.
+                             Hierarchy is type and spacing; no rules, no badges. -->
                         <StackPanel>
-                            <StackPanel Padding="16" Spacing="8">
-                                <TextBlock
-                                    Text="{x:Bind DisplayName}"
-                                    Style="{StaticResource BodyStrongTextBlockStyle}"
-                                    TextWrapping="Wrap" />
-                                <TextBlock
-                                    Text="{x:Bind Description}"
-                                    Visibility="{x:Bind HasDescription}"
-                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    TextWrapping="Wrap" />
-                                <ItemsRepeater
-                                    Visibility="{x:Bind HasModelChips}"
-                                    ItemsSource="{x:Bind ModelChips}"
-                                    ItemTemplate="{StaticResource DeviceChipTemplate}"
-                                    AutomationProperties.Name="Supported devices">
-                                    <ItemsRepeater.Layout>
-                                        <LinedFlowLayout ItemsStretch="None" ItemsJustification="Start" MinItemSpacing="8" LineSpacing="8" />
-                                    </ItemsRepeater.Layout>
-                                </ItemsRepeater>
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid Width="44" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}">
+                                    <Image Width="28" Height="28" Stretch="Uniform" Visibility="{x:Bind HasIcon}">
+                                        <Image.Source>
+                                            <BitmapImage UriSource="{x:Bind IconUri}" DecodePixelWidth="56" />
+                                        </Image.Source>
+                                    </Image>
+                                    <TextBlock
+                                        Text="{x:Bind Monogram}"
+                                        Visibility="{x:Bind HasNoIcon}"
+                                        Foreground="{StaticResource DeckMonogramBrush}"
+                                        FontSize="15"
+                                        FontWeight="SemiBold"
+                                        CharacterSpacing="50"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Grid>
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind PluginName}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock
+                                Text="{x:Bind Description}"
+                                Visibility="{x:Bind HasDescription}"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                TextWrapping="Wrap"
+                                Margin="0,16,0,0" />
+
+                            <StackPanel Spacing="2" Margin="0,16,0,0">
+                                <TextBlock Text="Works with" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="{x:Bind CompatibilityFull}" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
                             </StackPanel>
-                            <ItemsControl
-                                ItemsSource="{x:Bind ParameterRows}"
-                                ItemTemplate="{StaticResource ParameterBlockTemplate}"
-                                Visibility="{x:Bind HasParameters}" />
-                            <StackPanel
-                                Visibility="{x:Bind HasNoParameters}"
-                                Padding="16"
-                                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                                BorderThickness="0,1,0,0">
+
+                            <StackPanel Margin="0,16,0,0">
+                                <TextBlock Text="Settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                 <TextBlock
                                     Text="No settings. This command runs as-is."
+                                    Visibility="{x:Bind HasNoParameters}"
                                     Style="{StaticResource CaptionTextBlockStyle}"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Margin="0,8,0,0" />
+                                <ItemsControl ItemsSource="{x:Bind ParameterRows}" Visibility="{x:Bind HasParameters}" Margin="0,8,0,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="16" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="services:ParameterRow">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyTextBlockStyle}" />
+                                                <TextBlock Text="{x:Bind MetaLine}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                <TextBlock Text="{x:Bind OptionsLine}" Visibility="{x:Bind HasOptions}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                <TextBlock Text="{x:Bind Description}" Visibility="{x:Bind HasDescription}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </StackPanel>
                     </Flyout>
@@ -340,12 +274,8 @@
                 <ItemsControl ItemsSource="{x:Bind ViewModel.Plugins, Mode=OneWay}" Margin="0,0,0,24">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="services:PluginInfo">
-                            <!-- One plugin = single-line section head + a tile grid on
-                                 the full content width; MinItemWidth 236 yields five
-                                 columns at the locked window width and ItemsStretch=Fill
-                                 runs the tiles out to the page's right rail. -->
                             <StackPanel Margin="0,0,0,24">
-                                <Grid ColumnSpacing="8" Margin="0,0,0,8">
+                                <Grid ColumnSpacing="8" Margin="0,0,0,8" ToolTipService.ToolTip="{x:Bind HeaderToolTip}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
@@ -360,8 +290,7 @@
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         VerticalAlignment="Bottom"
                                         Margin="0,0,0,2"
-                                        TextTrimming="CharacterEllipsis"
-                                        ToolTipService.ToolTip="{x:Bind Subtitle}" />
+                                        TextTrimming="CharacterEllipsis" />
                                 </Grid>
                                 <ItemsRepeater
                                     ItemsSource="{x:Bind Commands}"
@@ -370,7 +299,7 @@
                                         <UniformGridLayout
                                             Orientation="Horizontal"
                                             MinItemWidth="236"
-                                            MinItemHeight="116"
+                                            MinItemHeight="112"
                                             MinColumnSpacing="8"
                                             MinRowSpacing="8"
                                             ItemsStretch="Fill" />
@@ -394,7 +323,7 @@
                 <TextBlock
                     Text="Place plugin folders inside the plugins directory next to the application. Plugin assemblies follow the DeckSurf.Plugin.*.dll naming convention."
                     Style="{StaticResource BodyTextBlockStyle}"
-                    Opacity="0.7"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     TextWrapping="Wrap"
                     TextAlignment="Center" />
                 <Button
