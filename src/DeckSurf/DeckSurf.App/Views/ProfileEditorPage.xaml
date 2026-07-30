@@ -67,12 +67,13 @@
              container margin) so selection chrome hugs the tile. Fill-only; the
              deck card's border is the only outline on the stage. -->
         <DataTemplate x:Key="KeyTileTemplate" x:DataType="vm:KeyViewModel">
+            <!-- Drops are accepted per tile; dragging starts through the owning
+                 GridView's CanDragItems, which unlike CanDrag on the content does
+                 not swallow the tap that selects the key. -->
             <Grid
                 CornerRadius="8"
                 Background="{ThemeResource DeckKeyBrush}"
-                CanDrag="True"
                 AllowDrop="True"
-                DragStarting="Target_DragStarting"
                 DragOver="Target_DragOver"
                 Drop="Target_Drop">
                 <Image Source="{x:Bind PreviewImage, Mode=OneWay}" Stretch="UniformToFill" />
@@ -338,6 +339,8 @@
                             ItemsSource="{x:Bind ViewModel.Keys}"
                             SelectionMode="Single"
                             SelectionChanged="TargetList_SelectionChanged"
+                            CanDragItems="True"
+                            DragItemsStarting="TargetList_DragItemsStarting"
                             Loaded="KeyGrid_Loaded"
                             HorizontalAlignment="Left"
                             ItemTemplate="{StaticResource KeyTileTemplate}"
@@ -382,6 +385,8 @@
                             ItemsSource="{x:Bind ViewModel.KnobTargets}"
                             SelectionMode="Single"
                             SelectionChanged="TargetList_SelectionChanged"
+                            CanDragItems="True"
+                            DragItemsStarting="TargetList_DragItemsStarting"
                             ItemContainerStyle="{StaticResource KeyTileContainerStyle}"
                             Visibility="{x:Bind ViewModel.ShowKnobs, Mode=OneWay}"
                             HorizontalAlignment="Left">
@@ -396,9 +401,7 @@
                                         Spacing="4"
                                         HorizontalAlignment="Center"
                                         Padding="0,4"
-                                        CanDrag="True"
                                         AllowDrop="True"
-                                        DragStarting="Target_DragStarting"
                                         DragOver="Target_DragOver"
                                         Drop="Target_Drop">
                                         <Grid HorizontalAlignment="Center">

@@ -78,18 +78,19 @@ namespace DeckSurf.App.Views
         // key to key, knob to knob. Strips and the any-key slot stay put.
         private KeyViewModel? dragSource;
 
-        private void Target_DragStarting(UIElement sender, Microsoft.UI.Xaml.DragStartingEventArgs args)
+        private void TargetList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
         {
-            if (sender is FrameworkElement { DataContext: KeyViewModel key }
+            if (e.Items.Count == 1
+                && e.Items[0] is KeyViewModel key
                 && (key.Target == MappingTarget.Key || key.Target == MappingTarget.Knob)
                 && key.Index >= 0)
             {
                 dragSource = key;
-                args.Data.RequestedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+                e.Data.RequestedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
             }
             else
             {
-                args.Cancel = true;
+                e.Cancel = true;
             }
         }
 
