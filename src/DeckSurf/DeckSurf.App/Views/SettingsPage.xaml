@@ -72,7 +72,9 @@
                                             Style="{StaticResource CaptionTextBlockStyle}"
                                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </Border>
-                                    <Button Content="Remove" Click="RemovePluginFolder_Click" Visibility="{x:Bind RemoveVisibility}" AutomationProperties.Name="Remove folder" />
+                                    <!-- Tag carries the row; the expander's repeater does not
+                                         flow DataContext into realized templates. -->
+                                    <Button Content="Remove" Tag="{x:Bind}" Click="RemovePluginFolder_Click" Visibility="{x:Bind RemoveVisibility}" AutomationProperties.Name="Remove folder" />
                                 </StackPanel>
                             </tk:SettingsCard>
                         </DataTemplate>

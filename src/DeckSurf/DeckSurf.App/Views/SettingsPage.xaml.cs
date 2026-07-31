@@ -149,7 +149,7 @@ namespace DeckSurf.App.Views
 
         private void RemovePluginFolder_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not FrameworkElement { DataContext: PluginFolderRow { IsBuiltIn: false } row })
+            if (sender is not FrameworkElement { Tag: PluginFolderRow { IsBuiltIn: false } row })
             {
                 return;
             }
