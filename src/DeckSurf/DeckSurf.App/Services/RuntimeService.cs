@@ -409,23 +409,29 @@ namespace DeckSurf.App.Services
 
             session.Profile = profile;
 
-            if (typesToRecycle.Count == 0)
+            // Command-less mappings (a touch key that only carries a backlight
+            // color, a screen background) still need their re-activation pass, so
+            // only a fully unchanged profile short-circuits.
+            if (typesToRecycle.Count == 0 && affected.Count == 0)
             {
                 Log(session, "Profile changes applied.");
                 return;
             }
 
-            RecycleCommands(session, typesToRecycle);
-
-            // A recycled instance may also serve mappings that did not change;
-            // those must re-activate on the fresh instance or their keys go dead.
-            foreach (var mapping in profile.ButtonMap)
+            if (typesToRecycle.Count > 0)
             {
-                if (mapping.Command is not null
-                    && typesToRecycle.Contains(mapping.Command)
-                    && !affected.Contains(mapping))
+                RecycleCommands(session, typesToRecycle);
+
+                // A recycled instance may also serve mappings that did not change;
+                // those must re-activate on the fresh instance or their keys go dead.
+                foreach (var mapping in profile.ButtonMap)
                 {
-                    affected.Add(mapping);
+                    if (mapping.Command is not null
+                        && typesToRecycle.Contains(mapping.Command)
+                        && !affected.Contains(mapping))
+                    {
+                        affected.Add(mapping);
+                    }
                 }
             }
 
