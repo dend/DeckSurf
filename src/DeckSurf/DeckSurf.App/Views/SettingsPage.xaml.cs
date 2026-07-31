@@ -53,26 +53,27 @@ namespace DeckSurf.App.Views
 
         public ObservableCollection<PluginFolderRow> FolderRows { get; } = [];
 
-        public string AppVersionText { get; } = $"Version {FormatVersion(Assembly.GetExecutingAssembly().GetName().Version)}";
+        /// <summary>
+        /// Gets the full app version with the build ID as semver build metadata:
+        /// the version, then the UTC compilation moment in yyyyMMdd.HHmm form
+        /// stamped into the assembly at build time.
+        /// </summary>
+        public string AppVersionText { get; } = ComposeAppVersion();
 
         public string SdkVersionText { get; } = $"DeckSurf.SDK {FormatVersion(typeof(DeckSurf.SDK.Core.DeviceManager).Assembly.GetName().Version)}";
-
-        /// <summary>
-        /// Gets the build ID: the UTC date and time of compilation in
-        /// yyyyMMdd.HHmm form, stamped into the assembly metadata at build time.
-        /// </summary>
-        public string BuildStampText { get; } = FormatBuildStamp();
 
         private static string FormatVersion(Version? version) =>
             version is null ? "unknown" : $"{version.Major}.{version.Minor}.{version.Build}";
 
-        private static string FormatBuildStamp()
+        private static string ComposeAppVersion()
         {
-            var stamp = Assembly.GetExecutingAssembly()
+            var assembly = Assembly.GetExecutingAssembly();
+            var version = FormatVersion(assembly.GetName().Version);
+            var stamp = assembly
                 .GetCustomAttributes<AssemblyMetadataAttribute>()
                 .FirstOrDefault(a => a.Key == "BuildTimestamp")?.Value;
 
-            return string.IsNullOrEmpty(stamp) ? "Build unknown" : $"Build {stamp}";
+            return string.IsNullOrEmpty(stamp) ? $"Version {version}" : $"Version {version}+{stamp}";
         }
 
         private void RebuildFolderRows()

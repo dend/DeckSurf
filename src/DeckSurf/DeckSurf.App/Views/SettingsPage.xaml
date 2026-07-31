@@ -101,14 +101,7 @@
                         </StackPanel>
                     </tk:SettingsExpander.Header>
                     <tk:SettingsExpander.Items>
-                        <tk:SettingsCard Header="App" Description="{x:Bind AppVersionText}">
-                            <TextBlock
-                                Text="{x:Bind BuildStampText}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                IsTextSelectionEnabled="True"
-                                VerticalAlignment="Center" />
-                        </tk:SettingsCard>
+                        <tk:SettingsCard Header="App" Description="{x:Bind AppVersionText}" />
                         <tk:SettingsCard Header="SDK" Description="{x:Bind SdkVersionText}">
                             <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/dend/decksurf-sdk" />
                         </tk:SettingsCard>
