@@ -76,6 +76,10 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            // The game board is the key grid; other targets cannot host it.
+            if (mappedCommand.Target != MappingTarget.Key)
+                return;
+
             _columns = mappedDevice.ButtonColumns;
             _rows = mappedDevice.ButtonRows;
 

@@ -81,6 +81,12 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            // This command draws on a grid key; a mapping on any other target
+            // (touch key, knob) has no face for it and must not paint the key
+            // that happens to share its index.
+            if (mappedCommand.Target != MappingTarget.Key || mappedCommand.ButtonIndex < 0)
+                return;
+
             _mappedCommand = mappedCommand;
             _mappedDevice = mappedDevice;
 

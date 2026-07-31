@@ -50,6 +50,13 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            // Activation only paints the launcher icon, and only a grid key has
+            // a face for it. The launch action itself works from any target.
+            if (mappedCommand.Target != MappingTarget.Key || mappedCommand.ButtonIndex < 0)
+            {
+                return;
+            }
+
             if (!string.IsNullOrEmpty(mappedCommand.ButtonImagePath))
             {
                 return;

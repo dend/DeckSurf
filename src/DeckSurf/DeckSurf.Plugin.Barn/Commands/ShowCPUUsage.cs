@@ -23,6 +23,11 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            // This command draws on a grid key; other targets have no face for
+            // it and must not paint the key sharing their index.
+            if (mappedCommand.Target != MappingTarget.Key || mappedCommand.ButtonIndex < 0)
+                return;
+
             // Rendering rides the shared sampler so every instance of this
             // command, across all connected devices, draws the same series.
             _sampleHandler = (s, e) =>

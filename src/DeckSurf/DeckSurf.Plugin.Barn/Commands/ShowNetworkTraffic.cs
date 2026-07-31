@@ -23,6 +23,14 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            // This command draws on a grid key or the touch strip; any other
+            // target has no face for it and must not paint the key sharing its
+            // index.
+            var paintsKey = mappedCommand.Target == MappingTarget.Key && mappedCommand.ButtonIndex >= 0;
+            var paintsScreen = mappedCommand.Target == MappingTarget.Screen && mappedDevice.IsScreenSupported;
+            if (!paintsKey && !paintsScreen)
+                return;
+
             // Rendering rides the shared sampler so every instance of this
             // command, across all connected devices, draws the same series.
             _sampleHandler = (s, e) =>
