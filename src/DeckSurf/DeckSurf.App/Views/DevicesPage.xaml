@@ -9,6 +9,56 @@
     mc:Ignorable="d"
     NavigationCacheMode="Required">
 
+    <Page.Resources>
+        <!-- Quiet icon actions (rename, open in editor, copy serial): invisible at
+             rest, a subtle wash and a brighter icon under the pointer, so they
+             read as live controls without competing with the card content. -->
+        <Style x:Key="QuietIconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+                                            <Setter Target="Presenter.Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+                                            <Setter Target="Presenter.Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Presenter.Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter
+                                x:Name="Presenter"
+                                Content="{TemplateBinding Content}"
+                                Padding="{TemplateBinding Padding}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
     <Grid Padding="28,20,28,0">
         <Grid>
             <Grid.RowDefinitions>
@@ -92,13 +142,11 @@
                                             Grid.Column="1"
                                             Tag="{x:Bind}"
                                             Click="RenameDevice_Click"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Padding="6"
+                                            Style="{StaticResource QuietIconButtonStyle}"
                                             VerticalAlignment="Center"
                                             ToolTipService.ToolTip="Give this device a nickname"
                                             AutomationProperties.Name="Rename device">
-                                            <FontIcon Glyph="&#xE70F;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <FontIcon Glyph="&#xE70F;" FontSize="14" />
                                         </Button>
                                         <ToggleSwitch
                                             Grid.Column="3"
@@ -139,13 +187,11 @@
                                                 Grid.Column="2"
                                                 Command="{x:Bind OpenEditorCommand}"
                                                 IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                Padding="6"
+                                                Style="{StaticResource QuietIconButtonStyle}"
                                                 VerticalAlignment="Center"
                                                 ToolTipService.ToolTip="Open this profile in the editor"
                                                 AutomationProperties.Name="Open in editor">
-                                                <FontIcon Glyph="&#xE8A7;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                <FontIcon Glyph="&#xE8A7;" FontSize="14" />
                                             </Button>
                                         </Grid>
                                         <TextBlock
@@ -212,13 +258,11 @@
                                         <Button
                                             Grid.Column="2"
                                             Command="{x:Bind CopySerialCommand}"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Padding="6"
+                                            Style="{StaticResource QuietIconButtonStyle}"
                                             VerticalAlignment="Center"
                                             ToolTipService.ToolTip="Copy serial"
                                             AutomationProperties.Name="Copy serial">
-                                            <FontIcon Glyph="{x:Bind CopyGlyph, Mode=OneWay}" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <FontIcon Glyph="{x:Bind CopyGlyph, Mode=OneWay}" FontSize="14" />
                                         </Button>
                                     </Grid>
                                 </Border>
