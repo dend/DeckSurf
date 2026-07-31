@@ -125,31 +125,33 @@
                                          connection stays. -->
                                     <Grid ColumnSpacing="4">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="0" VerticalAlignment="Center">
-                                            <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                            <!-- The rename pencil rides the title line itself, so it
+                                                 stays anchored to the name when the model caption
+                                                 makes this a two line stack. -->
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
+                                                <Button
+                                                    Tag="{x:Bind}"
+                                                    Click="RenameDevice_Click"
+                                                    Style="{StaticResource QuietIconButtonStyle}"
+                                                    VerticalAlignment="Center"
+                                                    ToolTipService.ToolTip="Give this device a nickname"
+                                                    AutomationProperties.Name="Rename device">
+                                                    <FontIcon Glyph="&#xE70F;" FontSize="14" />
+                                                </Button>
+                                            </StackPanel>
                                             <TextBlock
                                                 Text="{x:Bind Name}"
                                                 Style="{StaticResource CaptionTextBlockStyle}"
                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                 Visibility="{x:Bind HasNickname, Mode=OneWay}" />
                                         </StackPanel>
-                                        <Button
-                                            Grid.Column="1"
-                                            Tag="{x:Bind}"
-                                            Click="RenameDevice_Click"
-                                            Style="{StaticResource QuietIconButtonStyle}"
-                                            VerticalAlignment="Center"
-                                            ToolTipService.ToolTip="Give this device a nickname"
-                                            AutomationProperties.Name="Rename device">
-                                            <FontIcon Glyph="&#xE70F;" FontSize="14" />
-                                        </Button>
                                         <ToggleSwitch
-                                            Grid.Column="3"
+                                            Grid.Column="1"
                                             IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
                                             OnContent=""
                                             OffContent=""
