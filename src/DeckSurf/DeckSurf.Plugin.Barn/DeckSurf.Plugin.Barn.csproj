@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -18,12 +18,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Temporarily a ProjectReference to the local SDK source while the parameter
-         schema APIs are unreleased; switch back to the DeckSurf.SDK PackageReference
-         once 0.0.11 is published. -->
-    <ProjectReference Include="..\..\..\..\decksurf-sdk\src\DeckSurf.SDK\DeckSurf.SDK.csproj" />
+    <PackageReference Include="DeckSurf.SDK" Version="0.1.1" />
+    <!-- Explicit because the SDK package only flows ImageSharp itself; the
+         text and shape rendering in IconGenerator needs these two. The 2.x
+         lines pair with ImageSharp 3.x. -->
+    <PackageReference Include="SixLabors.Fonts" Version="2.1.3" />
     <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.7" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.0-preview.4.25258.110" />
   </ItemGroup>
 
 </Project>

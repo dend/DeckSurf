@@ -54,10 +54,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Temporarily a ProjectReference to the local SDK source while the parameter
-         schema APIs are unreleased; switch back to the DeckSurf.SDK PackageReference
-         once 0.0.11 is published. -->
-    <ProjectReference Include="..\..\..\..\decksurf-sdk\src\DeckSurf.SDK\DeckSurf.SDK.csproj" />
+    <PackageReference Include="DeckSurf.SDK" Version="0.1.1" />
   </ItemGroup>
 
 </Project>
