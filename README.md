@@ -30,10 +30,6 @@
   - [KnobBrightness](#knobbrightness)
   - [SnakeGame](#snakegame)
 - [Building a Plugin](#building-a-plugin)
-  - [Plugin Interface](#plugin-interface)
-  - [Command Interface](#command-interface)
-  - [Command Parameters](#command-parameters)
-  - [Key SDK Types](#key-sdk-types)
   - [Plugin Deployment](#plugin-deployment)
 - [Supported Devices](#supported-devices)
 - [FAQ](#faq)
@@ -216,98 +212,14 @@ The game uses the device's full button grid (e.g., 8x4 on the XL). Snake segment
 
 ## Building a Plugin
 
-DeckSurf uses a plugin architecture powered by the [DeckSurf SDK](https://github.com/dend/decksurf-sdk). Plugins are .NET class libraries that implement the `IDeckSurfPlugin` and `IDeckSurfCommand` interfaces.
+DeckSurf uses a plugin architecture powered by the [DeckSurf SDK](https://github.com/dend/decksurf-sdk). Plugins are .NET class libraries that implement two interfaces:
 
-### Plugin Interface
+- [`IDeckSurfPlugin`](https://docs.deck.surf/api/DeckSurf.SDK.Interfaces/DeckSurf.SDK.Interfaces.IDeckSurfPlugin.html) describes the plugin through its [`PluginMetadata`](https://docs.deck.surf/api/DeckSurf.SDK.Models/DeckSurf.SDK.Models.PluginMetadata.html) and lists the commands it exposes.
+- [`IDeckSurfCommand`](https://docs.deck.surf/api/DeckSurf.SDK.Interfaces/DeckSurf.SDK.Interfaces.IDeckSurfCommand.html) implements a single command: it runs code when a profile is activated, when the mapped button is pressed, and, for commands that react to knobs, touch, or button-up events, on every raw device event.
 
-Each plugin must implement `IDeckSurfPlugin`:
+Commands declare their arguments with [`CommandParameterAttribute`](https://docs.deck.surf/api/DeckSurf.SDK.Models/DeckSurf.SDK.Models.CommandParameterAttribute.html), which makes them show up in `deck plugins list` and gives them proper input controls in the DeckSurf for Windows profile editor. At runtime, values are read through [`CommandArguments`](https://docs.deck.surf/api/DeckSurf.SDK.Models/DeckSurf.SDK.Models.CommandArguments.html). Commands that only work on certain hardware mark themselves with [`CompatibleWithAttribute`](https://docs.deck.surf/api/DeckSurf.SDK.Models/DeckSurf.SDK.Models.CompatibleWithAttribute.html), and the device itself is driven through [`IConnectedDevice`](https://docs.deck.surf/api/DeckSurf.SDK.Interfaces/DeckSurf.SDK.Interfaces.IConnectedDevice.html).
 
-```csharp
-using DeckSurf.SDK.Interfaces;
-using DeckSurf.SDK.Models;
-
-public class Plugin : IDeckSurfPlugin
-{
-    public PluginMetadata Metadata => new()
-    {
-        Author = "Your Name",
-        Id = "DeckSurf.Plugin.YourPlugin",
-        Name = "Your Plugin",
-        Version = "1.0.0",
-        Website = "https://example.com"
-    };
-
-    public List<Type> GetSupportedCommands()
-    {
-        return new List<Type>() { typeof(YourCommand) };
-    }
-}
-```
-
-`Name` is the human-readable display name. Consumers fall back to `Id` when it is not set.
-
-### Command Interface
-
-Each command implements `IDeckSurfCommand` (which extends `IDisposable`):
-
-```csharp
-using DeckSurf.SDK.Interfaces;
-using DeckSurf.SDK.Models;
-
-[CompatibleWith(DeviceModel.XL)]
-class YourCommand : IDeckSurfCommand
-{
-    public string Name => "Your Command";
-    public string Description => "Description of the command.";
-
-    public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
-    {
-        // Called when the command is loaded and the device is initialized.
-    }
-
-    public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
-    {
-        // Called when the mapped button is pressed.
-    }
-
-    public void Dispose()
-    {
-        // Clean up any resources (timers, handles, etc.)
-    }
-}
-```
-
-Two additional members have default implementations you can override when you need them:
-
-- `ExecuteOnEvent` receives every raw device event routed to the mapping, including knob rotation and press events and touch screen taps. The default implementation forwards button-down events to `ExecuteOnAction`. Override it in commands that react to knobs, touch, or button-up events (see `KnobBrightness` in Barn for an example).
-- `ExecuteOnActionAsync` is the async counterpart to `ExecuteOnAction`, for commands that perform async work.
-
-### Command Parameters
-
-Commands declare their arguments with `[CommandParameter]` attributes on the class. Declared parameters show up in `deck plugins list` and get proper input controls in the DeckSurf for Windows profile editor:
-
-```csharp
-[CommandParameter("mode", CommandParameterType.Choice, DisplayName = "Mode",
-    Choices = new[] { "clock", "stopwatch", "timer" }, DefaultValue = "clock")]
-[CommandParameter("duration", CommandParameterType.Integer, DisplayName = "Duration (seconds)",
-    DefaultValue = "300", MinValue = 1)]
-class ShowTimer : IDeckSurfCommand
-```
-
-At runtime, values are read through `CommandMapping.CommandArguments` with typed accessors like `GetString` and `GetInt32`.
-
-### Key SDK Types
-
-| Type | Description |
-|:-----|:------------|
-| `IConnectedDevice` | Represents a connected Stream Deck device. Provides properties like `ButtonResolution`, `ButtonColumns`, `ButtonRows`, `Model`, `Serial`, and methods like `SetKey()`, `SetKeyColor()`, `SetBrightness()`, `ClearButtons()`. |
-| `CommandMapping` | Maps a key, knob, or screen target to a plugin, command, arguments, and image path. |
-| `CommandArguments` | Typed access to a mapping's `key=value` arguments (`GetString`, `GetInt32`, and similar). |
-| `DeviceColor` | RGB color struct with built-in presets (`Black`, `White`, `Red`, etc.). |
-| `DeviceModel` | Enum for supported device models. |
-| `ButtonEventKind` | Enum with `Down` and `Up` values for button press events. |
-| `ImageHelper` | Utility for image resizing, blank image creation, and Windows file icon extraction. |
-| `ConfigurationHelper` | Manages profile loading and saving. |
+The full API reference lives at [docs.deck.surf](https://docs.deck.surf), and the [Barn plugin source](src/DeckSurf/DeckSurf.Plugin.Barn) in this repository is a working example of all of the above.
 
 ### Plugin Deployment
 
@@ -323,7 +235,7 @@ Plugin DLLs must follow the naming convention `DeckSurf.Plugin.*.dll`. They are 
 | Stream Deck Neo | 8 | 4x2 | 96x96 px |
 | Stream Deck Plus | 8 | 4x2 | 120x120 px |
 
-The Stream Deck Plus and Neo also support LCD screen output via `IConnectedDevice.SetScreen()`.
+The Stream Deck Plus and Neo also support LCD screen output via [`IConnectedDevice.SetScreen()`](https://docs.deck.surf/api/DeckSurf.SDK.Interfaces/DeckSurf.SDK.Interfaces.IConnectedDevice.html).
 
 ## FAQ
 
