@@ -150,16 +150,37 @@
                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                 Visibility="{x:Bind HasNickname, Mode=OneWay}" />
                                         </StackPanel>
-                                        <ToggleSwitch
-                                            Grid.Column="1"
-                                            IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
-                                            OnContent=""
-                                            OffContent=""
-                                            MinWidth="0"
-                                            Margin="0,0,-12,0"
-                                            VerticalAlignment="Center"
-                                            ToolTipService.ToolTip="On runs the device's active profile, off leaves the device alone and hides it from the editor"
-                                            AutomationProperties.Name="Device enabled" />
+                                        <!-- The device actions live together: identify, jump to the
+                                             editor, and the enable switch, one cluster on the title
+                                             row. -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                            <Button
+                                                Command="{x:Bind IdentifyCommand}"
+                                                Style="{StaticResource QuietIconButtonStyle}"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="Flash all keys white so you can tell devices apart"
+                                                AutomationProperties.Name="Flash keys">
+                                                <FontIcon Glyph="&#xE754;" FontSize="14" />
+                                            </Button>
+                                            <Button
+                                                Command="{x:Bind OpenEditorCommand}"
+                                                IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
+                                                Style="{StaticResource QuietIconButtonStyle}"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="Open this profile in the editor"
+                                                AutomationProperties.Name="Open in editor">
+                                                <FontIcon Glyph="&#xE8A7;" FontSize="14" />
+                                            </Button>
+                                            <ToggleSwitch
+                                                IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
+                                                OnContent=""
+                                                OffContent=""
+                                                MinWidth="0"
+                                                Margin="8,0,-12,0"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="On runs the device's active profile, off leaves the device alone and hides it from the editor"
+                                                AutomationProperties.Name="Device enabled" />
+                                        </StackPanel>
                                     </Grid>
 
                                     <!-- The active profile is the card's working control:
@@ -171,7 +192,6 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <Grid Width="8" VerticalAlignment="Center">
                                                 <Ellipse Width="8" Height="8" Fill="{ThemeResource SystemFillColorSuccessBrush}" Visibility="{x:Bind IsRunning, Mode=OneWay}" />
@@ -185,16 +205,6 @@
                                                 PlaceholderText="Choose a profile"
                                                 HorizontalAlignment="Stretch"
                                                 AutomationProperties.Name="Active profile" />
-                                            <Button
-                                                Grid.Column="2"
-                                                Command="{x:Bind OpenEditorCommand}"
-                                                IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
-                                                Style="{StaticResource QuietIconButtonStyle}"
-                                                VerticalAlignment="Center"
-                                                ToolTipService.ToolTip="Open this profile in the editor"
-                                                AutomationProperties.Name="Open in editor">
-                                                <FontIcon Glyph="&#xE8A7;" FontSize="14" />
-                                            </Button>
                                         </Grid>
                                         <TextBlock
                                             Text="No profiles for this device yet. Create one in the editor."
@@ -209,7 +219,6 @@
                                         <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <!-- x:Bind, not Binding: ItemsRepeater does not flow
@@ -228,12 +237,6 @@
                                                 Text="{x:Bind BrightnessText, Mode=OneWay}"
                                                 MinWidth="40"
                                                 TextAlignment="Right"
-                                                VerticalAlignment="Center" />
-                                            <Button
-                                                Grid.Column="2"
-                                                Content="Flash keys"
-                                                Command="{x:Bind IdentifyCommand}"
-                                                ToolTipService.ToolTip="Flashes all keys white so you can tell devices apart"
                                                 VerticalAlignment="Center" />
                                         </Grid>
                                     </StackPanel>
