@@ -9,7 +9,7 @@
          self-contained app publish with the Barn plugin nested under
          plugins\. The wxs harvests it wholesale. -->
     <StagingDir Condition="'$(StagingDir)' == ''">$(MSBuildProjectDirectory)\..\..\bin\installer-staging</StagingDir>
-    <ProductVersion Condition="'$(ProductVersion)' == ''">0.0.1</ProductVersion>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">0.1.0</ProductVersion>
     <DefineConstants>$(DefineConstants);StagingDir=$(StagingDir);ProductVersion=$(ProductVersion)</DefineConstants>
     <!-- ICE03 trips on language metadata inside the harvested Windows App SDK
          binaries; ICE38, ICE43, and ICE57 flag the standard per-machine Start

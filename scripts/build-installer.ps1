@@ -2,7 +2,7 @@
 # plugin under plugins\, and hands the staging tree to the WiX project.
 param(
     [string]$Configuration = "Release",
-    [string]$Version = "0.0.1"
+    [string]$Version = "0.1.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,7 +16,7 @@ if (Test-Path $staging) {
 
 Write-Host "Publishing DeckSurf.App to $staging"
 dotnet publish (Join-Path $root "src\DeckSurf\DeckSurf.App\DeckSurf.App.csproj") `
-    -c $Configuration --self-contained true -o $staging
+    -c $Configuration --self-contained true -o $staging -p:Version=$Version
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "Publishing DeckSurf.Plugin.Barn into the staged plugins folder"
