@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:DeckSurf.App.Controls"
+    xmlns:services="using:DeckSurf.App.Services"
     xmlns:vm="using:DeckSurf.App.ViewModels"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -282,8 +283,17 @@
                 PlaceholderText="No devices connected"
                 IsEnabled="{x:Bind ViewModel.HasDevices, Mode=OneWay}"
                 ItemsSource="{x:Bind ViewModel.ConnectedDevices}"
-                DisplayMemberPath="DisplayText"
-                SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" />
+                SelectedItem="{Binding SelectedDevice, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="services:DeviceSummary">
+                        <!-- The serial stays visible in muted form beside the name,
+                             so a nicknamed device never hides which hardware it is. -->
+                        <TextBlock>
+                            <Run Text="{x:Bind EffectiveName}" /><Run Text="  " /><Run Text="{x:Bind Serial}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </TextBlock>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
             <ComboBox
                 Width="220"
                 Header="Profile"
@@ -368,7 +378,9 @@
                                     <Grid Width="48" Height="44" CornerRadius="8" Background="{ThemeResource DeckKeyBrush}" ToolTipService.ToolTip="{x:Bind IndexLabel}">
                                         <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
                                             <TextBlock Text="{x:Bind IndexLabel}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource DeckTextBrush}" Opacity="0.6" HorizontalAlignment="Center" />
-                                            <Ellipse Width="6" Height="6" Fill="{ThemeResource DeckTextBrush}" Visibility="{x:Bind HasMapping, Mode=OneWay}" HorizontalAlignment="Center" />
+                                            <!-- The dot mirrors the physical backlight: the chosen
+                                                 color, or the default glow when only mapped. -->
+                                            <Ellipse Width="6" Height="6" Fill="{x:Bind TouchColorBrush, Mode=OneWay}" Visibility="{x:Bind ShowTouchDot, Mode=OneWay}" HorizontalAlignment="Center" />
                                         </StackPanel>
                                         <Border BorderBrush="{ThemeResource AccentFillColorDefaultBrush}" BorderThickness="2" CornerRadius="8" Visibility="{x:Bind IsSelected, Mode=OneWay}" />
                                     </Grid>
@@ -607,6 +619,39 @@
                                         Text="This command draws its own button image."
                                         Style="{StaticResource CaptionTextBlockStyle}"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+
+                                <!-- Touch keys have no display; their backlight color is the
+                                     configurable surface. Applied live through auto-save. -->
+                                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.ShowTouchColorSection, Mode=OneWay}">
+                                    <TextBlock Text="Backlight" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock
+                                        Text="Color this touch key glows while the profile is active."
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        TextWrapping="Wrap" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <DropDownButton AutomationProperties.Name="Backlight color">
+                                            <Border
+                                                Width="20"
+                                                Height="20"
+                                                CornerRadius="4"
+                                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                                BorderThickness="1"
+                                                Background="{x:Bind ViewModel.SelectedTouchColorBrush, Mode=OneWay}" />
+                                            <DropDownButton.Flyout>
+                                                <Flyout Placement="Bottom" Opening="TouchColorFlyout_Opening">
+                                                    <ColorPicker
+                                                        x:Name="TouchColorPicker"
+                                                        IsAlphaEnabled="False"
+                                                        IsMoreButtonVisible="False"
+                                                        ColorSpectrumShape="Box"
+                                                        ColorChanged="TouchColor_ColorChanged" />
+                                                </Flyout>
+                                            </DropDownButton.Flyout>
+                                        </DropDownButton>
+                                        <Button Content="Reset" Command="{x:Bind ViewModel.ResetTouchColorCommand}" ToolTipService.ToolTip="Back to the default white glow" />
+                                    </StackPanel>
                                 </StackPanel>
 
                                 <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.HasSelectedCommand, Mode=OneWay}">

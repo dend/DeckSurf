@@ -219,6 +219,26 @@ namespace DeckSurf.App.Views
                 : field.DynamicChoices.Where(choice => choice.Contains(sender.Text, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
+        // The picker is seeded when the flyout opens rather than bound: a binding
+        // would echo selection changes back through ColorChanged and write the
+        // fallback white onto keys that have no color set.
+        private bool seedingTouchColor;
+
+        private void TouchColorFlyout_Opening(object sender, object e)
+        {
+            seedingTouchColor = true;
+            TouchColorPicker.Color = ViewModel.SelectedTouchColor;
+            seedingTouchColor = false;
+        }
+
+        private void TouchColor_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        {
+            if (!seedingTouchColor)
+            {
+                ViewModel.SetSelectedTouchColor(args.NewColor);
+            }
+        }
+
         private async void BrowseKeyImage_Click(object sender, RoutedEventArgs e)
         {
             var path = await PickFileAsync([".png", ".jpg", ".jpeg", ".bmp", ".gif"]);

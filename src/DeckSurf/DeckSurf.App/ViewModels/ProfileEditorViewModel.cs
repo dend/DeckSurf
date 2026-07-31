@@ -161,6 +161,9 @@ namespace DeckSurf.App.ViewModels
         [NotifyPropertyChangedFor(nameof(HasSelectedKey))]
         [NotifyPropertyChangedFor(nameof(HasNoSelectedKey))]
         [NotifyPropertyChangedFor(nameof(InspectorTitle))]
+        [NotifyPropertyChangedFor(nameof(ShowTouchColorSection))]
+        [NotifyPropertyChangedFor(nameof(SelectedTouchColor))]
+        [NotifyPropertyChangedFor(nameof(SelectedTouchColorBrush))]
         public partial KeyViewModel? SelectedKey { get; set; }
 
         [ObservableProperty]
@@ -252,6 +255,57 @@ namespace DeckSurf.App.ViewModels
             && SelectedKey?.Target != MappingTarget.Knob
             && SelectedKey?.Target != MappingTarget.TouchButton
             && SelectedCommand?.HasDynamicDisplay == true;
+
+        /// <summary>
+        /// Gets a value indicating whether the backlight section applies: touch
+        /// keys have no display, but their backlight color is configurable.
+        /// </summary>
+        public bool ShowTouchColorSection => SelectedKey?.Target == MappingTarget.TouchButton;
+
+        /// <summary>
+        /// Gets the selected touch key's backlight color for the picker; white is
+        /// the runtime's default glow for mapped keys.
+        /// </summary>
+        public Windows.UI.Color SelectedTouchColor => SelectedKey?.TouchColor is { } c
+            ? Windows.UI.Color.FromArgb(255, c.R, c.G, c.B)
+            : Windows.UI.Color.FromArgb(255, 255, 255, 255);
+
+        public SolidColorBrush SelectedTouchColorBrush => new(SelectedTouchColor);
+
+        /// <summary>
+        /// Applies a picker color to the selected touch key and auto-saves. No-op
+        /// for other targets or when the color did not change.
+        /// </summary>
+        public void SetSelectedTouchColor(Windows.UI.Color color)
+        {
+            if (SelectedKey is not { Target: MappingTarget.TouchButton } key)
+            {
+                return;
+            }
+
+            var next = new DeviceColor(color.R, color.G, color.B);
+            if (Nullable.Equals(key.TouchColor, next))
+            {
+                return;
+            }
+
+            key.TouchColor = next;
+            OnPropertyChanged(nameof(SelectedTouchColor));
+            OnPropertyChanged(nameof(SelectedTouchColorBrush));
+            ScheduleAutoSave();
+        }
+
+        [RelayCommand]
+        private void ResetTouchColor()
+        {
+            if (SelectedKey is { Target: MappingTarget.TouchButton, TouchColor: not null } key)
+            {
+                key.TouchColor = null;
+                OnPropertyChanged(nameof(SelectedTouchColor));
+                OnPropertyChanged(nameof(SelectedTouchColorBrush));
+                ScheduleAutoSave();
+            }
+        }
 
         public bool HasNoParameters => SelectedCommand is not null && ParameterFields.Count == 0;
 
@@ -595,9 +649,13 @@ namespace DeckSurf.App.ViewModels
 
             // Screen tiles are saved with just an image too - a background without a
             // mapped command is still meaningful.
+            // Screen tiles persist with just an image, and touch keys with just a
+            // backlight color; either is meaningful without a mapped command.
             foreach (var key in Keys.Concat(CatchAllMappings).Concat(KnobTargets).Concat(ScreenTargets)
                 .Concat(TouchLeftTargets).Concat(TouchRightTargets)
-                .Where(k => k.HasMapping || (k.Target == MappingTarget.Screen && !string.IsNullOrEmpty(k.ImagePath))))
+                .Where(k => k.HasMapping
+                    || (k.Target == MappingTarget.Screen && !string.IsNullOrEmpty(k.ImagePath))
+                    || (k.Target == MappingTarget.TouchButton && k.TouchColor is not null)))
             {
                 profile.ButtonMap.Add(new CommandMapping
                 {
@@ -607,6 +665,7 @@ namespace DeckSurf.App.ViewModels
                     Command = key.CommandId,
                     CommandArguments = key.CommandArguments,
                     ButtonImagePath = key.ImagePath ?? string.Empty,
+                    ButtonColor = key.TouchColor,
                 });
             }
 
@@ -729,6 +788,7 @@ namespace DeckSurf.App.ViewModels
                         : pluginService.GetCommand(mapping.Plugin, mapping.Command)?.DisplayName;
                     target.CommandArguments = mapping.CommandArguments;
                     target.ImagePath = mapping.ButtonImagePath;
+                    target.TouchColor = mapping.ButtonColor;
                 }
 
                 // The deck always shows one any-key slot; it is only saved once mapped.

@@ -25,6 +25,12 @@ namespace DeckSurf.App.Services
         string? Nickname = null)
     {
         public string DisplayText => Nickname is null ? $"{Name} ({Serial})" : $"{Nickname} ({Name})";
+
+        /// <summary>
+        /// Gets the name the user knows the device by: the nickname when one is
+        /// set, otherwise the model name.
+        /// </summary>
+        public string EffectiveName => Nickname ?? Name;
     }
 
     /// <summary>

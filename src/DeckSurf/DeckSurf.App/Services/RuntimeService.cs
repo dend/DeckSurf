@@ -438,7 +438,7 @@ namespace DeckSurf.App.Services
 
                 if (mapping.Target == MappingTarget.TouchButton)
                 {
-                    SetTouchKeyLight(session, mapping.ButtonIndex, lit: true);
+                    LightTouchKey(session, mapping);
                 }
 
                 var command = FindCommand(session, mapping);
@@ -456,6 +456,30 @@ namespace DeckSurf.App.Services
             }
 
             Log(session, "Profile changes applied.");
+        }
+
+        /// <summary>
+        /// Lights a mapped touch key: the mapping's declared color when it has
+        /// one, otherwise a white glow so a live target is visible. Commands may
+        /// still override from their own activation.
+        /// </summary>
+        private static void LightTouchKey(Session session, CommandMapping mapping)
+        {
+            if (mapping.ButtonIndex < 0 || mapping.ButtonIndex >= session.Device.TouchButtonCount)
+            {
+                return;
+            }
+
+            try
+            {
+                session.Device.SetKeyColor(
+                    session.Device.ButtonCount + mapping.ButtonIndex,
+                    mapping.ButtonColor ?? DeviceColor.White);
+            }
+            catch (Exception ex)
+            {
+                Log(session, $"Touch key light warning: {ex.Message}");
+            }
         }
 
         // Slots are occurrence-indexed because a profile can hold several
@@ -478,6 +502,7 @@ namespace DeckSurf.App.Services
             string.Equals(a.Plugin, b.Plugin, StringComparison.OrdinalIgnoreCase)
             && string.Equals(a.Command, b.Command, StringComparison.OrdinalIgnoreCase)
             && string.Equals(a.ButtonImagePath ?? string.Empty, b.ButtonImagePath ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+            && Nullable.Equals(a.ButtonColor, b.ButtonColor)
             && ArgumentsEqual(a.CommandArguments, b.CommandArguments);
 
         private static bool ArgumentsEqual(CommandArguments a, CommandArguments b)
@@ -668,7 +693,7 @@ namespace DeckSurf.App.Services
 
                 if (mapping.Target == MappingTarget.TouchButton)
                 {
-                    SetTouchKeyLight(session, mapping.ButtonIndex, lit: true);
+                    LightTouchKey(session, mapping);
                 }
 
                 var command = FindCommand(session, mapping);

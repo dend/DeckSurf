@@ -34,6 +34,7 @@ namespace DeckSurf.App.ViewModels
         [NotifyPropertyChangedFor(nameof(Label))]
         [NotifyPropertyChangedFor(nameof(ShowLabel))]
         [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
+        [NotifyPropertyChangedFor(nameof(ShowTouchDot))]
         public partial string? PluginId { get; set; }
 
         [ObservableProperty]
@@ -42,6 +43,7 @@ namespace DeckSurf.App.ViewModels
         [NotifyPropertyChangedFor(nameof(TitleText))]
         [NotifyPropertyChangedFor(nameof(ShowLabel))]
         [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
+        [NotifyPropertyChangedFor(nameof(ShowTouchDot))]
         public partial string? CommandId { get; set; }
 
         /// <summary>
@@ -55,6 +57,29 @@ namespace DeckSurf.App.ViewModels
 
         [ObservableProperty]
         public partial CommandArguments? CommandArguments { get; set; }
+
+        /// <summary>
+        /// Gets or sets the backlight color for touch key targets. Null means the
+        /// runtime's default white glow for mapped keys.
+        /// </summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(TouchColorBrush))]
+        [NotifyPropertyChangedFor(nameof(ShowTouchDot))]
+        public partial DeviceColor? TouchColor { get; set; }
+
+        /// <summary>
+        /// Gets the brush for the touch key cap's indicator dot: the chosen
+        /// backlight color, or the default face glow when none is set.
+        /// </summary>
+        public SolidColorBrush TouchColorBrush => new(TouchColor is { } c
+            ? Windows.UI.Color.FromArgb(255, c.R, c.G, c.B)
+            : Windows.UI.Color.FromArgb(255, 255, 255, 255));
+
+        /// <summary>
+        /// Gets a value indicating whether the touch key cap shows its dot: it is
+        /// mapped, colored, or both.
+        /// </summary>
+        public bool ShowTouchDot => HasMapping || TouchColor is not null;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(PreviewImage))]
@@ -151,6 +176,7 @@ namespace DeckSurf.App.ViewModels
             CommandId = null;
             CommandArguments = null;
             ImagePath = null;
+            TouchColor = null;
         }
     }
 }
