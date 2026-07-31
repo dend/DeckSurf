@@ -31,10 +31,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The build moment travels with the assembly so About can show a build
-         identity beyond the version. Minute precision keeps same-minute
-         incremental builds from recompiling just for the stamp. -->
-    <AssemblyMetadata Include="BuildTimestamp" Value="$([System.DateTime]::UtcNow.ToString(&quot;yyyy-MM-dd HH:mm&quot;))" />
+    <!-- The build moment travels with the assembly as a compact, sortable
+         build ID (UTC date and time), so About can identify a binary beyond
+         its version. Minute precision keeps same-minute incremental builds
+         from recompiling just for the stamp. -->
+    <AssemblyMetadata Include="BuildTimestamp" Value="$([System.DateTime]::UtcNow.ToString(&quot;yyyyMMdd.HHmm&quot;))" />
   </ItemGroup>
 
   <ItemGroup>

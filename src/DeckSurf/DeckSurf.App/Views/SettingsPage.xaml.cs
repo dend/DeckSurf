@@ -18,7 +18,7 @@ namespace DeckSurf.App.Views
 
         public bool IsBuiltIn { get; set; }
 
-        public string Note => IsBuiltIn ? "Built-in location" : "Custom folder";
+        public Visibility BuiltInVisibility => IsBuiltIn ? Visibility.Visible : Visibility.Collapsed;
 
         public Visibility RemoveVisibility => IsBuiltIn ? Visibility.Collapsed : Visibility.Visible;
     }
@@ -58,8 +58,8 @@ namespace DeckSurf.App.Views
         public string SdkVersionText { get; } = $"DeckSurf.SDK {FormatVersion(typeof(DeckSurf.SDK.Core.DeviceManager).Assembly.GetName().Version)}";
 
         /// <summary>
-        /// Gets the build identity: the UTC moment this binary was compiled,
-        /// stamped into the assembly metadata at build time.
+        /// Gets the build ID: the UTC date and time of compilation in
+        /// yyyyMMdd.HHmm form, stamped into the assembly metadata at build time.
         /// </summary>
         public string BuildStampText { get; } = FormatBuildStamp();
 
@@ -72,7 +72,7 @@ namespace DeckSurf.App.Views
                 .GetCustomAttributes<AssemblyMetadataAttribute>()
                 .FirstOrDefault(a => a.Key == "BuildTimestamp")?.Value;
 
-            return string.IsNullOrEmpty(stamp) ? "Build time unknown" : $"Build {stamp} UTC";
+            return string.IsNullOrEmpty(stamp) ? "Build unknown" : $"Build {stamp}";
         }
 
         private void RebuildFolderRows()

@@ -54,8 +54,26 @@
                     <Button Content="Add folder" Click="AddPluginFolder_Click" AutomationProperties.Name="Add plugin folder" />
                     <tk:SettingsExpander.ItemTemplate>
                         <DataTemplate x:DataType="views:PluginFolderRow">
-                            <tk:SettingsCard Header="{x:Bind Note}" Description="{x:Bind Path}">
-                                <Button Content="Remove" Click="RemovePluginFolder_Click" Visibility="{x:Bind RemoveVisibility}" AutomationProperties.Name="Remove folder" />
+                            <!-- The path is the row's identity; immutability reads as a
+                                 pill instead of prose, and only custom folders offer
+                                 an action. -->
+                            <tk:SettingsCard Header="{x:Bind Path}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border
+                                        Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10"
+                                        Padding="8,2,8,3"
+                                        VerticalAlignment="Center"
+                                        Visibility="{x:Bind BuiltInVisibility}">
+                                        <TextBlock
+                                            Text="Built-in"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Border>
+                                    <Button Content="Remove" Click="RemovePluginFolder_Click" Visibility="{x:Bind RemoveVisibility}" AutomationProperties.Name="Remove folder" />
+                                </StackPanel>
                             </tk:SettingsCard>
                         </DataTemplate>
                     </tk:SettingsExpander.ItemTemplate>
@@ -63,7 +81,7 @@
 
                 <!-- About sits in the same card rhythm as everything else; a
                      larger gap here read as a mistake, not a grouping. -->
-                <tk:SettingsExpander Description="Created by Den Delimarsky." IsExpanded="True">
+                <tk:SettingsExpander IsExpanded="True">
                     <tk:SettingsExpander.Header>
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <Image Source="ms-appx:///Assets/piglet.ico" Width="20" Height="20" />
@@ -82,7 +100,6 @@
                             </Border>
                         </StackPanel>
                     </tk:SettingsExpander.Header>
-                    <HyperlinkButton Content="den.dev" NavigateUri="https://den.dev" ToolTipService.ToolTip="Den Delimarsky's website" />
                     <tk:SettingsExpander.Items>
                         <tk:SettingsCard Header="App" Description="{x:Bind AppVersionText}">
                             <TextBlock
@@ -94,6 +111,9 @@
                         </tk:SettingsCard>
                         <tk:SettingsCard Header="SDK" Description="{x:Bind SdkVersionText}">
                             <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/dend/decksurf-sdk" />
+                        </tk:SettingsCard>
+                        <tk:SettingsCard Header="Created by" Description="Den Delimarsky">
+                            <HyperlinkButton Content="den.dev" NavigateUri="https://den.dev" ToolTipService.ToolTip="Den Delimarsky's website" />
                         </tk:SettingsCard>
                     </tk:SettingsExpander.Items>
                 </tk:SettingsExpander>
