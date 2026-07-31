@@ -1,0 +1,21 @@
+<!-- Pinned to v6: WiX v7 gates builds behind the Open Source Maintenance
+     Fee EULA, which is a licensing decision, not a build detail. -->
+<Project Sdk="WixToolset.Sdk/6.0.2">
+
+  <PropertyGroup>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputName>DeckSurf</OutputName>
+    <!-- The staging tree is produced by scripts\build-installer.ps1: the
+         self-contained app publish with the Barn plugin nested under
+         plugins\. The wxs harvests it wholesale. -->
+    <StagingDir Condition="'$(StagingDir)' == ''">$(MSBuildProjectDirectory)\..\..\bin\installer-staging</StagingDir>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">0.0.1</ProductVersion>
+    <DefineConstants>$(DefineConstants);StagingDir=$(StagingDir);ProductVersion=$(ProductVersion)</DefineConstants>
+    <!-- ICE03 trips on language metadata inside the harvested Windows App SDK
+         binaries; ICE38, ICE43, and ICE57 flag the standard per-machine Start
+         menu shortcut pattern with its HKCU keypath. All four are noise for
+         this layout. -->
+    <SuppressIces>ICE03;ICE38;ICE43;ICE57</SuppressIces>
+  </PropertyGroup>
+
+</Project>
