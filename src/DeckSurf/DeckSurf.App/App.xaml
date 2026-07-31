@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="DeckSurf.App.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- The deck face is deliberately dark in both themes: it mirrors the
+                 physical hardware. These are the only literal colors in the app;
+                 every other brush is a system ThemeResource. -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="DeckFaceBrush" Color="#FF1A1A1A" />
+                    <SolidColorBrush x:Key="DeckKeyBrush" Color="#FF2B2B2B" />
+                    <SolidColorBrush x:Key="DeckTextBrush" Color="#FFE8E8E8" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="DeckFaceBrush" Color="#FF1A1A1A" />
+                    <SolidColorBrush x:Key="DeckKeyBrush" Color="#FF2B2B2B" />
+                    <SolidColorBrush x:Key="DeckTextBrush" Color="#FFE8E8E8" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

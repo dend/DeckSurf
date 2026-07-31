@@ -9,48 +9,60 @@ using System.Runtime.Versioning;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
-    [CompatibleWith(DeviceModel.XL)]
-    [CompatibleWith(DeviceModel.XL2022)]
-    [CompatibleWith(DeviceModel.Original)]
-    [CompatibleWith(DeviceModel.Original2019)]
-    [CompatibleWith(DeviceModel.MK2)]
-    [CompatibleWith(DeviceModel.Mini)]
-    [CompatibleWith(DeviceModel.Mini2022)]
-    [CompatibleWith(DeviceModel.Plus)]
-    [CompatibleWith(DeviceModel.Neo)]
+    [CommandParameter("path", CommandParameterType.FilePath, DisplayName = "Application path", Description = "Executable, document, or URL to open when the button is pressed.", Required = true)]
     class LaunchApplication : IDeckSurfCommand
     {
-        public string Name => "Launch Application";
+        public string Name => "Launch application";
         public string Description => "Launches an application from a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
         {
+            var target = GetTargetPath(mappedCommand);
+
             if (OperatingSystem.IsMacOS())
             {
                 // macOS needs 'open' to launch .app bundles.
-                Process.Start("open", mappedCommand.CommandArguments);
+                Process.Start("open", target);
             }
             else if (OperatingSystem.IsLinux())
             {
                 // Linux needs 'xdg-open' to handle desktop files and URLs.
-                Process.Start("xdg-open", mappedCommand.CommandArguments);
+                Process.Start("xdg-open", target);
             }
             else
             {
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = mappedCommand.CommandArguments,
+                    FileName = target,
                     UseShellExecute = false,
                 });
             }
         }
 
+        // Profiles written before the parameter schema existed store the raw
+        // path as the whole arguments string, so fall back to it when there
+        // is no 'path' key.
+        private static string GetTargetPath(CommandMapping mappedCommand)
+        {
+            var arguments = mappedCommand.CommandArguments;
+            return arguments.GetString("path", arguments.LegacyText ?? string.Empty);
+        }
+
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            // Activation only paints the launcher icon, and only a grid key has
+            // a face for it. The launch action itself works from any target.
+            if (mappedCommand.Target != MappingTarget.Key || mappedCommand.ButtonIndex < 0)
+            {
+                return;
+            }
+
             if (!string.IsNullOrEmpty(mappedCommand.ButtonImagePath))
             {
                 return;
             }
+
+            var target = GetTargetPath(mappedCommand);
 
             try
             {
@@ -58,17 +70,16 @@ namespace DeckSurf.Plugin.Barn.Commands
 
                 if (OperatingSystem.IsWindows())
                 {
-                    imageBytes = TryGetWindowsFileIcon(mappedCommand.CommandArguments, mappedDevice);
+                    imageBytes = TryGetWindowsFileIcon(target, mappedDevice);
                 }
 
                 if (imageBytes == null)
                 {
                     // Cross-platform fallback: use a custom image if the command
                     // argument points to an image file, otherwise set a colored key.
-                    var arg = mappedCommand.CommandArguments;
-                    if (File.Exists(arg) && IsImageFile(arg))
+                    if (File.Exists(target) && IsImageFile(target))
                     {
-                        imageBytes = File.ReadAllBytes(arg);
+                        imageBytes = File.ReadAllBytes(target);
                     }
                 }
 
@@ -84,15 +95,22 @@ namespace DeckSurf.Plugin.Barn.Commands
                 }
                 else
                 {
-                    // No icon available — set a recognizable colored key.
-                    mappedDevice.SetKeyColor(mappedCommand.ButtonIndex, DeviceColor.Cyan);
+                    SetFallbackKey(mappedCommand, mappedDevice);
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Could not set icon for {mappedCommand.CommandArguments}: {ex.Message}");
-                mappedDevice.SetKeyColor(mappedCommand.ButtonIndex, DeviceColor.Cyan);
+                Debug.WriteLine($"Could not set icon for {target}: {ex.Message}");
+                SetFallbackKey(mappedCommand, mappedDevice);
             }
+        }
+
+        // SetKeyColor only works on the Stream Deck Neo, so the recognizable
+        // colored fallback key is rendered as a full key image instead.
+        private static void SetFallbackKey(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+        {
+            var cyanImage = ImageHelper.CreateBlankImage(mappedDevice.ButtonResolution, DeviceColor.Cyan);
+            mappedDevice.SetKey(mappedCommand.ButtonIndex, cyanImage);
         }
 
         [SupportedOSPlatform("windows")]

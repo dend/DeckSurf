@@ -12,6 +12,7 @@ namespace DeckSurf.Plugin.Barn
         {
             Author = "Den Delimarsky",
             Id = "DeckSurf.Plugin.Barn",
+            Name = "Barn",
             Version = "0.0.3",
             Website = "https://github.com/dend/decksurf"
         };
@@ -28,6 +29,7 @@ namespace DeckSurf.Plugin.Barn
         {
             return new List<Type>()
             {
+                typeof(KnobBrightness),
                 typeof(LaunchApplication),
                 typeof(ShowCPUUsage),
                 typeof(ShowNetworkTraffic),

@@ -9,24 +9,12 @@ using System.IO;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
-    [CompatibleWith(DeviceModel.XL)]
-    [CompatibleWith(DeviceModel.XL2022)]
-    [CompatibleWith(DeviceModel.Original)]
-    [CompatibleWith(DeviceModel.Original2019)]
-    [CompatibleWith(DeviceModel.MK2)]
-    [CompatibleWith(DeviceModel.Mini)]
-    [CompatibleWith(DeviceModel.Mini2022)]
-    [CompatibleWith(DeviceModel.Plus)]
-    [CompatibleWith(DeviceModel.Neo)]
+    [CommandDynamicDisplay]
     class ShowNetworkTraffic : IDeckSurfCommand
     {
-        private const int MaxHistory = 30;
+        private EventHandler _sampleHandler;
 
-        private System.Timers.Timer _netTimer;
-        private readonly List<long> _history = new();
-        private readonly object _historyLock = new();
-
-        public string Name => "Show Network Traffic";
+        public string Name => "Show network traffic";
         public string Description => "Displays live network upload/download speeds on a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
@@ -35,57 +23,77 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            _netTimer = new System.Timers.Timer(1000);
-            _netTimer.Elapsed += (s, e) =>
+            // This command draws on a grid key or the touch strip; any other
+            // target has no face for it and must not paint the key sharing its
+            // index.
+            var paintsKey = mappedCommand.Target == MappingTarget.Key && mappedCommand.ButtonIndex >= 0;
+            var paintsScreen = mappedCommand.Target == MappingTarget.Screen && mappedDevice.IsScreenSupported;
+            if (!paintsKey && !paintsScreen)
+                return;
+
+            // Rendering rides the shared sampler so every instance of this
+            // command, across all connected devices, draws the same series.
+            _sampleHandler = (s, e) =>
             {
                 try
                 {
-                    var (up, down) = NetworkMonitor.GetThroughput();
+                    var (up, down, series) = SystemSampler.GetNetwork();
                     if (up < 0) return;
 
-                    long total = up + down;
-
-                    lock (_historyLock)
-                    {
-                        _history.Add(total);
-                        if (_history.Count > MaxHistory)
-                            _history.RemoveAt(0);
-                    }
-
-                    RenderButton(up, down, mappedCommand, mappedDevice);
+                    RenderButton(up, down, series, mappedCommand, mappedDevice);
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error in network traffic timer callback: {ex}");
+                    Debug.WriteLine($"Error rendering network traffic: {ex}");
                 }
             };
-            _netTimer.Start();
+            SystemSampler.SampleAvailable += _sampleHandler;
         }
 
-        private void RenderButton(long up, long down, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+        private void RenderButton(long up, long down, List<long> series, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
             var font = IconGenerator.ResolveFont(28, SixLabors.Fonts.FontStyle.Bold);
 
-            List<long> snapshot;
-            lock (_historyLock)
-            {
-                snapshot = new List<long>(_history);
-            }
-
             // Normalize history to 0-100 based on peak value in the window.
-            var normalized = new List<int>(snapshot.Count);
-            if (snapshot.Count > 0)
+            var normalized = new List<int>(series.Count);
+            if (series.Count > 0)
             {
                 long max = 0;
-                foreach (var v in snapshot)
+                foreach (var v in series)
                     if (v > max) max = v;
 
-                foreach (var v in snapshot)
+                foreach (var v in series)
                     normalized.Add(max > 0 ? (int)(v * 100 / max) : 0);
             }
 
             string upLabel = "\u25b2 " + NetworkMonitor.FormatBytes(up);
             string downLabel = "\u25bc " + NetworkMonitor.FormatBytes(down);
+
+            // Render to whatever the mapping actually targets: a screen mapping
+            // paints the touch strip, everything else paints its key. Without the
+            // branch, a screen-assigned instance painted key ButtonIndex instead,
+            // fighting that key's own content.
+            if (mappedCommand.Target == MappingTarget.Screen && mappedDevice.IsScreenSupported)
+            {
+                using var strip = IconGenerator.GenerateNetworkStripImage(
+                    mappedDevice.ScreenWidth,
+                    mappedDevice.ScreenHeight,
+                    "NET",
+                    upLabel,
+                    downLabel,
+                    font,
+                    normalized);
+
+                byte[] stripContent;
+                using (var ms = new MemoryStream())
+                {
+                    strip.SaveAsJpeg(ms);
+                    stripContent = ms.ToArray();
+                }
+
+                mappedDevice.SetScreen(stripContent, 0, mappedDevice.ScreenWidth, mappedDevice.ScreenHeight);
+                return;
+            }
 
             using var image = IconGenerator.GenerateNetworkImage(
                 200,
@@ -107,8 +115,11 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void Dispose()
         {
-            _netTimer?.Stop();
-            _netTimer?.Dispose();
+            if (_sampleHandler != null)
+            {
+                SystemSampler.SampleAvailable -= _sampleHandler;
+                _sampleHandler = null;
+            }
         }
     }
 }

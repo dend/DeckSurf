@@ -1,4 +1,4 @@
-using DeckSurf.Plugin.Barn.Helpers;
+﻿using DeckSurf.Plugin.Barn.Helpers;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using SixLabors.ImageSharp;
@@ -8,15 +8,9 @@ using System.IO;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
-    [CompatibleWith(DeviceModel.XL)]
-    [CompatibleWith(DeviceModel.XL2022)]
-    [CompatibleWith(DeviceModel.Original)]
-    [CompatibleWith(DeviceModel.Original2019)]
-    [CompatibleWith(DeviceModel.MK2)]
-    [CompatibleWith(DeviceModel.Mini)]
-    [CompatibleWith(DeviceModel.Mini2022)]
-    [CompatibleWith(DeviceModel.Plus)]
-    [CompatibleWith(DeviceModel.Neo)]
+    [CommandDynamicDisplay]
+    [CommandParameter("mode", CommandParameterType.Choice, DisplayName = "Mode", Description = "Clock shows the current time; stopwatch counts up; timer counts down.", Choices = new[] { "clock", "stopwatch", "timer" }, DefaultValue = "clock", Order = 0)]
+    [CommandParameter("duration", CommandParameterType.Integer, DisplayName = "Duration (seconds)", Description = "Countdown length. Only used in timer mode.", DefaultValue = "300", MinValue = 1, Order = 1)]
     class ShowTimer : IDeckSurfCommand
     {
         private enum TimerMode { Clock, Stopwatch, Timer }
@@ -87,6 +81,12 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
+            // This command draws on a grid key; a mapping on any other target
+            // (touch key, knob) has no face for it and must not paint the key
+            // that happens to share its index.
+            if (mappedCommand.Target != MappingTarget.Key || mappedCommand.ButtonIndex < 0)
+                return;
+
             _mappedCommand = mappedCommand;
             _mappedDevice = mappedDevice;
 
@@ -107,34 +107,18 @@ namespace DeckSurf.Plugin.Barn.Commands
             _renderTimer.Start();
         }
 
-        private void ParseArguments(string args)
+        private void ParseArguments(CommandArguments args)
         {
-            if (string.IsNullOrWhiteSpace(args)) return;
-
-            foreach (var part in args.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            _mode = args.GetString("mode").ToLowerInvariant() switch
             {
-                var kv = part.Split('=', 2);
-                if (kv.Length != 2) continue;
+                "stopwatch" => TimerMode.Stopwatch,
+                "timer" => TimerMode.Timer,
+                _ => TimerMode.Clock,
+            };
 
-                var key = kv[0].Trim().ToLowerInvariant();
-                var value = kv[1].Trim();
-
-                switch (key)
-                {
-                    case "mode":
-                        _mode = value.ToLowerInvariant() switch
-                        {
-                            "stopwatch" => TimerMode.Stopwatch,
-                            "timer" => TimerMode.Timer,
-                            _ => TimerMode.Clock,
-                        };
-                        break;
-                    case "duration":
-                        if (int.TryParse(value, out int seconds))
-                            _countdownDuration = TimeSpan.FromSeconds(seconds);
-                        break;
-                }
-            }
+            var seconds = args.GetInt32("duration", 0);
+            if (seconds > 0)
+                _countdownDuration = TimeSpan.FromSeconds(seconds);
         }
 
         private void Render()

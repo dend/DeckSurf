@@ -1,4 +1,3 @@
-using DeckSurf.Extensibility;
 using DeckSurf.SDK.Core;
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
@@ -160,7 +159,7 @@ namespace DeckSurf
             writeCommand.AddOption(new Option<string>(
                    aliases: new[] { "--action-args", "-a" },
                    getDefaultValue: () => string.Empty,
-                   description: "Arguments passed to the command.")
+                   description: "Arguments passed to the command, as comma-separated key=value pairs (e.g. \"scene=Gaming,port=4455\").")
             {
                 IsRequired = true,
                 AllowMultipleArgumentsPerToken = false
@@ -199,9 +198,16 @@ namespace DeckSurf
             return rootCommand.InvokeAsync(args);
         }
 
+        private static IReadOnlyList<IDeckSurfPlugin> LoadPlugins()
+        {
+            return PluginLoader.LoadPlugins(
+                AppContext.BaseDirectory,
+                message => Console.Error.WriteLine($"[Warning] {message}"));
+        }
+
         private static void HandleListPluginsCommand()
         {
-            var plugins = Loader.Load<IDeckSurfPlugin>();
+            var plugins = LoadPlugins();
 
             if (!plugins.Any())
             {
@@ -217,8 +223,25 @@ namespace DeckSurf
                 Console.WriteLine($"{plugin.Metadata.Id,-25} {plugin.Metadata.Version,-12} {plugin.Metadata.Author,-15}");
                 foreach (var command in plugin.GetSupportedCommands())
                 {
-                    var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
-                    Console.WriteLine($"  -> {commandInstance.Name,-20} {commandInstance.Description}");
+                    using var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
+                    Console.WriteLine($"  -> {command.Name,-20} {commandInstance.Description}");
+
+                    foreach (var parameter in CommandSchemaReader.GetParameters(command))
+                    {
+                        var details = parameter.ParameterType.ToString();
+                        if (parameter.Choices is { Length: > 0 })
+                        {
+                            details += $": {string.Join("|", parameter.Choices)}";
+                        }
+
+                        if (!string.IsNullOrEmpty(parameter.DefaultValue))
+                        {
+                            details += $" (default: {parameter.DefaultValue})";
+                        }
+
+                        var requiredMarker = parameter.Required ? " [required]" : string.Empty;
+                        Console.WriteLine($"       * {parameter.Key,-16} {details}{requiredMarker}");
+                    }
                 }
             }
         }
@@ -233,7 +256,7 @@ namespace DeckSurf
                 return;
             }
 
-            var plugins = Loader.Load<IDeckSurfPlugin>();
+            var plugins = LoadPlugins();
             var commands = new Dictionary<string, IEnumerable<IDeckSurfCommand>>();
 
             var device = DeviceManager.SetupDevice(workingProfile);
@@ -250,30 +273,49 @@ namespace DeckSurf
 
                 device.ButtonPressed += (s, e) =>
                 {
-                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.EventKind}");
+                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.EventKind} ({e.ButtonKind})");
 
-                    if (e.EventKind == ButtonEventKind.Down)
+                    switch (e.ButtonKind)
                     {
-                        var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.ButtonIndex == e.Id);
-                        if (buttonEntry != null)
-                        {
-                            ExecuteButtonAction(buttonEntry, device, commands);
-                        }
-
-                        var anyButtonCatchers = workingProfile.ButtonMap.Where(x => x.ButtonIndex == -1);
-                        if (anyButtonCatchers.Any())
-                        {
-                            foreach (var button in anyButtonCatchers)
+                        case ButtonKind.Knob:
+                            foreach (var knobEntry in workingProfile.ButtonMap.Where(x => x.Target == MappingTarget.Knob && x.ButtonIndex == e.Id))
                             {
-                                ExecuteButtonAction(button, device, commands, e.Id);
+                                ExecuteEventAction(knobEntry, device, commands, e);
                             }
-                        }
+
+                            break;
+                        case ButtonKind.Screen:
+                            foreach (var screenEntry in workingProfile.ButtonMap.Where(x => x.Target == MappingTarget.Screen))
+                            {
+                                ExecuteEventAction(screenEntry, device, commands, e);
+                            }
+
+                            break;
+                        default:
+                            if (e.EventKind == ButtonEventKind.Down)
+                            {
+                                var buttonEntry = workingProfile.ButtonMap.FirstOrDefault(x => x.Target == MappingTarget.Key && x.ButtonIndex == e.Id);
+                                if (buttonEntry != null)
+                                {
+                                    ExecuteButtonAction(buttonEntry, device, commands);
+                                }
+
+                                var anyButtonCatchers = workingProfile.ButtonMap.Where(x => x.Target == MappingTarget.Key && x.ButtonIndex == -1);
+                                foreach (var button in anyButtonCatchers)
+                                {
+                                    ExecuteButtonAction(button, device, commands, e.Id);
+                                }
+                            }
+
+                            break;
                     }
                 };
 
                 foreach (var plugin in plugins)
                 {
-                    commands.Add(plugin.Metadata.Id.ToLower(), Loader.LoadCommands(plugin, device.Model));
+                    commands.Add(
+                        plugin.Metadata.Id.ToLower(),
+                        PluginLoader.LoadCompatibleCommands(plugin, device.Model, message => Console.Error.WriteLine($"[Warning] {message}")));
                 }
 
                 device.StartListening();
@@ -317,16 +359,31 @@ namespace DeckSurf
 
         private static void ExecuteButtonAction(CommandMapping buttonEntry, IConnectedDevice device, IDictionary<string, IEnumerable<IDeckSurfCommand>> commands, int activatingButton = -1)
         {
-            var targetPluginName = buttonEntry.Plugin.ToLower();
-            if (commands.ContainsKey(targetPluginName))
+            var targetCommand = FindMappedCommand(buttonEntry, commands);
+            targetCommand?.ExecuteOnAction(buttonEntry, device, activatingButton);
+        }
+
+        private static void ExecuteEventAction(CommandMapping mappingEntry, IConnectedDevice device, IDictionary<string, IEnumerable<IDeckSurfCommand>> commands, ButtonPressEventArgs eventArgs)
+        {
+            var targetCommand = FindMappedCommand(mappingEntry, commands);
+            targetCommand?.ExecuteOnEvent(mappingEntry, device, eventArgs);
+        }
+
+        private static IDeckSurfCommand FindMappedCommand(CommandMapping mappingEntry, IDictionary<string, IEnumerable<IDeckSurfCommand>> commands)
+        {
+            if (mappingEntry.Plugin == null || mappingEntry.Command == null)
             {
-                var targetPlugin = commands[targetPluginName];
-                var targetCommand = (from c in targetPlugin where string.Equals(c.GetType().Name, buttonEntry.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
-                if (targetCommand != null)
-                {
-                    targetCommand.ExecuteOnAction(buttonEntry, device, activatingButton);
-                }
+                return null;
             }
+
+            var targetPluginName = mappingEntry.Plugin.ToLower();
+            if (!commands.ContainsKey(targetPluginName))
+            {
+                return null;
+            }
+
+            var targetPlugin = commands[targetPluginName];
+            return (from c in targetPlugin where string.Equals(c.GetType().Name, mappingEntry.Command, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
         }
 
         private static void HandleListCommand()
@@ -355,7 +412,7 @@ namespace DeckSurf
                 return;
             }
 
-            var plugins = Loader.Load<IDeckSurfPlugin>();
+            var plugins = LoadPlugins();
 
             var targetPlugin = (from c in plugins where string.Equals(c.Metadata.Id, plugin, StringComparison.InvariantCultureIgnoreCase) select c).FirstOrDefault();
 
@@ -368,7 +425,9 @@ namespace DeckSurf
                     {
                         ButtonImagePath = imagePath,
                         ButtonIndex = keyIndex,
-                        CommandArguments = actionArgs,
+                        // The CLI keeps the comma-separated key=value syntax because
+                        // quoting JSON in a shell is miserable.
+                        CommandArguments = CommandArguments.FromLegacyString(actionArgs),
                         Plugin = plugin,
                         Command = command
                     };
@@ -392,18 +451,8 @@ namespace DeckSurf
 
         private static void HandleProfilesListCommand()
         {
-            var profilesPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Den.Dev", "DeckSurf", "Profiles");
-
-            if (!Directory.Exists(profilesPath))
-            {
-                Console.WriteLine("No profiles found. Use 'deck write' to create one.");
-                return;
-            }
-
-            var directories = Directory.GetDirectories(profilesPath);
-            if (directories.Length == 0)
+            var profiles = ConfigurationHelper.ListProfiles();
+            if (profiles.Count == 0)
             {
                 Console.WriteLine("No profiles found. Use 'deck write' to create one.");
                 return;
@@ -411,9 +460,9 @@ namespace DeckSurf
 
             Console.WriteLine("Available profiles:");
             Console.WriteLine(new string('-', 30));
-            foreach (var dir in directories)
+            foreach (var profile in profiles)
             {
-                Console.WriteLine($"  {Path.GetFileName(dir)}");
+                Console.WriteLine($"  {profile}");
             }
         }
 
@@ -456,25 +505,23 @@ namespace DeckSurf
 
         private static void HandleProfilesDeleteCommand(string name)
         {
-            var profilesRoot = Path.GetFullPath(Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Den.Dev", "DeckSurf", "Profiles"));
-            var profilesPath = Path.GetFullPath(Path.Combine(profilesRoot, name));
-
-            if (!profilesPath.StartsWith(profilesRoot, StringComparison.OrdinalIgnoreCase))
+            bool deleted;
+            try
+            {
+                deleted = ConfigurationHelper.DeleteProfile(name);
+            }
+            catch (ArgumentException)
             {
                 Console.WriteLine($"Invalid profile name: {name}");
                 return;
             }
 
-            if (!Directory.Exists(profilesPath))
+            if (!deleted)
             {
                 Console.WriteLine($"Profile not found: {name}");
                 return;
             }
 
-            Console.WriteLine($"Deleting profile: {name}");
-            Directory.Delete(profilesPath, true);
             Console.WriteLine($"Profile '{name}' deleted successfully.");
         }
 

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="DeckSurf.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="DeckSurf">
+
+    <Grid>
+        <Grid.Resources>
+            <!-- The runtime status row: shaped like a navigation item so it
+                 belongs to the pane, quiet until hovered, and clicking it opens
+                 Devices, where the per-device state lives. -->
+            <Style x:Key="RuntimeStatusButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="16,0" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Root.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Root.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <ContentPresenter
+                                    Content="{TemplateBinding Content}"
+                                    Padding="{TemplateBinding Padding}"
+                                    HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalContentAlignment="Center" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="TitleBarArea" Grid.Row="0" Height="36">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="16,0,0,0">
+                <Image Source="Assets/piglet.ico" Width="16" Height="16" />
+                <TextBlock Text="DeckSurf" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <NavigationView
+            x:Name="RootNavigation"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            PaneDisplayMode="Left"
+            OpenPaneLength="220"
+            SelectionChanged="RootNavigation_SelectionChanged">
+            <NavigationView.Resources>
+                <!-- Let Mica show through the shell; pages render on the rounded layer below. -->
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+                <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+            </NavigationView.Resources>
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="DevicesItem" Content="Devices" Tag="devices">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE7F4;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="EditorItem" Content="Editor" Tag="editor">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE70F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="PluginsItem" Content="Plugins" Tag="plugins">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEA86;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="SettingsItem" Content="Settings" Tag="settings">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+
+            <NavigationView.PaneFooter>
+                <!-- The dot sits in the 16px slot where a nav glyph would, so the
+                     label shares the item grammar; hover carries the per-device
+                     detail and clicking opens Devices. -->
+                <Button
+                    x:Name="RuntimeStatusButton"
+                    Style="{StaticResource RuntimeStatusButtonStyle}"
+                    Margin="4,0,4,4"
+                    Click="RuntimeStatus_Click"
+                    AutomationProperties.Name="Runtime status, opens Devices">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Grid Width="16" VerticalAlignment="Center">
+                            <Ellipse x:Name="RuntimeStatusDot" Width="8" Height="8" Fill="{ThemeResource SystemFillColorNeutralBrush}" />
+                        </Grid>
+                        <TextBlock x:Name="RuntimeStatusText" Text="Idle" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </NavigationView.PaneFooter>
+
+            <Border
+                Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1,1,0,0"
+                CornerRadius="8,0,0,0">
+                <Frame x:Name="ContentFrame" />
+            </Border>
+        </NavigationView>
+    </Grid>
+</Window>

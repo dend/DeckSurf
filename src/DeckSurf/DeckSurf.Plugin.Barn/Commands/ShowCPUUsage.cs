@@ -9,24 +9,12 @@ using System.IO;
 
 namespace DeckSurf.Plugin.Barn.Commands
 {
-    [CompatibleWith(DeviceModel.XL)]
-    [CompatibleWith(DeviceModel.XL2022)]
-    [CompatibleWith(DeviceModel.Original)]
-    [CompatibleWith(DeviceModel.Original2019)]
-    [CompatibleWith(DeviceModel.MK2)]
-    [CompatibleWith(DeviceModel.Mini)]
-    [CompatibleWith(DeviceModel.Mini2022)]
-    [CompatibleWith(DeviceModel.Plus)]
-    [CompatibleWith(DeviceModel.Neo)]
+    [CommandDynamicDisplay]
     class ShowCPUUsage : IDeckSurfCommand
     {
-        private const int MaxHistory = 30;
+        private EventHandler _sampleHandler;
 
-        private System.Timers.Timer _cpuUsageTimer;
-        private readonly List<int> _history = new();
-        private readonly object _historyLock = new();
-
-        public string Name => "Show CPU Usage";
+        public string Name => "Show CPU usage";
         public string Description => "Displays live CPU usage percentage on a Stream Deck button.";
 
         public void ExecuteOnAction(CommandMapping mappedCommand, IConnectedDevice mappedDevice, int activatingButton = -1)
@@ -35,47 +23,40 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void ExecuteOnActivation(CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
-            _cpuUsageTimer = new System.Timers.Timer(2000);
-            _cpuUsageTimer.Elapsed += (s, e) =>
+            // This command draws on a grid key; other targets have no face for
+            // it and must not paint the key sharing their index.
+            if (mappedCommand.Target != MappingTarget.Key || mappedCommand.ButtonIndex < 0)
+                return;
+
+            // Rendering rides the shared sampler so every instance of this
+            // command, across all connected devices, draws the same series.
+            _sampleHandler = (s, e) =>
             {
                 try
                 {
-                    int cpuUsage = CpuMonitor.GetSystemCpuUsage();
+                    var (cpuUsage, series) = SystemSampler.GetCpu();
                     if (cpuUsage < 0) return;
 
-                    lock (_historyLock)
-                    {
-                        _history.Add(cpuUsage);
-                        if (_history.Count > MaxHistory)
-                            _history.RemoveAt(0);
-                    }
-
-                    RenderButton(cpuUsage, mappedCommand, mappedDevice);
+                    RenderButton(cpuUsage, series, mappedCommand, mappedDevice);
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error in CPU usage timer callback: {ex}");
+                    Debug.WriteLine($"Error rendering CPU usage: {ex}");
                 }
             };
-            _cpuUsageTimer.Start();
+            SystemSampler.SampleAvailable += _sampleHandler;
         }
 
-        private void RenderButton(int cpuUsage, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
+        private void RenderButton(int cpuUsage, List<int> series, CommandMapping mappedCommand, IConnectedDevice mappedDevice)
         {
             var font = IconGenerator.ResolveFont(36, SixLabors.Fonts.FontStyle.Bold);
-
-            List<int> snapshot;
-            lock (_historyLock)
-            {
-                snapshot = new List<int>(_history);
-            }
 
             using var image = IconGenerator.GenerateUsageImage(
                 200,
                 "CPU",
                 cpuUsage + "%",
                 font,
-                snapshot);
+                series);
 
             byte[] byteContent;
             using (var ms = new MemoryStream())
@@ -89,8 +70,11 @@ namespace DeckSurf.Plugin.Barn.Commands
 
         public void Dispose()
         {
-            _cpuUsageTimer?.Stop();
-            _cpuUsageTimer?.Dispose();
+            if (_sampleHandler != null)
+            {
+                SystemSampler.SampleAvailable -= _sampleHandler;
+                _sampleHandler = null;
+            }
         }
     }
 }
