@@ -73,7 +73,7 @@ namespace DeckSurf.App.Views
                 .GetCustomAttributes<AssemblyMetadataAttribute>()
                 .FirstOrDefault(a => a.Key == "BuildTimestamp")?.Value;
 
-            return string.IsNullOrEmpty(stamp) ? $"Version {version}" : $"Version {version}, build {stamp}";
+            return string.IsNullOrEmpty(stamp) ? $"Version {version}" : $"Version {version}.{stamp}";
         }
 
         private void RebuildFolderRows()
