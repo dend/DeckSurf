@@ -2,7 +2,7 @@
 # plugin under plugins\, and hands the staging tree to the WiX project.
 param(
     [string]$Configuration = "Release",
-    [string]$Version = "0.0.1"
+    [string]$Version = "0.1.0"
 )
 
 $ErrorActionPreference = "Stop"

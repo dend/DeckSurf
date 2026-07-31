@@ -6,7 +6,7 @@ on:
       version:
         description: 'MSI product version (a.b.c)'
         required: false
-        default: '0.0.1'
+        default: '0.1.0'
 
 permissions:
   contents: read

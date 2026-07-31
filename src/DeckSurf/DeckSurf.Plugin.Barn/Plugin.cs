@@ -13,7 +13,7 @@ namespace DeckSurf.Plugin.Barn
             Author = "Den Delimarsky",
             Id = "DeckSurf.Plugin.Barn",
             Name = "Barn",
-            Version = "0.0.3",
+            Version = "0.1.0",
             Website = "https://github.com/dend/decksurf"
         };
 
