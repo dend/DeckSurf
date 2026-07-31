@@ -31,6 +31,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The build moment travels with the assembly so About can show a build
+         identity beyond the version. Minute precision keeps same-minute
+         incremental builds from recompiling just for the stamp. -->
+    <AssemblyMetadata Include="BuildTimestamp" Value="$([System.DateTime]::UtcNow.ToString(&quot;yyyy-MM-dd HH:mm&quot;))" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
     <Content Include="Assets\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

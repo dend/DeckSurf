@@ -53,9 +53,27 @@ namespace DeckSurf.App.Views
 
         public ObservableCollection<PluginFolderRow> FolderRows { get; } = [];
 
-        public string AboutText { get; } =
-            $"Version {Assembly.GetExecutingAssembly().GetName().Version}, " +
-            $"SDK {typeof(DeckSurf.SDK.Core.DeviceManager).Assembly.GetName().Version}";
+        public string AppVersionText { get; } = $"Version {FormatVersion(Assembly.GetExecutingAssembly().GetName().Version)}";
+
+        public string SdkVersionText { get; } = $"DeckSurf.SDK {FormatVersion(typeof(DeckSurf.SDK.Core.DeviceManager).Assembly.GetName().Version)}";
+
+        /// <summary>
+        /// Gets the build identity: the UTC moment this binary was compiled,
+        /// stamped into the assembly metadata at build time.
+        /// </summary>
+        public string BuildStampText { get; } = FormatBuildStamp();
+
+        private static string FormatVersion(Version? version) =>
+            version is null ? "unknown" : $"{version.Major}.{version.Minor}.{version.Build}";
+
+        private static string FormatBuildStamp()
+        {
+            var stamp = Assembly.GetExecutingAssembly()
+                .GetCustomAttributes<AssemblyMetadataAttribute>()
+                .FirstOrDefault(a => a.Key == "BuildTimestamp")?.Value;
+
+            return string.IsNullOrEmpty(stamp) ? "Build time unknown" : $"Build {stamp} UTC";
+        }
 
         private void RebuildFolderRows()
         {
