@@ -54,9 +54,9 @@ namespace DeckSurf.App.Views
         public ObservableCollection<PluginFolderRow> FolderRows { get; } = [];
 
         /// <summary>
-        /// Gets the full app version with the build ID as semver build metadata:
-        /// the version, then the UTC compilation moment in yyyyMMdd.HHmm form
-        /// stamped into the assembly at build time.
+        /// Gets the full app version: the version, then the build ID, which is
+        /// the UTC compilation moment in yyyyMMdd.HHmm form stamped into the
+        /// assembly at build time.
         /// </summary>
         public string AppVersionText { get; } = ComposeAppVersion();
 
@@ -73,7 +73,7 @@ namespace DeckSurf.App.Views
                 .GetCustomAttributes<AssemblyMetadataAttribute>()
                 .FirstOrDefault(a => a.Key == "BuildTimestamp")?.Value;
 
-            return string.IsNullOrEmpty(stamp) ? $"Version {version}" : $"Version {version}+{stamp}";
+            return string.IsNullOrEmpty(stamp) ? $"Version {version}" : $"Version {version}, build {stamp}";
         }
 
         private void RebuildFolderRows()
