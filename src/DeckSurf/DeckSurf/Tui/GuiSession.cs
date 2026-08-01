@@ -63,26 +63,26 @@ namespace DeckSurf.Tui
                 using var application = Application.Create().Init();
                 app = application;
 
-                // One dark scheme everywhere; the library default is the
-                // white-on-blue classic that reads as decades old.
-                var background = new Terminal.Gui.Drawing.Color(16, 18, 20);
-                var foreground = new Terminal.Gui.Drawing.Color(214, 218, 222);
-                var accent = new Terminal.Gui.Drawing.Color(0x22, 0xB8, 0xCF);
-                var dim = new Terminal.Gui.Drawing.Color(138, 143, 152);
-                var scheme = new Scheme(new Terminal.Gui.Drawing.Attribute(foreground, background))
+                // The library default theme is the white-on-blue classic that
+                // reads as decades old; the built-in Dark theme keeps every
+                // view (popup, status bar, text views) coherent. Themes ship
+                // in the library's embedded config, which only loads once the
+                // configuration manager is enabled.
+                try
                 {
-                    Focus = new Terminal.Gui.Drawing.Attribute(foreground, new Terminal.Gui.Drawing.Color(30, 33, 36)),
-                    HotNormal = new Terminal.Gui.Drawing.Attribute(accent, background),
-                    HotFocus = new Terminal.Gui.Drawing.Attribute(accent, new Terminal.Gui.Drawing.Color(30, 33, 36)),
-                    Disabled = new Terminal.Gui.Drawing.Attribute(dim, background),
-                };
+                    Terminal.Gui.Configuration.ConfigurationManager.Enable(Terminal.Gui.Configuration.ConfigLocations.LibraryResources);
+                    Terminal.Gui.Configuration.ThemeManager.Theme = "Dark";
+                }
+                catch (Exception)
+                {
+                    Terminal.Gui.Configuration.ThemeManager.Theme = "Default";
+                }
 
                 var window = new Window
                 {
                     Title = $"DeckSurf v{version}",
                     BorderStyle = LineStyle.Rounded,
                 };
-                window.SetScheme(scheme);
                 windowRef = window;
                 versionText = version;
 
@@ -115,25 +115,21 @@ namespace DeckSurf.Tui
                 };
                 input.Autocomplete.SuggestionGenerator = new DeckSuggestionGenerator();
                 input.Autocomplete.MaxHeight = 6;
+                input.Autocomplete.MaxWidth = 44;
 
                 input.KeyDown += OnInputKeyDown;
 
                 var status = new StatusBar(new[]
                 {
-                    new Shortcut(Key.Enter, "run", null, "run the typed command"),
-                    new Shortcut(Key.Tab, "complete", null, "complete the current token"),
-                    new Shortcut(Key.Esc, "stop listen", null, "stop a streaming listen"),
-                    new Shortcut(Key.Q.WithCtrl, "quit", () => app.RequestStop(), "leave the session"),
+                    new Shortcut(Key.Enter, "run", null, null),
+                    new Shortcut(Key.Tab, "complete", null, null),
+                    new Shortcut(Key.Esc, "stop listen", null, null),
+                    new Shortcut(Key.Q.WithCtrl, "quit", () => app.RequestStop(), null),
                 })
                 {
                     Y = Pos.AnchorEnd(1),
                     Width = Dim.Fill(),
                 };
-
-                transcript.SetScheme(scheme);
-                prompt.SetScheme(scheme);
-                input.SetScheme(scheme);
-                status.SetScheme(scheme);
 
                 window.KeyDown += (s, e) =>
                 {
