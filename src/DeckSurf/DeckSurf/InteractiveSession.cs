@@ -25,11 +25,18 @@ namespace DeckSurf
         {
             var richInput = TerminalCapabilities.SupportsRichInput;
             ConsoleGate gate = null;
+            FooterController footer = null;
             if (richInput)
             {
                 gate = new ConsoleGate(Console.Out);
                 Console.SetOut(gate);
+                footer = new FooterController(gate.Inner, gate.Sync);
+                gate.Footer = footer;
+                FooterController.Current = footer;
             }
+
+            var initialDevices = SafeDevices();
+            footer?.SetStatus(GetDisplayVersion(), initialDevices.Count);
 
             PrintBanner();
             Console.WriteLine();
@@ -39,7 +46,7 @@ namespace DeckSurf
                 return await LegacyLoopAsync(rootCommand);
             }
 
-            var editor = new LineEditor(new CompletionEngine(), () =>
+            var editor = new LineEditor(new CompletionEngine(), footer, () =>
             {
                 PrintBanner();
                 Console.WriteLine();
@@ -48,46 +55,82 @@ namespace DeckSurf
             var startedAt = DateTime.UtcNow;
             var commandCount = 0;
 
-            while (true)
+            try
             {
-                var line = editor.ReadLine();
-                if (line == null)
+                while (true)
                 {
-                    break;
-                }
+                    var raw = editor.ReadLine();
+                    if (raw == null)
+                    {
+                        break;
+                    }
 
-                line = Normalize(line);
-                if (line == null)
-                {
-                    continue;
-                }
+                    var line = Normalize(raw);
+                    if (line == null)
+                    {
+                        continue;
+                    }
 
-                if (line == "exit")
-                {
-                    break;
-                }
+                    // Commit the submitted command to the transcript, the way
+                    // Claude Code echoes a message before responding to it.
+                    Console.Out.Write($"{Theme.AccentAnsi}>{Theme.ResetAnsi} {raw.Trim()}\r\n");
 
-                if (line == "clear")
-                {
-                    AnsiConsole.Clear();
-                    PrintBanner();
+                    if (line == "exit")
+                    {
+                        break;
+                    }
+
+                    if (line == "clear")
+                    {
+                        footer.Invalidate();
+                        Console.Out.Write("\x1b[2J\x1b[H");
+                        PrintBanner();
+                        Console.WriteLine();
+                        continue;
+                    }
+
+                    if (!PreflightParse(rootCommand, line))
+                    {
+                        Console.WriteLine();
+                        continue;
+                    }
+
+                    commandCount++;
+                    await CommandRunner.RunAsync(rootCommand, line, footer);
                     Console.WriteLine();
-                    continue;
-                }
 
-                if (!PreflightParse(rootCommand, line))
-                {
-                    Console.WriteLine();
-                    continue;
+                    if (!line.StartsWith("listen", StringComparison.OrdinalIgnoreCase))
+                    {
+                        RefreshDeviceCount(footer);
+                    }
                 }
-
-                commandCount++;
-                await CommandRunner.RunAsync(rootCommand, line, gate);
-                Console.WriteLine();
+            }
+            finally
+            {
+                footer.Hide();
+                FooterController.Current = null;
             }
 
             Output.SessionClosed(commandCount, DateTime.UtcNow - startedAt);
             return 0;
+        }
+
+        /// <summary>
+        /// Refreshes the status bar's device count off the loop; enumeration
+        /// costs real time and must not delay the next prompt.
+        /// </summary>
+        private static void RefreshDeviceCount(FooterController footer)
+        {
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    footer.SetDeviceCount(DeviceManager.GetDeviceList().Count);
+                }
+                catch (Exception)
+                {
+                }
+            });
         }
 
         /// <summary>
