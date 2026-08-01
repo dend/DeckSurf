@@ -463,7 +463,6 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                FooterController.Current?.NoteListenEvent();
                 var control = eventArgs.ButtonKind switch
                 {
                     ButtonKind.Knob => $"knob {eventArgs.Id}",
