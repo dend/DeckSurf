@@ -208,6 +208,7 @@ namespace DeckSurf
 
             // Key grid: documents the -k index for write at a glance.
             AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"    [{Theme.Dim}]key positions, use with write -k[/]");
             for (var row = 0; row < device.ButtonRows; row++)
             {
                 var sb = new StringBuilder("    ");
