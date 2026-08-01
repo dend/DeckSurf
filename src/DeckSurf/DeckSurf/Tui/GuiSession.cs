@@ -36,13 +36,34 @@ namespace DeckSurf.Tui
         private static int commandCount;
         private static DateTime startedAt;
 
+        private static StatusBar statusIdle;
+        private static StatusBar statusListen;
+        private static CancellationTokenSource listenCts;
+
         internal static bool Active { get; private set; }
 
         /// <summary>
         /// Set by the listen handler while a listen is streaming; Escape in
-        /// the session cancels it without ending the session.
+        /// the session cancels it without ending the session. The status bar
+        /// follows this state so only currently valid keys are shown.
         /// </summary>
-        internal static CancellationTokenSource ListenCts { get; set; }
+        internal static CancellationTokenSource ListenCts
+        {
+            get => listenCts;
+            set
+            {
+                listenCts = value;
+                var listening = value != null;
+                app?.Invoke(() =>
+                {
+                    if (statusIdle != null)
+                    {
+                        statusIdle.Visible = !listening;
+                        statusListen.Visible = listening;
+                    }
+                });
+            }
+        }
 
         internal static int Run(RootCommand rootCommand, string version)
         {
@@ -119,16 +140,27 @@ namespace DeckSurf.Tui
 
                 input.KeyDown += OnInputKeyDown;
 
-                var status = new StatusBar(new[]
+                statusIdle = new StatusBar(new[]
                 {
                     new Shortcut(Key.Enter, "run", null, null),
                     new Shortcut(Key.Tab, "complete", null, null),
+                    new Shortcut(Key.F1, "help", ShowHelp, null),
+                    new Shortcut(Key.Q.WithCtrl, "quit", () => app.RequestStop(), null),
+                })
+                {
+                    Y = Pos.AnchorEnd(1),
+                    Width = Dim.Fill(),
+                };
+
+                statusListen = new StatusBar(new[]
+                {
                     new Shortcut(Key.Esc, "stop listen", null, null),
                     new Shortcut(Key.Q.WithCtrl, "quit", () => app.RequestStop(), null),
                 })
                 {
                     Y = Pos.AnchorEnd(1),
                     Width = Dim.Fill(),
+                    Visible = false,
                 };
 
                 window.KeyDown += (s, e) =>
@@ -138,9 +170,14 @@ namespace DeckSurf.Tui
                         app.RequestStop();
                         e.Handled = true;
                     }
+                    else if (e == Key.F1)
+                    {
+                        ShowHelp();
+                        e.Handled = true;
+                    }
                 };
 
-                window.Add(transcript, prompt, input, status);
+                window.Add(transcript, prompt, input, statusIdle, statusListen);
 
                 // Output can only land once the main loop is pumping; the
                 // Initialized event fires as the runnable begins.
@@ -240,6 +277,12 @@ namespace DeckSurf.Tui
                 return;
             }
 
+            if (line == "--help")
+            {
+                ShowHelp();
+                return;
+            }
+
             if (line == "exit")
             {
                 app.RequestStop();
@@ -280,6 +323,45 @@ namespace DeckSurf.Tui
                     RefreshDeviceCount();
                 }
             });
+        }
+
+        /// <summary>
+        /// Session-native command reference, written in the session's own
+        /// voice instead of the System.CommandLine help dump.
+        /// </summary>
+        private static void ShowHelp()
+        {
+            var help = string.Join('\n', new[]
+            {
+                "* commands",
+                string.Empty,
+                "  devices                     show connected devices",
+                "  devices info -d N           inspect one device and its key grid",
+                "  devices brightness -d N -l 0..100   set brightness",
+                "  plugins                     show plugins and their commands",
+                "  plugins list --full         include every command setting",
+                "  profiles                    show saved profiles",
+                "  profiles show NAME          inspect one profile (--json for the raw file)",
+                "  profiles delete NAME        remove a profile",
+                "  write                       map a key to a plugin command",
+                "  listen NAME                 activate a profile and stream key events",
+                string.Empty,
+                "* keys and shorthands",
+                string.Empty,
+                "  devices, plugins, profiles  bare names run their list forms",
+                "  tab                         completes commands, profile names, and serials",
+                "  up, down                    recall history",
+                "  esc                         clears the input, stops a running listen",
+                "  ctrl+q                      leaves the session",
+                string.Empty,
+                "* example, map CPU usage to key 0 and activate it",
+                string.Empty,
+                "  write -s SERIAL -k 0 -n DeckSurf.Plugin.Barn -c ShowCPUUsage -i \"\" -a \"\" -p demo",
+                "  listen demo",
+                string.Empty,
+            });
+
+            Console.Out.Write(help + "\n");
         }
 
         private static void PrintBannerAndStatus()

@@ -113,10 +113,13 @@ namespace DeckSurf
             }
             else
             {
-                AnsiConsole.MarkupLine($"  {devices.Count} devices connected. Run devices to list them.");
+                AnsiConsole.MarkupLine($"  {devices.Count} devices connected.");
             }
 
-            AnsiConsole.MarkupLine($"  [{Theme.Dim}]Type a command, or / to see them all. exit leaves.[/]");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"  devices           [{Theme.Dim}]show connected devices[/]");
+            AnsiConsole.MarkupLine($"  listen <profile>  [{Theme.Dim}]activate a saved profile[/]");
+            AnsiConsole.MarkupLine($"  help              [{Theme.Dim}]every command and shorthand[/]");
         }
 
         internal static void SessionClosed(int commandCount, TimeSpan elapsed)
