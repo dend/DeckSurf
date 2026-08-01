@@ -360,7 +360,15 @@ namespace DeckSurf
                     }
                 }
 
-                if (interactiveWait)
+                if (DeckSurf.Tui.GuiSession.Active)
+                {
+                    // The GUI session owns console input; it cancels this
+                    // token when the user presses Escape.
+                    DeckSurf.Tui.GuiSession.ListenCts = cts;
+                    cts.Token.WaitHandle.WaitOne();
+                    Output.ListenSummary(listenEventCount, DateTime.UtcNow - listenStarted);
+                }
+                else if (interactiveWait)
                 {
                     // Esc or Ctrl+C stops this listen without ending the session.
                     var previousTreatCtrlC = Console.TreatControlCAsInput;
