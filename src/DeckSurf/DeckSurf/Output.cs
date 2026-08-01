@@ -8,9 +8,10 @@ using System.Collections.Generic;
 namespace DeckSurf
 {
     /// <summary>
-    /// Renders CLI output. On a real terminal the output uses rich, ASCII-only
-    /// rendering; when output is redirected it stays plain and stable so scripts
-    /// can keep parsing it.
+    /// Renders CLI output. On a real terminal the output uses minimal, ASCII-only
+    /// styling: flat indented text, dim secondary details, and colored status
+    /// markers, with no box borders. When output is redirected it stays plain and
+    /// stable so scripts can keep parsing it.
     /// </summary>
     internal static class Output
     {
@@ -23,7 +24,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"[green][[ok]][/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"[green]*[/] {Markup.Escape(message)}");
             }
             else
             {
@@ -35,7 +36,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"[yellow][[!!]][/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"[yellow]![/] {Markup.Escape(message)}");
             }
             else
             {
@@ -47,7 +48,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"[red][[!!]][/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"[red]x[/] {Markup.Escape(message)}");
             }
             else
             {
@@ -59,7 +60,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"[grey][[..]][/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"[grey]* {Markup.Escape(message)}[/]");
             }
             else
             {
@@ -71,7 +72,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine(Markup.Escape(message));
+                AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(message)}[/]");
             }
             else
             {
@@ -81,12 +82,10 @@ namespace DeckSurf
 
         internal static void Banner(string version, int deviceCount)
         {
-            var content = new Markup(
-                $"[bold]DeckSurf[/] [grey]{Markup.Escape(version)}[/]\n" +
-                $"{deviceCount} device(s) connected\n" +
-                "[grey]type 'help' for commands, 'exit' to quit[/]");
-
-            AnsiConsole.Write(new Panel(content) { Border = BoxBorder.Ascii });
+            AnsiConsole.MarkupLine($"[orange1]*[/] [bold]DeckSurf[/] [grey]v{Markup.Escape(version)}[/]");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"  {deviceCount} device(s) connected");
+            AnsiConsole.MarkupLine("  [grey]commands work with or without a leading slash: /devices, /help, /exit[/]");
         }
 
         internal static void DevicesTable(IReadOnlyList<ConnectedDevice> devices)
@@ -103,25 +102,25 @@ namespace DeckSurf
                 return;
             }
 
-            var table = new Table().Border(TableBorder.Ascii);
-            table.AddColumn("[grey]#[/]");
-            table.AddColumn("Name");
-            table.AddColumn("Serial");
-            table.AddColumn("Model");
-            table.AddColumn("[grey]VID[/]");
+            Header($"devices ({devices.Count})");
+            AnsiConsole.WriteLine();
+
+            var nameWidth = 0;
+            var modelWidth = 0;
+            foreach (var device in devices)
+            {
+                nameWidth = Math.Max(nameWidth, (device.Name ?? string.Empty).Length);
+                modelWidth = Math.Max(modelWidth, device.Model.ToString().Length);
+            }
 
             for (var i = 0; i < devices.Count; i++)
             {
                 var device = devices[i];
-                table.AddRow(
-                    $"[grey]{i}[/]",
-                    Markup.Escape(device.Name ?? string.Empty),
-                    Markup.Escape(device.Serial ?? string.Empty),
-                    Markup.Escape(device.Model.ToString()),
-                    $"[grey]{device.VendorId}[/]");
+                AnsiConsole.MarkupLine(
+                    $"  [grey]{i}[/]  {Markup.Escape(Pad(device.Name, nameWidth))}  " +
+                    $"[cyan]{Markup.Escape(Pad(device.Model.ToString(), modelWidth))}[/]  " +
+                    $"[grey]serial {Markup.Escape(device.Serial ?? string.Empty)}[/]");
             }
-
-            AnsiConsole.Write(table);
         }
 
         internal static void DeviceInfo(ConnectedDevice device)
@@ -146,17 +145,12 @@ namespace DeckSurf
                 return;
             }
 
-            var table = new Table().Border(TableBorder.Ascii).HideHeaders();
-            table.AddColumn("Property");
-            table.AddColumn("Value");
-            table.Title = new TableTitle(Markup.Escape(device.Name ?? "Device"));
-            table.AddRow("[grey]Serial[/]", Markup.Escape(device.Serial ?? string.Empty));
-            table.AddRow("[grey]Model[/]", Markup.Escape(device.Model.ToString()));
-            table.AddRow("[grey]Buttons[/]", device.ButtonCount.ToString());
-            table.AddRow("[grey]Layout[/]", $"{device.ButtonColumns} x {device.ButtonRows}");
-            table.AddRow("[grey]Resolution[/]", $"{device.ButtonResolution} px");
-            table.AddRow("[grey]Screen[/]", device.IsScreenSupported ? $"{device.ScreenWidth} x {device.ScreenHeight}" : "not supported");
-            AnsiConsole.Write(table);
+            Header(device.Name ?? "device");
+            AnsiConsole.WriteLine();
+            DetailRow("serial", device.Serial ?? string.Empty);
+            DetailRow("model", device.Model.ToString());
+            DetailRow("buttons", $"{device.ButtonCount} ({device.ButtonColumns} x {device.ButtonRows}, {device.ButtonResolution} px)");
+            DetailRow("screen", device.IsScreenSupported ? $"{device.ScreenWidth} x {device.ScreenHeight}" : "not supported");
         }
 
         internal static void PluginsList(IReadOnlyList<IDeckSurfPlugin> plugins)
@@ -184,26 +178,47 @@ namespace DeckSurf
                 return;
             }
 
-            var tree = new Tree("[bold]plugins[/]").Guide(TreeGuide.Ascii);
+            var first = true;
             foreach (var plugin in plugins)
             {
-                var pluginNode = tree.AddNode(
-                    $"[bold]{Markup.Escape(plugin.Metadata.Id)}[/] [grey]{Markup.Escape(plugin.Metadata.Version ?? string.Empty)} by {Markup.Escape(plugin.Metadata.Author ?? string.Empty)}[/]");
+                if (!first)
+                {
+                    AnsiConsole.WriteLine();
+                }
 
-                foreach (var command in plugin.GetSupportedCommands())
+                first = false;
+
+                AnsiConsole.MarkupLine(
+                    $"[orange1]*[/] [bold]{Markup.Escape(plugin.Metadata.Id)}[/] " +
+                    $"[grey]v{Markup.Escape(plugin.Metadata.Version ?? string.Empty)} by {Markup.Escape(plugin.Metadata.Author ?? string.Empty)}[/]");
+                AnsiConsole.WriteLine();
+
+                var commandTypes = plugin.GetSupportedCommands();
+                var commandWidth = 0;
+                foreach (var command in commandTypes)
+                {
+                    commandWidth = Math.Max(commandWidth, command.Name.Length);
+                }
+
+                foreach (var command in commandTypes)
                 {
                     using var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
-                    var commandNode = pluginNode.AddNode(
-                        $"{Markup.Escape(command.Name)} [grey]{Markup.Escape(commandInstance.Description ?? string.Empty)}[/]");
+                    AnsiConsole.MarkupLine(
+                        $"  {Markup.Escape(Pad(command.Name, commandWidth))}  [grey]{Markup.Escape(commandInstance.Description ?? string.Empty)}[/]");
 
-                    foreach (var parameter in CommandSchemaReader.GetParameters(command))
+                    var parameters = CommandSchemaReader.GetParameters(command);
+                    var keyWidth = 0;
+                    foreach (var parameter in parameters)
                     {
-                        commandNode.AddNode($"[grey]{Markup.Escape(parameter.Key)}  {Markup.Escape(DescribeParameter(parameter))}[/]");
+                        keyWidth = Math.Max(keyWidth, parameter.Key.Length);
+                    }
+
+                    foreach (var parameter in parameters)
+                    {
+                        AnsiConsole.MarkupLine($"    [grey]{Markup.Escape(Pad(parameter.Key, keyWidth))}  {Markup.Escape(DescribeParameter(parameter))}[/]");
                     }
                 }
             }
-
-            AnsiConsole.Write(tree);
         }
 
         internal static void ProfilesList(IReadOnlyList<string> profiles)
@@ -220,10 +235,47 @@ namespace DeckSurf
                 return;
             }
 
-            AnsiConsole.MarkupLine("[bold]profiles[/]");
-            foreach (var profile in profiles)
+            Header($"profiles ({profiles.Count})");
+            AnsiConsole.WriteLine();
+
+            var rows = new List<(string Name, string Model, string Serial, bool Broken)>();
+            foreach (var name in profiles)
             {
-                AnsiConsole.MarkupLine($"  [grey]*[/] {Markup.Escape(profile)}");
+                try
+                {
+                    var profile = ConfigurationHelper.GetProfile(name);
+                    if (profile == null || string.IsNullOrEmpty(profile.DeviceSerial))
+                    {
+                        rows.Add((name, null, null, false));
+                    }
+                    else
+                    {
+                        rows.Add((name, profile.DeviceModel.ToString(), profile.DeviceSerial, false));
+                    }
+                }
+                catch (Exception)
+                {
+                    rows.Add((name, null, null, true));
+                }
+            }
+
+            var nameWidth = 0;
+            var modelWidth = 0;
+            foreach (var row in rows)
+            {
+                nameWidth = Math.Max(nameWidth, row.Name.Length);
+                modelWidth = Math.Max(modelWidth, (row.Model ?? string.Empty).Length);
+            }
+
+            foreach (var row in rows)
+            {
+                var binding = row.Broken
+                    ? "[red]unreadable[/]"
+                    : row.Serial == null
+                        ? "[yellow]not bound to a device[/]"
+                        : $"[grey]{Markup.Escape(Pad(row.Model, modelWidth))}  {Markup.Escape(row.Serial)}[/]";
+
+                AnsiConsole.MarkupLine($"  {Markup.Escape(Pad(row.Name, nameWidth))}  {binding}");
             }
         }
 
@@ -259,37 +311,52 @@ namespace DeckSurf
                 return;
             }
 
-            var binding = string.IsNullOrEmpty(profile.DeviceSerial)
-                ? "[yellow]not bound to a device serial[/]"
-                : $"{Markup.Escape(profile.DeviceModel.ToString())} [grey]serial[/] {Markup.Escape(profile.DeviceSerial)}";
-            AnsiConsole.MarkupLine($"[bold]{Markup.Escape(name)}[/]  {binding}  [grey]index {profile.DeviceIndex}[/]");
-
-            if (profile.ButtonMap != null && profile.ButtonMap.Count > 0)
+            Header(name);
+            if (string.IsNullOrEmpty(profile.DeviceSerial))
             {
-                var table = new Table().Border(TableBorder.Ascii);
-                table.AddColumn("[grey]Index[/]");
-                table.AddColumn("[grey]Target[/]");
-                table.AddColumn("Plugin");
-                table.AddColumn("Command");
-                table.AddColumn("Arguments");
-                table.AddColumn("Image");
-
-                foreach (var mapping in profile.ButtonMap)
-                {
-                    table.AddRow(
-                        mapping.ButtonIndex.ToString(),
-                        $"[grey]{Markup.Escape(mapping.Target.ToString())}[/]",
-                        Markup.Escape(mapping.Plugin ?? string.Empty),
-                        Markup.Escape(mapping.Command ?? string.Empty),
-                        Markup.Escape(mapping.CommandArguments?.ToString() ?? string.Empty),
-                        Markup.Escape(mapping.ButtonImagePath ?? string.Empty));
-                }
-
-                AnsiConsole.Write(table);
+                AnsiConsole.MarkupLine("  [yellow]not bound to a device serial[/]");
             }
             else
             {
-                Info("No button mappings configured.");
+                AnsiConsole.MarkupLine(
+                    $"  [grey]bound to[/] {Markup.Escape(profile.DeviceModel.ToString())} [grey]serial[/] {Markup.Escape(profile.DeviceSerial)}");
+            }
+
+            AnsiConsole.WriteLine();
+
+            if (profile.ButtonMap == null || profile.ButtonMap.Count == 0)
+            {
+                Line("No button mappings configured.");
+                return;
+            }
+
+            var targetWidth = 0;
+            var commandWidth = 0;
+            foreach (var mapping in profile.ButtonMap)
+            {
+                targetWidth = Math.Max(targetWidth, TargetLabel(mapping).Length);
+                commandWidth = Math.Max(commandWidth, (mapping.Command ?? string.Empty).Length);
+            }
+
+            foreach (var mapping in profile.ButtonMap)
+            {
+                var line =
+                    $"  {Markup.Escape(Pad(TargetLabel(mapping), targetWidth))}  " +
+                    $"{Markup.Escape(Pad(mapping.Command, commandWidth))}  " +
+                    $"[grey]{Markup.Escape(mapping.Plugin ?? string.Empty)}[/]";
+
+                var arguments = mapping.CommandArguments?.ToString();
+                if (!string.IsNullOrEmpty(arguments))
+                {
+                    line += $"  [grey]{Markup.Escape(arguments)}[/]";
+                }
+
+                if (!string.IsNullOrEmpty(mapping.ButtonImagePath))
+                {
+                    line += $"  [grey]image {Markup.Escape(mapping.ButtonImagePath)}[/]";
+                }
+
+                AnsiConsole.MarkupLine(line);
             }
         }
 
@@ -297,13 +364,46 @@ namespace DeckSurf
         {
             if (IsRich)
             {
+                var control = eventArgs.ButtonKind switch
+                {
+                    ButtonKind.Knob => "knob",
+                    ButtonKind.Screen => "screen",
+                    _ => "key",
+                };
+
                 AnsiConsole.MarkupLine(
-                    $"[grey]{DateTime.Now:HH:mm:ss}[/] key {eventArgs.Id} {Markup.Escape(eventArgs.EventKind.ToString())} [grey]({Markup.Escape(eventArgs.ButtonKind.ToString())})[/]");
+                    $"  [grey]{DateTime.Now:HH:mm:ss}[/]  {control} {eventArgs.Id}  {Markup.Escape(eventArgs.EventKind.ToString().ToLowerInvariant())}");
             }
             else
             {
                 Console.WriteLine($"Button {eventArgs.Id} pressed. Event type: {eventArgs.EventKind} ({eventArgs.ButtonKind})");
             }
+        }
+
+        private static void Header(string title)
+        {
+            AnsiConsole.MarkupLine($"[orange1]*[/] [bold]{Markup.Escape(title)}[/]");
+        }
+
+        private static void DetailRow(string label, string value)
+        {
+            AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(Pad(label, 10))}[/]{Markup.Escape(value)}");
+        }
+
+        private static string Pad(string value, int width)
+        {
+            return (value ?? string.Empty).PadRight(width);
+        }
+
+        private static string TargetLabel(CommandMapping mapping)
+        {
+            return mapping.Target switch
+            {
+                MappingTarget.Knob => $"knob {mapping.ButtonIndex}",
+                MappingTarget.Screen => "screen",
+                MappingTarget.TouchButton => $"touch {mapping.ButtonIndex}",
+                _ => mapping.ButtonIndex < 0 ? "any key" : $"key {mapping.ButtonIndex}",
+            };
         }
 
         private static string DescribeParameter(CommandParameterAttribute parameter)
