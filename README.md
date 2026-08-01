@@ -21,6 +21,7 @@
 - [Prerequisites](#prerequisites)
 - [How It Works](#how-it-works)
 - [Available CLI Commands](#available-cli-commands)
+- [Interactive Mode](#interactive-mode)
 - [Included Plugin: Barn](#included-plugin-barn)
   - [LaunchApplication](#launchapplication)
   - [ShowCPUUsage](#showcpuusage)
@@ -114,6 +115,32 @@ The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles
 | `deck profiles delete <name>` | Delete a saved profile. |
 | `deck write`   | Write a button configuration to a profile. |
 | `deck listen`  | Start listening for button presses on a configured profile. |
+
+## Interactive Mode
+
+Running `deck` with no arguments on a terminal opens an interactive session:
+
+```
++------------------------------------------+
+| DeckSurf 0.1.0                           |
+| 3 device(s) connected                    |
+| type 'help' for commands, 'exit' to quit |
++------------------------------------------+
+
+deck> devices
+
++-----------------------------------------------------+
+| # | Name            | Serial         | Model | VID  |
+|---+-----------------+----------------+-------+------|
+| 0 | Stream Deck XL  | CL00A0A00001   | XL    | 4057 |
++-----------------------------------------------------+
+
+deck> listen obs-test
+```
+
+Every CLI command works at the prompt, with a few conveniences: `devices`, `plugins`, and `profiles` expand to their `list` subcommands, `listen <profile>` expands to `listen -p <profile>`, and `help`, `clear`, and `exit` do what they say.
+
+On a terminal, commands render as ASCII tables and trees. When output is piped or redirected, the CLI prints the same plain text as earlier releases, so existing scripts keep working. Two environment variables override the detection: `DECK_FORCE_RICH=1` keeps rich rendering when output is redirected, and `DECK_INTERACTIVE=1` opens the interactive session even when input is piped.
 
 ## Included Plugin: Barn
 
