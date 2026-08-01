@@ -4,16 +4,16 @@ using System.Text;
 namespace DeckSurf.Tui
 {
     /// <summary>
-    /// Serializes all stdout writes behind one lock and guarantees that an
-    /// active spinner line is erased before any other output lands, so command
-    /// results appear exactly where the spinner was. Installed via
-    /// Console.SetOut before Spectre captures a writer.
+    /// Serializes all stdout writes behind one lock and keeps the managed
+    /// footer region anchored at the bottom: before any transcript write the
+    /// footer is lifted, and while a command runs or a listen streams it is
+    /// re-laid immediately below the new content. Installed via Console.SetOut
+    /// before Spectre captures a writer, so all rendering flows through it.
     /// </summary>
     internal sealed class ConsoleGate : TextWriter
     {
         private readonly TextWriter inner;
         private readonly object writeLock = new();
-        private bool spinnerVisible;
 
         public ConsoleGate(TextWriter inner)
         {
@@ -22,21 +22,34 @@ namespace DeckSurf.Tui
 
         public override Encoding Encoding => this.inner.Encoding;
 
+        internal object Sync => this.writeLock;
+
+        internal TextWriter Inner => this.inner;
+
+        internal FooterController Footer { get; set; }
+
         public override void Write(char value)
         {
             lock (this.writeLock)
             {
-                this.EraseSpinnerLocked();
+                this.Footer?.LiftLocked();
                 this.inner.Write(value);
+                this.RelayIfLiveLocked(value == '\n');
             }
         }
 
         public override void Write(string value)
         {
+            if (string.IsNullOrEmpty(value))
+            {
+                return;
+            }
+
             lock (this.writeLock)
             {
-                this.EraseSpinnerLocked();
+                this.Footer?.LiftLocked();
                 this.inner.Write(value);
+                this.RelayIfLiveLocked(value.EndsWith('\n'));
             }
         }
 
@@ -44,8 +57,9 @@ namespace DeckSurf.Tui
         {
             lock (this.writeLock)
             {
-                this.EraseSpinnerLocked();
+                this.Footer?.LiftLocked();
                 this.inner.Write(buffer, index, count);
+                this.RelayIfLiveLocked(count > 0 && buffer[index + count - 1] == '\n');
             }
         }
 
@@ -57,30 +71,17 @@ namespace DeckSurf.Tui
             }
         }
 
-        internal void SpinnerFrame(string styledLine)
+        /// <summary>
+        /// While a command runs or a listen streams, the footer chases the
+        /// transcript: repaint right below the content that just landed. Only
+        /// after complete lines, so a partial write does not get a footer
+        /// spliced into it.
+        /// </summary>
+        private void RelayIfLiveLocked(bool endedWithNewline)
         {
-            lock (this.writeLock)
+            if (endedWithNewline)
             {
-                this.inner.Write("\r\x1b[2K");
-                this.inner.Write(styledLine);
-                this.spinnerVisible = true;
-            }
-        }
-
-        internal void SpinnerDone()
-        {
-            lock (this.writeLock)
-            {
-                this.EraseSpinnerLocked();
-            }
-        }
-
-        private void EraseSpinnerLocked()
-        {
-            if (this.spinnerVisible)
-            {
-                this.inner.Write("\r\x1b[2K");
-                this.spinnerVisible = false;
+                this.Footer?.PaintIfLiveLocked();
             }
         }
     }

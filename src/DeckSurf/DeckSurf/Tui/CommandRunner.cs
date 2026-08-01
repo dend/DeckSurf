@@ -5,13 +5,15 @@ using System.Threading.Tasks;
 namespace DeckSurf.Tui
 {
     /// <summary>
-    /// Dispatches a session line through the command tree on a worker task,
-    /// animating a spinner if the command is still running after a 150 ms
-    /// grace period. Ctrl+C during a run is absorbed so the session survives.
+    /// Dispatches a session line through the command tree on a worker task
+    /// while the footer shows the live state: an npm-style activity line with
+    /// a spinner for ordinary commands (after a 150 ms grace period), or the
+    /// listen status with a live event counter. Ctrl+C during a run is
+    /// absorbed so the session survives.
     /// </summary>
     internal static class CommandRunner
     {
-        internal static async Task RunAsync(RootCommand rootCommand, string line, ConsoleGate gate)
+        internal static async Task RunAsync(RootCommand rootCommand, string line, FooterController footer)
         {
             var isListen = line.Equals("listen", StringComparison.OrdinalIgnoreCase)
                 || line.StartsWith("listen ", StringComparison.OrdinalIgnoreCase);
@@ -29,15 +31,24 @@ namespace DeckSurf.Tui
 
                 var work = Task.Run(() => rootCommand.InvokeAsync(line));
 
-                if (!isListen)
+                if (isListen)
+                {
+                    footer.EnterListen(ListenProfileName(line));
+                    while (!work.IsCompleted)
+                    {
+                        footer.Tick();
+                        await Task.Delay(120);
+                    }
+                }
+                else
                 {
                     var first = await Task.WhenAny(work, Task.Delay(150));
                     if (first != work)
                     {
-                        using var spinner = new Spinner(gate, $"running {FirstToken(line)}");
+                        footer.EnterRun($"running {FirstToken(line)}");
                         while (!work.IsCompleted)
                         {
-                            spinner.Frame();
+                            footer.Tick();
                             await Task.Delay(80);
                         }
                     }
@@ -51,6 +62,7 @@ namespace DeckSurf.Tui
             }
             finally
             {
+                footer.Hide();
                 if (!isListen)
                 {
                     Console.CancelKeyPress -= absorb;
@@ -63,6 +75,20 @@ namespace DeckSurf.Tui
         {
             var space = line.IndexOf(' ');
             return space < 0 ? line : line.Substring(0, space);
+        }
+
+        private static string ListenProfileName(string line)
+        {
+            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            for (var i = 0; i < parts.Length - 1; i++)
+            {
+                if (parts[i] is "-p" or "--profile")
+                {
+                    return parts[i + 1];
+                }
+            }
+
+            return parts.Length > 1 ? parts[^1] : string.Empty;
         }
     }
 }

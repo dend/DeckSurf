@@ -6,16 +6,16 @@ namespace DeckSurf.Tui
 {
     /// <summary>
     /// Readline replacement for the interactive session: cursor editing, kill
-    /// bindings, history, tab completion, and the slash palette. Renders its
-    /// region (input rows plus menu or hint rows) with purely relative cursor
-    /// math in a single write per redraw, so the transcript above is never
-    /// touched.
+    /// bindings, history, tab completion, and the slash palette. The editor is
+    /// pure input logic; every visual state lands in the managed footer, which
+    /// paints the anchored input box in place.
     /// </summary>
     internal sealed class LineEditor
     {
         private const int HistoryCap = 500;
 
         private readonly CompletionEngine completions;
+        private readonly FooterController footer;
         private readonly Action onClearScreen;
         private readonly List<string> history = new();
         private readonly StringBuilder buffer = new();
@@ -26,13 +26,11 @@ namespace DeckSurf.Tui
         private CompletionMenu menu;
         private bool ctrlCHint;
         private DateTime lastCtrlC = DateTime.MinValue;
-        private int caretRow;
-        private int rowsBelowCaret;
-        private int lastWidth = -1;
 
-        public LineEditor(CompletionEngine completions, Action onClearScreen)
+        public LineEditor(CompletionEngine completions, FooterController footer, Action onClearScreen)
         {
             this.completions = completions;
+            this.footer = footer;
             this.onClearScreen = onClearScreen;
         }
 
@@ -57,21 +55,18 @@ namespace DeckSurf.Tui
             this.ctrlCHint = false;
             this.draft = null;
             this.historyIndex = this.history.Count;
-            this.caretRow = 0;
-            this.rowsBelowCaret = 0;
-            this.lastWidth = TerminalCapabilities.SafeWindowWidth();
 
             var previousTreatCtrlC = Console.TreatControlCAsInput;
             Console.TreatControlCAsInput = true;
             try
             {
-                this.Render();
+                this.UpdateFooter();
                 while (true)
                 {
                     var key = Console.ReadKey(true);
                     KeyResult result;
 
-                    // Drain paste bursts with a single redraw at the end.
+                    // Drain paste bursts with a single repaint at the end.
                     while (true)
                     {
                         result = this.Apply(key);
@@ -86,7 +81,7 @@ namespace DeckSurf.Tui
                     switch (result)
                     {
                         case KeyResult.Submit:
-                            this.FinalizeRegion();
+                            this.footer.Hide();
                             var line = this.buffer.ToString();
                             if (line.Trim().Length > 0)
                             {
@@ -100,15 +95,15 @@ namespace DeckSurf.Tui
                             return line;
 
                         case KeyResult.Abort:
-                            this.FinalizeRegion();
+                            this.footer.Hide();
                             return string.Empty;
 
                         case KeyResult.Exit:
-                            this.FinalizeRegion();
+                            this.footer.Hide();
                             return null;
 
                         default:
-                            this.Render();
+                            this.UpdateFooter();
                             break;
                     }
                 }
@@ -116,13 +111,17 @@ namespace DeckSurf.Tui
             finally
             {
                 Console.TreatControlCAsInput = previousTreatCtrlC;
-                Console.Out.Write("\x1b[?25h");
             }
         }
 
         private static bool IsPrintable(char c)
         {
             return c >= ' ' && c != '\x7f';
+        }
+
+        private void UpdateFooter()
+        {
+            this.footer.SetEditState(this.buffer.ToString(), this.cursor, this.menu, this.ctrlCHint);
         }
 
         private KeyResult Apply(ConsoleKeyInfo key)
@@ -199,9 +198,8 @@ namespace DeckSurf.Tui
 
                     case ConsoleKey.L:
                         this.menu = null;
+                        this.footer.Invalidate();
                         Console.Out.Write("\x1b[2J\x1b[H");
-                        this.caretRow = 0;
-                        this.rowsBelowCaret = 0;
                         this.onClearScreen?.Invoke();
                         return KeyResult.Continue;
 
@@ -488,156 +486,6 @@ namespace DeckSurf.Tui
             }
 
             return i;
-        }
-
-        // ── rendering ──
-
-        private void Render()
-        {
-            var width = TerminalCapabilities.SafeWindowWidth();
-            if (width != this.lastWidth)
-            {
-                // The terminal reflowed the old region; do not try to erase it.
-                Console.Out.Write("\x1b[J");
-                this.caretRow = 0;
-                this.lastWidth = width;
-            }
-
-            var capacity = Math.Max(1, width - 3);
-            var text = this.buffer.ToString();
-
-            // Input rows: "> " on the first row, a two-space hang indent after.
-            var inputRows = (text.Length / capacity) + 1;
-            var rows = new List<string>(inputRows + CompletionMenu.MaxVisible + 1);
-            for (var r = 0; r < inputRows; r++)
-            {
-                var chunk = text.Substring(r * capacity, Math.Min(capacity, text.Length - (r * capacity)));
-                var prefix = r == 0
-                    ? $"{Theme.BoldAnsi}{Theme.AccentAnsi}> {Theme.ResetAnsi}"
-                    : "  ";
-                rows.Add(prefix + chunk);
-            }
-
-            var newCaretRow = this.cursor / capacity;
-            var caretCol = 2 + (this.cursor % capacity);
-
-            if (this.menu != null)
-            {
-                this.AppendMenuRows(rows, width);
-            }
-            else if (this.ctrlCHint)
-            {
-                rows.Add($"  {Theme.DimAnsi}press ctrl+c again to exit{Theme.ResetAnsi}");
-            }
-            else if (this.buffer.Length == 0)
-            {
-                rows.Add($"  {Theme.FaintAnsi}/ commands   ? help   ctrl+c cancel{Theme.ResetAnsi}");
-            }
-
-            var sb = new StringBuilder();
-            sb.Append("\x1b[?25l\r");
-            if (this.caretRow > 0)
-            {
-                sb.Append($"\x1b[{this.caretRow}A");
-            }
-
-            for (var i = 0; i < rows.Count; i++)
-            {
-                sb.Append(rows[i]).Append("\x1b[K");
-                if (i < rows.Count - 1)
-                {
-                    sb.Append("\r\n");
-                }
-            }
-
-            sb.Append("\x1b[J");
-
-            var rowsBelow = rows.Count - 1 - newCaretRow;
-            sb.Append('\r');
-            if (rowsBelow > 0)
-            {
-                sb.Append($"\x1b[{rowsBelow}A");
-            }
-
-            if (caretCol > 0)
-            {
-                sb.Append($"\x1b[{caretCol}C");
-            }
-
-            sb.Append("\x1b[?25h");
-            Console.Out.Write(sb.ToString());
-
-            this.caretRow = newCaretRow;
-            this.rowsBelowCaret = rowsBelow;
-        }
-
-        private void AppendMenuRows(List<string> rows, int width)
-        {
-            var items = this.menu.Items;
-            var labelWidth = 0;
-            foreach (var item in items)
-            {
-                labelWidth = Math.Max(labelWidth, item.Label.Length);
-            }
-
-            var visible = Math.Min(CompletionMenu.MaxVisible, items.Count - this.menu.WindowStart);
-            for (var i = this.menu.WindowStart; i < this.menu.WindowStart + visible; i++)
-            {
-                var item = items[i];
-                var selected = i == this.menu.Selected;
-                var label = item.Label.PadRight(labelWidth + 4);
-                var detail = item.Detail ?? string.Empty;
-
-                var visibleLength = 2 + label.Length + detail.Length;
-                if (visibleLength > width - 1)
-                {
-                    var room = Math.Max(0, width - 1 - 2 - label.Length);
-                    detail = detail.Length > room ? detail.Substring(0, room) : detail;
-                }
-
-                rows.Add(selected
-                    ? $"{Theme.AccentAnsi}> {label}{Theme.ResetAnsi}{Theme.DimAnsi}{detail}{Theme.ResetAnsi}"
-                    : $"  {label}{Theme.DimAnsi}{detail}{Theme.ResetAnsi}");
-            }
-
-            var remaining = items.Count - (this.menu.WindowStart + visible);
-            if (remaining > 0)
-            {
-                rows.Add($"  {Theme.DimAnsi}... and {remaining} more{Theme.ResetAnsi}");
-            }
-        }
-
-        /// <summary>
-        /// Commits the region to the transcript: repaints without menu or hint
-        /// rows, moves the caret past the last input row, and emits a newline.
-        /// </summary>
-        private void FinalizeRegion()
-        {
-            this.menu = null;
-            this.ctrlCHint = false;
-            var bufferEmpty = this.buffer.Length == 0;
-
-            // Suppress the shortcut strip on the final paint.
-            if (bufferEmpty)
-            {
-                this.buffer.Append(' ');
-                this.Render();
-                this.buffer.Clear();
-                this.cursor = 0;
-            }
-            else
-            {
-                this.Render();
-            }
-
-            if (this.rowsBelowCaret > 0)
-            {
-                Console.Out.Write($"\x1b[{this.rowsBelowCaret}B");
-            }
-
-            Console.Out.Write("\r\n");
-            this.caretRow = 0;
-            this.rowsBelowCaret = 0;
         }
     }
 }
