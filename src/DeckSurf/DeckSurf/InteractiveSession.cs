@@ -21,7 +21,7 @@ namespace DeckSurf
 
             while (true)
             {
-                AnsiConsole.Markup("[bold cyan]deck>[/] ");
+                AnsiConsole.Markup("[bold]>[/] ");
                 var line = Console.ReadLine();
                 if (line == null)
                 {
@@ -32,6 +32,16 @@ namespace DeckSurf
                 if (line.Length == 0)
                 {
                     continue;
+                }
+
+                // Accept Claude Code style slash commands: '/devices' == 'devices'.
+                if (line.StartsWith("/", StringComparison.Ordinal))
+                {
+                    line = line.Substring(1).Trim();
+                    if (line.Length == 0)
+                    {
+                        continue;
+                    }
                 }
 
                 switch (line.ToLowerInvariant())
