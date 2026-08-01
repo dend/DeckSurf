@@ -19,10 +19,22 @@ namespace DeckSurf
     {
         static int Main(string[] args)
         {
-            return SetupCommandLine(args).Result;
+            var rootCommand = BuildCommandLine();
+
+            // Bare 'deck' on a real terminal opens the interactive session; with
+            // arguments, or when redirected, it behaves like a one-shot CLI.
+            // DECK_INTERACTIVE=1 forces the session so it can be driven by a pipe.
+            var forceInteractive = Environment.GetEnvironmentVariable("DECK_INTERACTIVE") == "1";
+            var isTerminal = !Console.IsInputRedirected && !Console.IsOutputRedirected;
+            if (args.Length == 0 && (isTerminal || forceInteractive))
+            {
+                return InteractiveSession.RunAsync(rootCommand).Result;
+            }
+
+            return rootCommand.InvokeAsync(args).Result;
         }
 
-        private static Task<int> SetupCommandLine(string[] args)
+        private static RootCommand BuildCommandLine()
         {
             var rootCommand = new RootCommand("DeckSurf - open, hackable CLI for managing Elgato Stream Deck devices.");
 
@@ -203,7 +215,7 @@ namespace DeckSurf
             rootCommand.AddCommand(writeCommand);
             rootCommand.AddCommand(listenCommand);
 
-            return rootCommand.InvokeAsync(args);
+            return rootCommand;
         }
 
         private static IReadOnlyList<IDeckSurfPlugin> LoadPlugins()
@@ -219,39 +231,11 @@ namespace DeckSurf
 
             if (!plugins.Any())
             {
-                Console.WriteLine("No plugins found. Ensure plugin DLLs are in the plugins/ directory.");
+                Output.Warn("No plugins found. Ensure plugin DLLs are in the plugins/ directory.");
                 return;
             }
 
-            Console.WriteLine($"{"Plugin ID",-25} {"Version",-12} {"Author",-15}");
-            Console.WriteLine(new string('-', 52));
-
-            foreach (var plugin in plugins)
-            {
-                Console.WriteLine($"{plugin.Metadata.Id,-25} {plugin.Metadata.Version,-12} {plugin.Metadata.Author,-15}");
-                foreach (var command in plugin.GetSupportedCommands())
-                {
-                    using var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
-                    Console.WriteLine($"  -> {command.Name,-20} {commandInstance.Description}");
-
-                    foreach (var parameter in CommandSchemaReader.GetParameters(command))
-                    {
-                        var details = parameter.ParameterType.ToString();
-                        if (parameter.Choices is { Length: > 0 })
-                        {
-                            details += $": {string.Join("|", parameter.Choices)}";
-                        }
-
-                        if (!string.IsNullOrEmpty(parameter.DefaultValue))
-                        {
-                            details += $" (default: {parameter.DefaultValue})";
-                        }
-
-                        var requiredMarker = parameter.Required ? " [required]" : string.Empty;
-                        Console.WriteLine($"       * {parameter.Key,-16} {details}{requiredMarker}");
-                    }
-                }
-            }
+            Output.PluginsList(plugins);
         }
 
         private static void HandleListenCommand(string profile)
@@ -259,8 +243,8 @@ namespace DeckSurf
             var workingProfile = ConfigurationHelper.GetProfile(profile);
             if (workingProfile == null)
             {
-                Console.WriteLine($"Could not load profile: {profile}. Make sure that the profile exists.");
-                Console.WriteLine("Run 'deck profiles list' to see available profiles.");
+                Output.Error($"Could not load profile: {profile}. Make sure that the profile exists.");
+                Output.Line("Run 'deck profiles list' to see available profiles.");
                 return;
             }
 
@@ -268,20 +252,25 @@ namespace DeckSurf
             var commands = new Dictionary<string, IEnumerable<IDeckSurfCommand>>();
 
             var device = DeviceManager.SetupDevice(workingProfile);
+            using var cts = new CancellationTokenSource();
+
+            // Named so it can be detached when this listen ends; in an interactive
+            // session, stacked anonymous handlers from prior listens would fire
+            // against disposed token sources.
+            ConsoleCancelEventHandler cancelHandler = (s, e) =>
+            {
+                e.Cancel = true;
+                Output.Info("Shutting down...");
+                cts.Cancel();
+            };
+
             try
             {
-                using var cts = new CancellationTokenSource();
-
-                Console.CancelKeyPress += (s, e) =>
-                {
-                    e.Cancel = true;
-                    Console.WriteLine("Shutting down...");
-                    cts.Cancel();
-                };
+                Console.CancelKeyPress += cancelHandler;
 
                 device.ButtonPressed += (s, e) =>
                 {
-                    Console.WriteLine($"Button {e.Id} pressed. Event type: {e.EventKind} ({e.ButtonKind})");
+                    Output.ListenEvent(e);
 
                     switch (e.ButtonKind)
                     {
@@ -327,7 +316,8 @@ namespace DeckSurf
                 }
 
                 device.StartListening();
-                Console.WriteLine($"Listening on profile '{profile}'. Press Ctrl+C to stop.");
+                Output.Ok($"Bound to {device.Name} (serial {device.Serial}).");
+                Output.Info($"Listening on profile '{profile}'. Press Ctrl+C to stop.");
 
                 foreach (var mappedButton in workingProfile.ButtonMap)
                 {
@@ -347,6 +337,8 @@ namespace DeckSurf
             }
             finally
             {
+                Console.CancelKeyPress -= cancelHandler;
+
                 foreach (var commandGroup in commands.Values)
                 {
                     foreach (var command in commandGroup)
@@ -399,24 +391,19 @@ namespace DeckSurf
             var devices = DeviceManager.GetDeviceList();
             if (devices.Count == 0)
             {
-                Console.WriteLine("No Stream Deck devices found.");
-                Console.WriteLine("Make sure your device is connected and the Elgato Stream Deck software is closed.");
+                Output.Warn("No Stream Deck devices found.");
+                Output.Line("Make sure your device is connected and the Elgato Stream Deck software is closed.");
                 return;
             }
 
-            Console.WriteLine($"{"Device Name",-20} {"VID",-10} {"Serial",-20} {"Model",-15}");
-            Console.WriteLine(new string('-', 65));
-            foreach (var device in devices)
-            {
-                Console.WriteLine($"{device.Name,-20} {device.VendorId,-10} {device.Serial,-20} {device.Model,-15}");
-            }
+            Output.DevicesTable(devices);
         }
 
         private static void HandleWriteCommand(int deviceIndex, string deviceSerial, int keyIndex, string plugin, string command, string imagePath, string actionArgs, string profile)
         {
             if (!string.IsNullOrEmpty(imagePath) && !File.Exists(imagePath))
             {
-                Console.WriteLine($"Image file not found: {imagePath}");
+                Output.Error($"Image file not found: {imagePath}");
                 return;
             }
 
@@ -440,8 +427,8 @@ namespace DeckSurf
 
                 if (targetDevice == null)
                 {
-                    Console.WriteLine($"No connected device with serial '{deviceSerial}'.");
-                    Console.WriteLine("Run 'deck devices list' to see connected devices.");
+                    Output.Error($"No connected device with serial '{deviceSerial}'.");
+                    Output.Line("Run 'deck devices list' to see connected devices.");
                     return;
                 }
             }
@@ -477,27 +464,27 @@ namespace DeckSurf
                         writtenProfile.DeviceSerial = targetDevice.Serial;
                         writtenProfile.DeviceModel = targetDevice.Model;
                         ConfigurationHelper.SaveProfile(profile, writtenProfile);
-                        Console.WriteLine($"Profile '{profile}' bound to {targetDevice.Name} (serial {targetDevice.Serial}).");
+                        Output.Ok($"Profile '{profile}' bound to {targetDevice.Name} (serial {targetDevice.Serial}).");
                     }
                     else if (string.IsNullOrEmpty(writtenProfile.DeviceSerial))
                     {
-                        Console.WriteLine($"Warning: no connected device at index {deviceIndex}, so the profile was saved without a device serial.");
-                        Console.WriteLine("Tools that bind profiles to a specific device (like the DeckSurf app) will not offer this profile until a device serial is stamped.");
+                        Output.Warn($"Warning: no connected device at index {deviceIndex}, so the profile was saved without a device serial.");
+                        Output.Line("Tools that bind profiles to a specific device (like the DeckSurf app) will not offer this profile until a device serial is stamped.");
                     }
 
-                    Console.WriteLine($"Button {keyIndex} configured on profile '{profile}'.");
-                    Console.WriteLine($"Run 'deck listen -p {profile}' to activate.");
+                    Output.Ok($"Button {keyIndex} configured on profile '{profile}'.");
+                    Output.Line($"Run 'deck listen -p {profile}' to activate.");
                 }
                 else
                 {
-                    Console.WriteLine($"Command '{command}' not found in plugin '{plugin}'.");
-                    Console.WriteLine("Run 'deck plugins list' to see available commands.");
+                    Output.Error($"Command '{command}' not found in plugin '{plugin}'.");
+                    Output.Line("Run 'deck plugins list' to see available commands.");
                 }
             }
             else
             {
-                Console.WriteLine($"Plugin '{plugin}' not found.");
-                Console.WriteLine("Run 'deck plugins list' to see available plugins.");
+                Output.Error($"Plugin '{plugin}' not found.");
+                Output.Line("Run 'deck plugins list' to see available plugins.");
             }
         }
 
@@ -506,16 +493,11 @@ namespace DeckSurf
             var profiles = ConfigurationHelper.ListProfiles();
             if (profiles.Count == 0)
             {
-                Console.WriteLine("No profiles found. Use 'deck write' to create one.");
+                Output.Warn("No profiles found. Use 'deck write' to create one.");
                 return;
             }
 
-            Console.WriteLine("Available profiles:");
-            Console.WriteLine(new string('-', 30));
-            foreach (var profile in profiles)
-            {
-                Console.WriteLine($"  {profile}");
-            }
+            Output.ProfilesList(profiles);
         }
 
         private static void HandleProfilesShowCommand(string name)
@@ -523,36 +505,12 @@ namespace DeckSurf
             var workingProfile = ConfigurationHelper.GetProfile(name);
             if (workingProfile == null)
             {
-                Console.WriteLine($"Profile not found: {name}");
+                Output.Error($"Profile not found: {name}");
                 return;
             }
 
-            Console.WriteLine($"Profile: {name}");
-            Console.WriteLine(new string('-', 40));
-            Console.WriteLine($"  Device Index:  {workingProfile.DeviceIndex}");
-            Console.WriteLine($"  Device Model:  {workingProfile.DeviceModel}");
-            Console.WriteLine($"  Device Serial: {workingProfile.DeviceSerial}");
-            Console.WriteLine();
-
-            if (workingProfile.ButtonMap != null && workingProfile.ButtonMap.Count > 0)
-            {
-                Console.WriteLine("  Button Mappings:");
-                Console.WriteLine($"  {"Index",-8} {"Plugin",-20} {"Command",-20} {"Arguments",-25} {"Image Path"}");
-                Console.WriteLine($"  {new string('-', 8)} {new string('-', 20)} {new string('-', 20)} {new string('-', 25)} {new string('-', 20)}");
-                foreach (var mapping in workingProfile.ButtonMap)
-                {
-                    Console.WriteLine($"  {mapping.ButtonIndex,-8} {mapping.Plugin,-20} {mapping.Command,-20} {mapping.CommandArguments,-25} {mapping.ButtonImagePath}");
-                }
-            }
-            else
-            {
-                Console.WriteLine("  No button mappings configured.");
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Raw JSON:");
             var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            Console.WriteLine(JsonSerializer.Serialize(workingProfile, jsonOptions));
+            Output.ProfileDetails(name, workingProfile, JsonSerializer.Serialize(workingProfile, jsonOptions));
         }
 
         private static void HandleProfilesDeleteCommand(string name)
@@ -564,17 +522,17 @@ namespace DeckSurf
             }
             catch (ArgumentException)
             {
-                Console.WriteLine($"Invalid profile name: {name}");
+                Output.Error($"Invalid profile name: {name}");
                 return;
             }
 
             if (!deleted)
             {
-                Console.WriteLine($"Profile not found: {name}");
+                Output.Error($"Profile not found: {name}");
                 return;
             }
 
-            Console.WriteLine($"Profile '{name}' deleted successfully.");
+            Output.Ok($"Profile '{name}' deleted successfully.");
         }
 
         private static void HandleDeviceInfoCommand(int deviceIndex)
@@ -582,59 +540,45 @@ namespace DeckSurf
             var devices = DeviceManager.GetDeviceList();
             if (devices.Count == 0)
             {
-                Console.WriteLine("No Stream Deck devices found.");
-                Console.WriteLine("Make sure your device is connected and the Elgato Stream Deck software is closed.");
+                Output.Warn("No Stream Deck devices found.");
+                Output.Line("Make sure your device is connected and the Elgato Stream Deck software is closed.");
                 return;
             }
 
             if (deviceIndex < 0 || deviceIndex >= devices.Count)
             {
-                Console.WriteLine($"Invalid device index: {deviceIndex}. Available indices: 0-{devices.Count - 1}.");
+                Output.Error($"Invalid device index: {deviceIndex}. Available indices: 0-{devices.Count - 1}.");
                 return;
             }
 
-            var device = devices[deviceIndex];
-            Console.WriteLine("Device Information:");
-            Console.WriteLine(new string('-', 35));
-            Console.WriteLine($"  Name:              {device.Name}");
-            Console.WriteLine($"  Serial:            {device.Serial}");
-            Console.WriteLine($"  Model:             {device.Model}");
-            Console.WriteLine($"  Button Count:      {device.ButtonCount}");
-            Console.WriteLine($"  Button Layout:     {device.ButtonColumns} x {device.ButtonRows}");
-            Console.WriteLine($"  Button Resolution: {device.ButtonResolution}");
-            Console.WriteLine($"  Screen Supported:  {device.IsScreenSupported}");
-            if (device.IsScreenSupported)
-            {
-                Console.WriteLine($"  Screen Width:      {device.ScreenWidth}");
-                Console.WriteLine($"  Screen Height:     {device.ScreenHeight}");
-            }
+            Output.DeviceInfo(devices[deviceIndex]);
         }
 
         private static void HandleBrightnessCommand(int deviceIndex, int level)
         {
             if (level < 0 || level > 100)
             {
-                Console.WriteLine("Brightness level must be between 0 and 100.");
+                Output.Error("Brightness level must be between 0 and 100.");
                 return;
             }
 
             var devices = DeviceManager.GetDeviceList();
             if (devices.Count == 0)
             {
-                Console.WriteLine("No Stream Deck devices found.");
-                Console.WriteLine("Make sure your device is connected and the Elgato Stream Deck software is closed.");
+                Output.Warn("No Stream Deck devices found.");
+                Output.Line("Make sure your device is connected and the Elgato Stream Deck software is closed.");
                 return;
             }
 
             if (deviceIndex < 0 || deviceIndex >= devices.Count)
             {
-                Console.WriteLine($"Invalid device index: {deviceIndex}. Available indices: 0-{devices.Count - 1}.");
+                Output.Error($"Invalid device index: {deviceIndex}. Available indices: 0-{devices.Count - 1}.");
                 return;
             }
 
             var device = devices[deviceIndex];
             device.SetBrightness((byte)level);
-            Console.WriteLine($"Brightness set to {level}% on device '{device.Name}'.");
+            Output.Ok($"Brightness set to {level}% on device '{device.Name}'.");
         }
     }
 }
