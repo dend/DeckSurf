@@ -43,10 +43,17 @@ namespace DeckSurf
                 return await LegacyLoopAsync(rootCommand);
             }
 
+            // Pin the prompt to the bottom of the viewport, Claude Code style:
+            // content accumulates above it and older output lives in the
+            // terminal's own scrollback. Terminals clamp the huge row number
+            // to the last row.
+            AnchorBottom(footer);
+
             var editor = new LineEditor(new CompletionEngine(), footer, () =>
             {
                 PrintBanner();
                 Console.WriteLine();
+                AnchorBottom(footer);
             });
 
             var startedAt = DateTime.UtcNow;
@@ -91,6 +98,7 @@ namespace DeckSurf
                         Console.Out.Write("\x1b[2J\x1b[H");
                         PrintBanner();
                         Console.WriteLine();
+                        AnchorBottom(footer);
                         continue;
                     }
 
@@ -113,6 +121,17 @@ namespace DeckSurf
 
             Output.SessionClosed(commandCount, DateTime.UtcNow - startedAt);
             return 0;
+        }
+
+        /// <summary>
+        /// Moves the cursor to the last viewport row so the next footer paint
+        /// lands at the bottom of the screen. The footer keeps itself there
+        /// from then on, since committed content scrolls up past it.
+        /// </summary>
+        private static void AnchorBottom(FooterController footer)
+        {
+            footer.Invalidate();
+            Console.Out.Write("\x1b[999;1H");
         }
 
         /// <summary>
