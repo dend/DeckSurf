@@ -26,9 +26,10 @@ namespace DeckSurf.Tui
         private static readonly List<string> History = new();
 
         private static Terminal.Gui.App.IApplication app;
+        private static Window windowRef;
+        private static string versionText;
         private static TextView transcript;
         private static TextField input;
-        private static Shortcut deviceStatus;
         private static int historyIndex;
         private static string historyDraft;
         private static bool commandRunning;
@@ -62,11 +63,28 @@ namespace DeckSurf.Tui
                 using var application = Application.Create().Init();
                 app = application;
 
+                // One dark scheme everywhere; the library default is the
+                // white-on-blue classic that reads as decades old.
+                var background = new Terminal.Gui.Drawing.Color(16, 18, 20);
+                var foreground = new Terminal.Gui.Drawing.Color(214, 218, 222);
+                var accent = new Terminal.Gui.Drawing.Color(0x22, 0xB8, 0xCF);
+                var dim = new Terminal.Gui.Drawing.Color(138, 143, 152);
+                var scheme = new Scheme(new Terminal.Gui.Drawing.Attribute(foreground, background))
+                {
+                    Focus = new Terminal.Gui.Drawing.Attribute(foreground, new Terminal.Gui.Drawing.Color(30, 33, 36)),
+                    HotNormal = new Terminal.Gui.Drawing.Attribute(accent, background),
+                    HotFocus = new Terminal.Gui.Drawing.Attribute(accent, new Terminal.Gui.Drawing.Color(30, 33, 36)),
+                    Disabled = new Terminal.Gui.Drawing.Attribute(dim, background),
+                };
+
                 var window = new Window
                 {
                     Title = $"DeckSurf v{version}",
                     BorderStyle = LineStyle.Rounded,
                 };
+                window.SetScheme(scheme);
+                windowRef = window;
+                versionText = version;
 
                 transcript = new TextView
                 {
@@ -100,15 +118,22 @@ namespace DeckSurf.Tui
 
                 input.KeyDown += OnInputKeyDown;
 
-                deviceStatus = new Shortcut(Key.Empty, string.Empty, null, null);
                 var status = new StatusBar(new[]
                 {
                     new Shortcut(Key.Enter, "run", null, "run the typed command"),
                     new Shortcut(Key.Tab, "complete", null, "complete the current token"),
                     new Shortcut(Key.Esc, "stop listen", null, "stop a streaming listen"),
                     new Shortcut(Key.Q.WithCtrl, "quit", () => app.RequestStop(), "leave the session"),
-                    deviceStatus,
-                });
+                })
+                {
+                    Y = Pos.AnchorEnd(1),
+                    Width = Dim.Fill(),
+                };
+
+                transcript.SetScheme(scheme);
+                prompt.SetScheme(scheme);
+                input.SetScheme(scheme);
+                status.SetScheme(scheme);
 
                 window.KeyDown += (s, e) =>
                 {
@@ -121,8 +146,13 @@ namespace DeckSurf.Tui
 
                 window.Add(transcript, prompt, input, status);
 
-                PrintBannerAndStatus();
-                input.SetFocus();
+                // Output can only land once the main loop is pumping; the
+                // Initialized event fires as the runnable begins.
+                window.Initialized += (s, e) =>
+                {
+                    PrintBannerAndStatus();
+                    input.SetFocus();
+                };
 
                 application.Run(window);
                 window.Dispose();
@@ -279,9 +309,10 @@ namespace DeckSurf.Tui
 
                 app?.Invoke(() =>
                 {
-                    if (deviceStatus != null)
+                    if (windowRef != null)
                     {
-                        deviceStatus.Title = count == 1 ? "1 device" : $"{count} devices";
+                        var devices = count == 1 ? "1 device" : $"{count} devices";
+                        windowRef.Title = $"DeckSurf v{versionText}, {devices}";
                     }
                 });
             });
