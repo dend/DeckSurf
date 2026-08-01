@@ -108,7 +108,7 @@ namespace DeckSurf
             // ── write ──
             var writeCommand = new Command("write", "Write a button configuration to a profile.")
             {
-                Handler = CommandHandler.Create<int, int, string, string, string, string, string>(HandleWriteCommand)
+                Handler = CommandHandler.Create<int, string, int, string, string, string, string, string>(HandleWriteCommand)
             };
 
             writeCommand.AddOption(new Option<int>(
@@ -117,6 +117,14 @@ namespace DeckSurf
                    description: "Zero-based index of the connected device.")
             {
                 IsRequired = true,
+                AllowMultipleArgumentsPerToken = false
+            });
+
+            writeCommand.AddOption(new Option<string>(
+                   aliases: new[] { "--device-serial", "-s" },
+                   getDefaultValue: () => string.Empty,
+                   description: "Serial number of the target device. Takes precedence over --device-index and is stable across sessions.")
+            {
                 AllowMultipleArgumentsPerToken = false
             });
 
@@ -404,12 +412,42 @@ namespace DeckSurf
             }
         }
 
-        private static void HandleWriteCommand(int deviceIndex, int keyIndex, string plugin, string command, string imagePath, string actionArgs, string profile)
+        private static void HandleWriteCommand(int deviceIndex, string deviceSerial, int keyIndex, string plugin, string command, string imagePath, string actionArgs, string profile)
         {
             if (!string.IsNullOrEmpty(imagePath) && !File.Exists(imagePath))
             {
                 Console.WriteLine($"Image file not found: {imagePath}");
                 return;
+            }
+
+            // Resolve the target device up front so the profile can be stamped with its
+            // serial. Serial wins over index: HID enumeration order can change between
+            // invocations, so an index observed in 'devices list' may already be stale.
+            var devices = DeviceManager.GetDeviceList();
+            IConnectedDevice targetDevice = null;
+
+            if (!string.IsNullOrEmpty(deviceSerial))
+            {
+                for (var i = 0; i < devices.Count; i++)
+                {
+                    if (string.Equals(devices[i].Serial, deviceSerial, StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetDevice = devices[i];
+                        deviceIndex = i;
+                        break;
+                    }
+                }
+
+                if (targetDevice == null)
+                {
+                    Console.WriteLine($"No connected device with serial '{deviceSerial}'.");
+                    Console.WriteLine("Run 'deck devices list' to see connected devices.");
+                    return;
+                }
+            }
+            else if (deviceIndex >= 0 && deviceIndex < devices.Count)
+            {
+                targetDevice = devices[deviceIndex];
             }
 
             var plugins = LoadPlugins();
@@ -432,7 +470,21 @@ namespace DeckSurf
                         Command = command
                     };
 
-                    ConfigurationHelper.WriteToConfiguration(profile, deviceIndex, mapping);
+                    var writtenProfile = ConfigurationHelper.WriteToConfiguration(profile, deviceIndex, mapping);
+
+                    if (targetDevice != null)
+                    {
+                        writtenProfile.DeviceSerial = targetDevice.Serial;
+                        writtenProfile.DeviceModel = targetDevice.Model;
+                        ConfigurationHelper.SaveProfile(profile, writtenProfile);
+                        Console.WriteLine($"Profile '{profile}' bound to {targetDevice.Name} (serial {targetDevice.Serial}).");
+                    }
+                    else if (string.IsNullOrEmpty(writtenProfile.DeviceSerial))
+                    {
+                        Console.WriteLine($"Warning: no connected device at index {deviceIndex}, so the profile was saved without a device serial.");
+                        Console.WriteLine("Tools that bind profiles to a specific device (like the DeckSurf app) will not offer this profile until a device serial is stamped.");
+                    }
+
                     Console.WriteLine($"Button {keyIndex} configured on profile '{profile}'.");
                     Console.WriteLine($"Run 'deck listen -p {profile}' to activate.");
                 }

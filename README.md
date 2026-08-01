@@ -76,6 +76,7 @@ Usage:
 
 Options:
   -d, --device-index <device-index> (REQUIRED)  Zero-based index of the connected device. [default: -1]
+  -s, --device-serial <device-serial>           Serial number of the target device. Takes precedence over --device-index and is stable across sessions. [default: ]
   -k, --key-index <key-index> (REQUIRED)        Zero-based index of the key to configure. [default: -1]
   -n, --plugin <plugin> (REQUIRED)              Plugin ID (e.g., DeckSurf.Plugin.Barn). [default: ]
   -c, --command <command> (REQUIRED)            Command class name within the plugin. [default: ]
@@ -90,6 +91,7 @@ The following arguments are used, and are required:
 | Argument                 | Description |
 |:-------------------------|:------------|
 | `--device-index` or `-d` | Zero-based index of the connected Stream Deck device. If only one device is connected, the index is `0`. |
+| `--device-serial` or `-s` | Optional. Serial number of the target device, as shown by `deck devices list`. When provided it takes precedence over `--device-index`, which is useful because USB enumeration order can change between sessions. |
 | `--key-index` or `-k`    | Zero-based index of the key that is being written to. Should be within the boundaries of the keys for the connected device. |
 | `--plugin` or `-n`       | The full identifier of the DeckSurf plugin that will be used for command handling. Should match the plugin ID (e.g., `DeckSurf.Plugin.Barn`). |
 | `--command` or `-c`      | Command identifier. Should match the name of the command class in the plugin assembly. |
@@ -97,7 +99,7 @@ The following arguments are used, and are required:
 | `--action-args` or `-a`  | Arguments to pass to the command, written as comma-separated `key=value` pairs (e.g., `mode=timer,duration=300`). Run `deck plugins list` to see the parameters each command accepts. Pass `""` for commands that take none. |
 | `--profile` or `-p`      | The name of the profile to be used. If no profile with a given name exists, a new one will be created. |
 
-The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles\{PROFILE_NAME}`. The settings are stored in a `profile.json` file within the profile folder.
+The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles\{PROFILE_NAME}`. The settings are stored in a `profile.json` file within the profile folder. When the target device is connected at write time, the profile records its serial number and model, and tools like `deck listen` and the DeckSurf for Windows app use that serial to find the device again regardless of USB enumeration order.
 
 ## Available CLI Commands
 
