@@ -1,17 +1,19 @@
 using DeckSurf.SDK.Interfaces;
 using DeckSurf.SDK.Models;
 using DeckSurf.SDK.Util;
+using DeckSurf.Tui;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace DeckSurf
 {
     /// <summary>
-    /// Renders CLI output. On a real terminal the output uses minimal, ASCII-only
-    /// styling: flat indented text, dim secondary details, and colored status
-    /// markers, with no box borders. When output is redirected it stays plain and
-    /// stable so scripts can keep parsing it.
+    /// Renders CLI output. On a real terminal the output uses a minimal,
+    /// ASCII-only visual system: a fixed marker vocabulary (* + ! x -), flat
+    /// indented rows, and dim secondary detail. When output is redirected it
+    /// stays plain and byte-stable so scripts keep parsing it.
     /// </summary>
     internal static class Output
     {
@@ -24,7 +26,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"[green]*[/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"[{Theme.Ok}]+[/] {Markup.Escape(message)}");
             }
             else
             {
@@ -36,7 +38,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"[yellow]![/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"[{Theme.Warn}]![/] {Markup.Escape(message)}");
             }
             else
             {
@@ -48,7 +50,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"[red]x[/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"[{Theme.Err}]x[/] {Markup.Escape(message)}");
             }
             else
             {
@@ -56,15 +58,31 @@ namespace DeckSurf
             }
         }
 
-        internal static void Info(string message)
+        /// <summary>
+        /// Intent narration and neutral notes: dim marker, dim text. Rich only;
+        /// piped output keeps its legacy lines.
+        /// </summary>
+        internal static void Note(string message)
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"[grey]* {Markup.Escape(message)}[/]");
+                AnsiConsole.MarkupLine($"[{Theme.Dim}]- {Markup.Escape(message)}[/]");
+            }
+        }
+
+        /// <summary>
+        /// Glued dim hint line under a message. In rich mode the leading
+        /// command token renders in the default foreground so it pops.
+        /// </summary>
+        internal static void Hint(string command, string rest)
+        {
+            if (IsRich)
+            {
+                AnsiConsole.MarkupLine($"  {Markup.Escape(command)} [{Theme.Dim}]{Markup.Escape(rest)}[/]");
             }
             else
             {
-                Console.WriteLine(message);
+                Console.WriteLine($"{command} {rest}");
             }
         }
 
@@ -72,7 +90,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(message)}[/]");
+                AnsiConsole.MarkupLine($"  [{Theme.Dim}]{Markup.Escape(message)}[/]");
             }
             else
             {
@@ -80,12 +98,30 @@ namespace DeckSurf
             }
         }
 
-        internal static void Banner(string version, int deviceCount)
+        internal static void Banner(string version, IReadOnlyList<ConnectedDevice> devices)
         {
-            AnsiConsole.MarkupLine($"[orange1]*[/] [bold]DeckSurf[/] [grey]v{Markup.Escape(version)}[/]");
+            AnsiConsole.MarkupLine($"[{Theme.Accent}]*[/] [bold]DeckSurf[/]  [{Theme.Dim}]v{Markup.Escape(version)}[/]");
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine($"  {deviceCount} device(s) connected");
-            AnsiConsole.MarkupLine("  [grey]commands work with or without a leading slash: /devices, /help, /exit[/]");
+
+            if (devices == null || devices.Count == 0)
+            {
+                AnsiConsole.MarkupLine($"  [{Theme.Warn}]![/] [{Theme.Dim}]no devices found, commands still work against profiles.[/]");
+            }
+            else if (devices.Count == 1)
+            {
+                AnsiConsole.MarkupLine($"  {Markup.Escape(devices[0].Name ?? "Stream Deck")} connected, serial {Markup.Escape(devices[0].Serial ?? "unknown")}.");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"  {devices.Count} devices connected. Run devices to list them.");
+            }
+
+            AnsiConsole.MarkupLine($"  [{Theme.Dim}]Type a command, or / to see them all. exit leaves.[/]");
+        }
+
+        internal static void SessionClosed(int commandCount, TimeSpan elapsed)
+        {
+            Ok($"Session closed, {commandCount} command(s) in {(int)elapsed.TotalMinutes:00}:{elapsed.Seconds:00}.");
         }
 
         internal static void DevicesTable(IReadOnlyList<ConnectedDevice> devices)
@@ -102,7 +138,7 @@ namespace DeckSurf
                 return;
             }
 
-            Header($"devices ({devices.Count})");
+            Section("devices", $"{devices.Count} connected");
             AnsiConsole.WriteLine();
 
             var nameWidth = 0;
@@ -117,10 +153,25 @@ namespace DeckSurf
             {
                 var device = devices[i];
                 AnsiConsole.MarkupLine(
-                    $"  [grey]{i}[/]  {Markup.Escape(Pad(device.Name, nameWidth))}  " +
-                    $"[cyan]{Markup.Escape(Pad(device.Model.ToString(), modelWidth))}[/]  " +
-                    $"[grey]serial {Markup.Escape(device.Serial ?? string.Empty)}[/]");
+                    $"  [{Theme.Dim}]{i,2}[/]  {Markup.Escape(Pad(device.Name, nameWidth))}  " +
+                    $"[{Theme.Accent}]{Markup.Escape(Pad(device.Model.ToString(), modelWidth))}[/]  " +
+                    $"[{Theme.Dim}]serial {Markup.Escape(device.Serial ?? string.Empty)}[/]");
             }
+        }
+
+        internal static void NoDevices()
+        {
+            if (!IsRich)
+            {
+                Console.WriteLine("No Stream Deck devices found.");
+                Console.WriteLine("Make sure your device is connected and the Elgato Stream Deck software is closed.");
+                return;
+            }
+
+            AnsiConsole.MarkupLine($"[{Theme.Warn}]![/] no devices found");
+            AnsiConsole.WriteLine();
+            Line("Connect a Stream Deck and close the Elgato software.");
+            Hint("devices list", "to scan again.");
         }
 
         internal static void DeviceInfo(ConnectedDevice device)
@@ -145,15 +196,28 @@ namespace DeckSurf
                 return;
             }
 
-            Header(device.Name ?? "device");
+            Section(device.Name ?? "device", null);
             AnsiConsole.WriteLine();
             DetailRow("serial", device.Serial ?? string.Empty);
             DetailRow("model", device.Model.ToString());
-            DetailRow("buttons", $"{device.ButtonCount} ({device.ButtonColumns} x {device.ButtonRows}, {device.ButtonResolution} px)");
+            DetailRow("buttons", $"{device.ButtonCount}, {device.ButtonColumns} x {device.ButtonRows} grid, {device.ButtonResolution} px keys");
             DetailRow("screen", device.IsScreenSupported ? $"{device.ScreenWidth} x {device.ScreenHeight}" : "not supported");
+
+            // Key grid: documents the -k index for write at a glance.
+            AnsiConsole.WriteLine();
+            for (var row = 0; row < device.ButtonRows; row++)
+            {
+                var sb = new StringBuilder("  ");
+                for (var col = 0; col < device.ButtonColumns; col++)
+                {
+                    sb.Append('[').Append(((row * device.ButtonColumns) + col).ToString().PadLeft(2)).Append(']');
+                }
+
+                AnsiConsole.MarkupLine($"[{Theme.Dim}]{Markup.Escape(sb.ToString())}[/]");
+            }
         }
 
-        internal static void PluginsList(IReadOnlyList<IDeckSurfPlugin> plugins)
+        internal static void PluginsList(IReadOnlyList<IDeckSurfPlugin> plugins, bool full)
         {
             if (!IsRich)
             {
@@ -178,19 +242,14 @@ namespace DeckSurf
                 return;
             }
 
-            var first = true;
+            Section("plugins", $"{plugins.Count} loaded");
+
             foreach (var plugin in plugins)
             {
-                if (!first)
-                {
-                    AnsiConsole.WriteLine();
-                }
-
-                first = false;
-
+                AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine(
-                    $"[orange1]*[/] [bold]{Markup.Escape(plugin.Metadata.Id)}[/] " +
-                    $"[grey]v{Markup.Escape(plugin.Metadata.Version ?? string.Empty)} by {Markup.Escape(plugin.Metadata.Author ?? string.Empty)}[/]");
+                    $"  [bold {Theme.Accent}]{Markup.Escape(plugin.Metadata.Id)}[/]  " +
+                    $"[{Theme.Dim}]v{Markup.Escape(plugin.Metadata.Version ?? string.Empty)}, by {Markup.Escape(plugin.Metadata.Author ?? string.Empty)}[/]");
                 AnsiConsole.WriteLine();
 
                 var commandTypes = plugin.GetSupportedCommands();
@@ -204,9 +263,20 @@ namespace DeckSurf
                 {
                     using var commandInstance = (IDeckSurfCommand)Activator.CreateInstance(command);
                     AnsiConsole.MarkupLine(
-                        $"  {Markup.Escape(Pad(command.Name, commandWidth))}  [grey]{Markup.Escape(commandInstance.Description ?? string.Empty)}[/]");
+                        $"    {Markup.Escape(Pad(command.Name, commandWidth))}  [{Theme.Dim}]{Markup.Escape(commandInstance.Description ?? string.Empty)}[/]");
+
+                    if (!full)
+                    {
+                        continue;
+                    }
 
                     var parameters = CommandSchemaReader.GetParameters(command);
+                    if (parameters.Count == 0)
+                    {
+                        AnsiConsole.MarkupLine($"      [{Theme.Dim}]No settings.[/]");
+                        continue;
+                    }
+
                     var keyWidth = 0;
                     foreach (var parameter in parameters)
                     {
@@ -215,9 +285,17 @@ namespace DeckSurf
 
                     foreach (var parameter in parameters)
                     {
-                        AnsiConsole.MarkupLine($"    [grey]{Markup.Escape(Pad(parameter.Key, keyWidth))}  {Markup.Escape(DescribeParameter(parameter))}[/]");
+                        var required = parameter.Required ? $" [{Theme.Warn}][[required]][/]" : string.Empty;
+                        AnsiConsole.MarkupLine(
+                            $"      {Markup.Escape(Pad(parameter.Key, keyWidth))}  [{Theme.Dim}]{Markup.Escape(DescribeParameter(parameter, false))}[/]{required}");
                     }
                 }
+            }
+
+            if (!full)
+            {
+                AnsiConsole.WriteLine();
+                Hint("plugins list --full", "shows command settings.");
             }
         }
 
@@ -235,7 +313,7 @@ namespace DeckSurf
                 return;
             }
 
-            Header($"profiles ({profiles.Count})");
+            Section("profiles", $"{profiles.Count} saved");
             AnsiConsole.WriteLine();
 
             var rows = new List<(string Name, string Model, string Serial, bool Broken)>();
@@ -269,13 +347,20 @@ namespace DeckSurf
 
             foreach (var row in rows)
             {
-                var binding = row.Broken
-                    ? "[red]unreadable[/]"
-                    : row.Serial == null
-                        ? "[yellow]not bound to a device[/]"
-                        : $"[grey]{Markup.Escape(Pad(row.Model, modelWidth))}  {Markup.Escape(row.Serial)}[/]";
-
-                AnsiConsole.MarkupLine($"  {Markup.Escape(Pad(row.Name, nameWidth))}  {binding}");
+                if (row.Broken)
+                {
+                    AnsiConsole.MarkupLine($"  [{Theme.Err}]x[/] {Markup.Escape(Pad(row.Name, nameWidth))}  [{Theme.Err}]unreadable[/]");
+                }
+                else if (row.Serial == null)
+                {
+                    AnsiConsole.MarkupLine($"  [{Theme.Warn}]![/] {Markup.Escape(Pad(row.Name, nameWidth))}  [{Theme.Warn}]not bound to a device[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine(
+                        $"  [{Theme.Ok}]+[/] {Markup.Escape(Pad(row.Name, nameWidth))}  " +
+                        $"[{Theme.Accent}]{Markup.Escape(Pad(row.Model, modelWidth))}[/]  [{Theme.Dim}]{Markup.Escape(row.Serial)}[/]");
+                }
             }
         }
 
@@ -311,22 +396,23 @@ namespace DeckSurf
                 return;
             }
 
-            Header(name);
+            Section(name, null);
+            AnsiConsole.WriteLine();
             if (string.IsNullOrEmpty(profile.DeviceSerial))
             {
-                AnsiConsole.MarkupLine("  [yellow]not bound to a device serial[/]");
+                AnsiConsole.MarkupLine($"  [{Theme.Warn}]not bound to a device serial[/]");
             }
             else
             {
                 AnsiConsole.MarkupLine(
-                    $"  [grey]bound to[/] {Markup.Escape(profile.DeviceModel.ToString())} [grey]serial[/] {Markup.Escape(profile.DeviceSerial)}");
+                    $"  [{Theme.Dim}]bound to[/] {Markup.Escape(profile.DeviceModel.ToString())}[{Theme.Dim}], serial[/] {Markup.Escape(profile.DeviceSerial)}");
             }
 
             AnsiConsole.WriteLine();
 
             if (profile.ButtonMap == null || profile.ButtonMap.Count == 0)
             {
-                Line("No button mappings configured.");
+                AnsiConsole.MarkupLine($"  [{Theme.Dim}]no key mappings yet. write adds one.[/]");
                 return;
             }
 
@@ -342,22 +428,35 @@ namespace DeckSurf
             {
                 var line =
                     $"  {Markup.Escape(Pad(TargetLabel(mapping), targetWidth))}  " +
-                    $"{Markup.Escape(Pad(mapping.Command, commandWidth))}  " +
-                    $"[grey]{Markup.Escape(mapping.Plugin ?? string.Empty)}[/]";
+                    $"[bold]{Markup.Escape(Pad(mapping.Command, commandWidth))}[/]  " +
+                    $"[{Theme.Dim}]{Markup.Escape(mapping.Plugin ?? string.Empty)}[/]";
 
                 var arguments = mapping.CommandArguments?.ToString();
                 if (!string.IsNullOrEmpty(arguments))
                 {
-                    line += $"  [grey]{Markup.Escape(arguments)}[/]";
-                }
-
-                if (!string.IsNullOrEmpty(mapping.ButtonImagePath))
-                {
-                    line += $"  [grey]image {Markup.Escape(mapping.ButtonImagePath)}[/]";
+                    line += $"  [{Theme.Dim}]{Markup.Escape(arguments)}[/]";
                 }
 
                 AnsiConsole.MarkupLine(line);
             }
+
+            AnsiConsole.WriteLine();
+            Hint($"profiles show {name} --json", "prints the raw profile.");
+        }
+
+        internal static void ListenStart(string profileName, IConnectedDevice device, bool interactive)
+        {
+            if (!IsRich)
+            {
+                Console.WriteLine($"Listening on profile '{profileName}'. Press Ctrl+C to stop.");
+                return;
+            }
+
+            Section($"listening on {profileName}", null);
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"  [{Theme.Dim}]bound to {Markup.Escape(device.Name ?? string.Empty)}, serial {Markup.Escape(device.Serial ?? string.Empty)}[/]");
+            AnsiConsole.MarkupLine($"  [{Theme.Dim}]{(interactive ? "esc or ctrl+c stops" : "ctrl+c stops")}[/]");
+            AnsiConsole.WriteLine();
         }
 
         internal static void ListenEvent(ButtonPressEventArgs eventArgs)
@@ -366,13 +465,13 @@ namespace DeckSurf
             {
                 var control = eventArgs.ButtonKind switch
                 {
-                    ButtonKind.Knob => "knob",
+                    ButtonKind.Knob => $"knob {eventArgs.Id}",
                     ButtonKind.Screen => "screen",
-                    _ => "key",
+                    _ => $"key {eventArgs.Id}",
                 };
 
                 AnsiConsole.MarkupLine(
-                    $"  [grey]{DateTime.Now:HH:mm:ss}[/]  {control} {eventArgs.Id}  {Markup.Escape(eventArgs.EventKind.ToString().ToLowerInvariant())}");
+                    $"  [{Theme.Dim}]{DateTime.Now:HH:mm:ss}[/]  [{Theme.Accent}]{Markup.Escape(Pad(control, 8))}[/]  {Markup.Escape(eventArgs.EventKind.ToString().ToLowerInvariant())}");
             }
             else
             {
@@ -380,14 +479,26 @@ namespace DeckSurf
             }
         }
 
-        private static void Header(string title)
+        internal static void ListenSummary(int eventCount, TimeSpan elapsed)
         {
-            AnsiConsole.MarkupLine($"[orange1]*[/] [bold]{Markup.Escape(title)}[/]");
+            if (IsRich)
+            {
+                AnsiConsole.WriteLine();
+                Ok($"Stopped, {eventCount} event(s) in {(int)elapsed.TotalMinutes:00}:{elapsed.Seconds:00}.");
+            }
+        }
+
+        internal static void Section(string title, string countSuffix)
+        {
+            var suffix = string.IsNullOrEmpty(countSuffix)
+                ? string.Empty
+                : $"[{Theme.Dim}], {Markup.Escape(countSuffix)}[/]";
+            AnsiConsole.MarkupLine($"[{Theme.Accent}]*[/] [bold]{Markup.Escape(title)}[/]{suffix}");
         }
 
         private static void DetailRow(string label, string value)
         {
-            AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(Pad(label, 10))}[/]{Markup.Escape(value)}");
+            AnsiConsole.MarkupLine($"  [{Theme.Dim}]{Markup.Escape(Pad(label, 9))}[/]{Markup.Escape(value)}");
         }
 
         private static string Pad(string value, int width)
@@ -406,7 +517,7 @@ namespace DeckSurf
             };
         }
 
-        private static string DescribeParameter(CommandParameterAttribute parameter)
+        private static string DescribeParameter(CommandParameterAttribute parameter, bool includeRequired = true)
         {
             var details = parameter.ParameterType.ToString();
             if (parameter.Choices is { Length: > 0 })
@@ -419,7 +530,7 @@ namespace DeckSurf
                 details += $" (default: {parameter.DefaultValue})";
             }
 
-            return parameter.Required ? details + " [required]" : details;
+            return includeRequired && parameter.Required ? details + " [required]" : details;
         }
     }
 }

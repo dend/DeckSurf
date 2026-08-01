@@ -86,8 +86,11 @@ namespace DeckSurf
 
             var pluginsListCommand = new Command("list", "List all available plugins and their commands.")
             {
-                Handler = CommandHandler.Create(HandleListPluginsCommand)
+                Handler = CommandHandler.Create<bool>(HandleListPluginsCommand)
             };
+            pluginsListCommand.AddOption(new Option<bool>(
+                   aliases: new[] { "--full" },
+                   description: "Include each command's settings schema."));
 
             pluginsCommand.AddCommand(pluginsListCommand);
 
@@ -104,14 +107,20 @@ namespace DeckSurf
             {
                 profilesShowNameArg,
             };
-            profilesShowCommand.Handler = CommandHandler.Create<string>(HandleProfilesShowCommand);
+            profilesShowCommand.AddOption(new Option<bool>(
+                   aliases: new[] { "--json" },
+                   description: "Print the raw profile JSON and nothing else."));
+            profilesShowCommand.Handler = CommandHandler.Create<string, bool>(HandleProfilesShowCommand);
 
             var profilesDeleteNameArg = new Argument<string>("name", "The name of the profile to delete.");
             var profilesDeleteCommand = new Command("delete", "Delete a specific profile.")
             {
                 profilesDeleteNameArg,
             };
-            profilesDeleteCommand.Handler = CommandHandler.Create<string>(HandleProfilesDeleteCommand);
+            profilesDeleteCommand.AddOption(new Option<bool>(
+                   aliases: new[] { "--yes", "-y" },
+                   description: "Delete without asking for confirmation."));
+            profilesDeleteCommand.Handler = CommandHandler.Create<string, bool>(HandleProfilesDeleteCommand);
 
             profilesCommand.AddCommand(profilesListCommand);
             profilesCommand.AddCommand(profilesShowCommand);
@@ -222,10 +231,20 @@ namespace DeckSurf
         {
             return PluginLoader.LoadPlugins(
                 AppContext.BaseDirectory,
-                message => Console.Error.WriteLine($"[Warning] {message}"));
+                message =>
+                {
+                    if (Output.IsRich)
+                    {
+                        Output.Warn(message);
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"[Warning] {message}");
+                    }
+                });
         }
 
-        private static void HandleListPluginsCommand()
+        private static void HandleListPluginsCommand(bool full)
         {
             var plugins = LoadPlugins();
 
@@ -235,7 +254,7 @@ namespace DeckSurf
                 return;
             }
 
-            Output.PluginsList(plugins);
+            Output.PluginsList(plugins, full);
         }
 
         private static void HandleListenCommand(string profile)
@@ -254,13 +273,21 @@ namespace DeckSurf
             var device = DeviceManager.SetupDevice(workingProfile);
             using var cts = new CancellationTokenSource();
 
+            var interactiveWait = Output.IsRich && !Console.IsInputRedirected;
+            var listenEventCount = 0;
+            var listenStarted = DateTime.UtcNow;
+
             // Named so it can be detached when this listen ends; in an interactive
             // session, stacked anonymous handlers from prior listens would fire
             // against disposed token sources.
             ConsoleCancelEventHandler cancelHandler = (s, e) =>
             {
                 e.Cancel = true;
-                Output.Info("Shutting down...");
+                if (!Output.IsRich)
+                {
+                    Console.WriteLine("Shutting down...");
+                }
+
                 cts.Cancel();
             };
 
@@ -270,6 +297,7 @@ namespace DeckSurf
 
                 device.ButtonPressed += (s, e) =>
                 {
+                    Interlocked.Increment(ref listenEventCount);
                     Output.ListenEvent(e);
 
                     switch (e.ButtonKind)
@@ -316,8 +344,7 @@ namespace DeckSurf
                 }
 
                 device.StartListening();
-                Output.Ok($"Bound to {device.Name} (serial {device.Serial}).");
-                Output.Info($"Listening on profile '{profile}'. Press Ctrl+C to stop.");
+                Output.ListenStart(profile, device, interactiveWait);
 
                 foreach (var mappedButton in workingProfile.ButtonMap)
                 {
@@ -333,7 +360,39 @@ namespace DeckSurf
                     }
                 }
 
-                cts.Token.WaitHandle.WaitOne();
+                if (interactiveWait)
+                {
+                    // Esc or Ctrl+C stops this listen without ending the session.
+                    var previousTreatCtrlC = Console.TreatControlCAsInput;
+                    Console.TreatControlCAsInput = true;
+                    try
+                    {
+                        while (!cts.IsCancellationRequested)
+                        {
+                            while (Console.KeyAvailable)
+                            {
+                                var key = Console.ReadKey(true);
+                                if (key.Key == ConsoleKey.Escape
+                                    || (key.Key == ConsoleKey.C && (key.Modifiers & ConsoleModifiers.Control) != 0))
+                                {
+                                    cts.Cancel();
+                                }
+                            }
+
+                            cts.Token.WaitHandle.WaitOne(50);
+                        }
+                    }
+                    finally
+                    {
+                        Console.TreatControlCAsInput = previousTreatCtrlC;
+                    }
+
+                    Output.ListenSummary(listenEventCount, DateTime.UtcNow - listenStarted);
+                }
+                else
+                {
+                    cts.Token.WaitHandle.WaitOne();
+                }
             }
             finally
             {
@@ -391,8 +450,7 @@ namespace DeckSurf
             var devices = DeviceManager.GetDeviceList();
             if (devices.Count == 0)
             {
-                Output.Warn("No Stream Deck devices found.");
-                Output.Line("Make sure your device is connected and the Elgato Stream Deck software is closed.");
+                Output.NoDevices();
                 return;
             }
 
@@ -464,16 +522,39 @@ namespace DeckSurf
                         writtenProfile.DeviceSerial = targetDevice.Serial;
                         writtenProfile.DeviceModel = targetDevice.Model;
                         ConfigurationHelper.SaveProfile(profile, writtenProfile);
-                        Output.Ok($"Profile '{profile}' bound to {targetDevice.Name} (serial {targetDevice.Serial}).");
-                    }
-                    else if (string.IsNullOrEmpty(writtenProfile.DeviceSerial))
-                    {
-                        Output.Warn($"Warning: no connected device at index {deviceIndex}, so the profile was saved without a device serial.");
-                        Output.Line("Tools that bind profiles to a specific device (like the DeckSurf app) will not offer this profile until a device serial is stamped.");
                     }
 
-                    Output.Ok($"Button {keyIndex} configured on profile '{profile}'.");
-                    Output.Line($"Run 'deck listen -p {profile}' to activate.");
+                    if (Output.IsRich)
+                    {
+                        if (targetDevice != null)
+                        {
+                            Output.Note($"resolving device {targetDevice.Name}, serial {targetDevice.Serial}");
+                            Output.Note($"resolving {command} in {plugin}");
+                            Output.Ok($"Key {keyIndex} configured on {profile}, bound to {targetDevice.Name}.");
+                        }
+                        else
+                        {
+                            Output.Warn($"no connected device at index {deviceIndex}, profile saved without a device serial.");
+                            Output.Ok($"Key {keyIndex} configured on {profile}.");
+                        }
+
+                        Output.Hint($"listen {profile}", "to activate.");
+                    }
+                    else
+                    {
+                        if (targetDevice != null)
+                        {
+                            Console.WriteLine($"Profile '{profile}' bound to {targetDevice.Name} (serial {targetDevice.Serial}).");
+                        }
+                        else if (string.IsNullOrEmpty(writtenProfile.DeviceSerial))
+                        {
+                            Console.WriteLine($"Warning: no connected device at index {deviceIndex}, so the profile was saved without a device serial.");
+                            Console.WriteLine("Tools that bind profiles to a specific device (like the DeckSurf app) will not offer this profile until a device serial is stamped.");
+                        }
+
+                        Console.WriteLine($"Button {keyIndex} configured on profile '{profile}'.");
+                        Console.WriteLine($"Run 'deck listen -p {profile}' to activate.");
+                    }
                 }
                 else
                 {
@@ -500,21 +581,44 @@ namespace DeckSurf
             Output.ProfilesList(profiles);
         }
 
-        private static void HandleProfilesShowCommand(string name)
+        private static void HandleProfilesShowCommand(string name, bool json)
         {
             var workingProfile = ConfigurationHelper.GetProfile(name);
             if (workingProfile == null)
             {
                 Output.Error($"Profile not found: {name}");
+                if (Output.IsRich)
+                {
+                    Output.Hint("profiles list", "to see what exists.");
+                }
+
                 return;
             }
 
             var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            Output.ProfileDetails(name, workingProfile, JsonSerializer.Serialize(workingProfile, jsonOptions));
+            var serialized = JsonSerializer.Serialize(workingProfile, jsonOptions);
+
+            if (json)
+            {
+                Console.WriteLine(serialized);
+                return;
+            }
+
+            Output.ProfileDetails(name, workingProfile, serialized);
         }
 
-        private static void HandleProfilesDeleteCommand(string name)
+        private static void HandleProfilesDeleteCommand(string name, bool yes)
         {
+            if (!yes && Output.IsRich && !Console.IsInputRedirected)
+            {
+                Console.Write($"  Delete profile {name}? [y/N] ");
+                var answer = Console.ReadLine();
+                if (!string.Equals(answer?.Trim(), "y", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
             bool deleted;
             try
             {
@@ -540,8 +644,7 @@ namespace DeckSurf
             var devices = DeviceManager.GetDeviceList();
             if (devices.Count == 0)
             {
-                Output.Warn("No Stream Deck devices found.");
-                Output.Line("Make sure your device is connected and the Elgato Stream Deck software is closed.");
+                Output.NoDevices();
                 return;
             }
 
@@ -565,8 +668,7 @@ namespace DeckSurf
             var devices = DeviceManager.GetDeviceList();
             if (devices.Count == 0)
             {
-                Output.Warn("No Stream Deck devices found.");
-                Output.Line("Make sure your device is connected and the Elgato Stream Deck software is closed.");
+                Output.NoDevices();
                 return;
             }
 
@@ -577,8 +679,16 @@ namespace DeckSurf
             }
 
             var device = devices[deviceIndex];
+            Output.Note($"setting brightness {level} on {device.Name}");
             device.SetBrightness((byte)level);
-            Output.Ok($"Brightness set to {level}% on device '{device.Name}'.");
+            if (Output.IsRich)
+            {
+                Output.Ok($"Brightness set to {level}% on {device.Name}.");
+            }
+            else
+            {
+                Console.WriteLine($"Brightness set to {level}% on device '{device.Name}'.");
+            }
         }
     }
 }

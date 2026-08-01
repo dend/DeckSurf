@@ -121,26 +121,27 @@ The created profile will be located in `%LOCALAPPDATA%\Den.Dev\DeckSurf\Profiles
 Running `deck` with no arguments on a terminal opens an interactive session:
 
 ```
-+------------------------------------------+
-| DeckSurf 0.1.0                           |
-| 3 device(s) connected                    |
-| type 'help' for commands, 'exit' to quit |
-+------------------------------------------+
+* DeckSurf  v0.1.0
 
-deck> devices
+  Stream Deck XL connected, serial CL00A0A00001.
+  Type a command, or / to see them all. exit leaves.
 
-+-----------------------------------------------------+
-| # | Name            | Serial         | Model | VID  |
-|---+-----------------+----------------+-------+------|
-| 0 | Stream Deck XL  | CL00A0A00001   | XL    | 4057 |
-+-----------------------------------------------------+
+> devices
 
-deck> listen obs-test
+* devices, 3 connected
+
+   0  Stream Deck XL    XL    serial CL00A0A00001
+   1  Stream Deck Plus  Plus  serial A00AA0000A0001
+   2  Stream Deck Neo   Neo   serial A00AA0000A0002
+
+> listen obs-test
 ```
 
-Every CLI command works at the prompt, with a few conveniences: `devices`, `plugins`, and `profiles` expand to their `list` subcommands, `listen <profile>` expands to `listen -p <profile>`, and `help`, `clear`, and `exit` do what they say.
+The prompt is a full line editor: cursor movement, Home/End, word jumps with Ctrl+Left/Right, kill bindings (Ctrl+U, Ctrl+K, Ctrl+W), and Up/Down history. Typing `/` opens a command palette that filters as you type, and Tab completes commands, option names, profile names, plugin ids, command names, and device serials. Escape clears the line, Ctrl+C twice (or Ctrl+D on an empty line) leaves the session. Commands that take longer than a beat show an ASCII spinner, and `listen` stops on Escape without ending the session.
 
-On a terminal, commands render as ASCII tables and trees. When output is piped or redirected, the CLI prints the same plain text as earlier releases, so existing scripts keep working. Two environment variables override the detection: `DECK_FORCE_RICH=1` keeps rich rendering when output is redirected, and `DECK_INTERACTIVE=1` opens the interactive session even when input is piped.
+Every CLI command works at the prompt, with a few conveniences: `devices`, `plugins`, and `profiles` expand to their `list` subcommands, and `listen <profile>` expands to `listen -p <profile>`. Some commands have quieter defaults in the session: `plugins list` collapses command settings unless you pass `--full`, `profiles show <name> --json` prints the raw profile, and `profiles delete` asks for confirmation unless you pass `--yes`.
+
+When output is piped or redirected, the CLI prints the same plain text as earlier releases, so existing scripts keep working. Two environment variables override the detection: `DECK_FORCE_RICH=1` keeps rich rendering when output is redirected, and `DECK_INTERACTIVE=1` opens the interactive session (with plain line input) when input is piped.
 
 ## Included Plugin: Barn
 
