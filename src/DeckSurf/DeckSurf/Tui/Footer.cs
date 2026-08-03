@@ -15,7 +15,7 @@ namespace DeckSurf.Tui
     /// </summary>
     internal sealed class FooterController
     {
-        private const string SpinnerFrames = "-\\|/";
+        private const string SpinnerFrames = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
 
         private readonly TextWriter inner;
         private readonly object sync;
@@ -282,7 +282,7 @@ namespace DeckSurf.Tui
             {
                 var chunk = text.Substring(r * capacity, Math.Min(capacity, text.Length - (r * capacity)));
                 var prefix = r == 0
-                    ? $"{Theme.BoldAnsi}{Theme.AccentAnsi}> {Theme.ResetAnsi}"
+                    ? $"{Theme.BoldAnsi}{Theme.AccentAnsi}❯ {Theme.ResetAnsi}"
                     : "  ";
                 var pad = new string(' ', innerWidth - 2 - chunk.Length);
                 rows.Add("  " + Faint("│ ") + prefix + chunk + pad + Faint(" │"));
@@ -301,7 +301,7 @@ namespace DeckSurf.Tui
             var hint = this.ctrlCHint
                 ? "press ctrl+c again to exit"
                 : this.menuItems is { Count: > 0 }
-                    ? "up/down choose   enter accept   esc close"
+                    ? "↑↓ choose   enter accept   esc close"
                     : "enter run   tab complete   ctrl+q quit";
             rows.Add("    " + Faint(hint));
 
@@ -331,14 +331,14 @@ namespace DeckSurf.Tui
                 }
 
                 rows.Add(selected
-                    ? $"  {Theme.AccentAnsi}> {label}{Theme.ResetAnsi}{Dim(detail)}"
+                    ? $"  {Theme.AccentAnsi}❯ {label}{Theme.ResetAnsi}{Dim(detail)}"
                     : $"    {label}{Dim(detail)}");
             }
 
             var remaining = this.menuItems.Count - (this.menuWindow + visibleCount);
             if (remaining > 0)
             {
-                rows.Add(Dim($"    ... and {remaining} more"));
+                rows.Add(Dim($"    … and {remaining} more"));
             }
         }
 
