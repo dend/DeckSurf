@@ -28,6 +28,16 @@ namespace DeckSurf
             FooterController footer = null;
             if (richInput)
             {
+                try
+                {
+                    // The input frame uses box-drawing glyphs; make sure the
+                    // console is not on a legacy codepage that mangles them.
+                    Console.OutputEncoding = System.Text.Encoding.UTF8;
+                }
+                catch (Exception)
+                {
+                }
+
                 gate = new ConsoleGate(Console.Out);
                 Console.SetOut(gate);
                 footer = new FooterController(gate.Inner, gate.Sync);

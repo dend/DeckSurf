@@ -268,21 +268,30 @@ namespace DeckSurf.Tui
 
         private int ComposeEditRows(List<string> rows, int width, out int caretCol)
         {
-            var capacity = Math.Max(1, width - 5);
+            // Claude Code style input: a rounded light-line box spanning the
+            // width, prompt inside, hint strip below.
+            var boxWidth = Math.Max(16, width - 3);
+            var innerWidth = boxWidth - 4;
+            var capacity = Math.Max(1, innerWidth - 2);
             var text = this.inputText;
+
+            rows.Add("  " + Faint("╭" + new string('─', boxWidth - 2) + "╮"));
 
             var inputRowCount = (text.Length / capacity) + 1;
             for (var r = 0; r < inputRowCount; r++)
             {
                 var chunk = text.Substring(r * capacity, Math.Min(capacity, text.Length - (r * capacity)));
                 var prefix = r == 0
-                    ? $"  {Theme.BoldAnsi}{Theme.AccentAnsi}> {Theme.ResetAnsi}"
-                    : "    ";
-                rows.Add(prefix + chunk);
+                    ? $"{Theme.BoldAnsi}{Theme.AccentAnsi}> {Theme.ResetAnsi}"
+                    : "  ";
+                var pad = new string(' ', innerWidth - 2 - chunk.Length);
+                rows.Add("  " + Faint("│ ") + prefix + chunk + pad + Faint(" │"));
             }
 
-            var caretRowIndex = this.inputCursor / capacity;
-            caretCol = 4 + (this.inputCursor % capacity);
+            rows.Add("  " + Faint("╰" + new string('─', boxWidth - 2) + "╯"));
+
+            var caretRowIndex = 1 + (this.inputCursor / capacity);
+            caretCol = 6 + (this.inputCursor % capacity);
 
             if (this.menuItems is { Count: > 0 })
             {
@@ -294,7 +303,7 @@ namespace DeckSurf.Tui
                 : this.menuItems is { Count: > 0 }
                     ? "up/down choose   enter accept   esc close"
                     : "enter run   tab complete   ctrl+q quit";
-            rows.Add("  " + Faint(hint));
+            rows.Add("    " + Faint(hint));
 
             return caretRowIndex;
         }
