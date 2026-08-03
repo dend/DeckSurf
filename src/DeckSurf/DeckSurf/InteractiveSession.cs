@@ -28,16 +28,6 @@ namespace DeckSurf
             FooterController footer = null;
             if (richInput)
             {
-                try
-                {
-                    // The input frame uses box-drawing glyphs; make sure the
-                    // console is not on a legacy codepage that mangles them.
-                    Console.OutputEncoding = System.Text.Encoding.UTF8;
-                }
-                catch (Exception)
-                {
-                }
-
                 gate = new ConsoleGate(Console.Out);
                 Console.SetOut(gate);
                 footer = new FooterController(gate.Inner, gate.Sync);
@@ -87,7 +77,7 @@ namespace DeckSurf
 
                     // Commit the submitted command to the transcript, the way
                     // Claude Code echoes a message before responding to it.
-                    Console.Out.Write($"  {Theme.AccentAnsi}>{Theme.ResetAnsi} {raw.Trim()}\r\n");
+                    Console.Out.Write($"  {Theme.AccentAnsi}❯{Theme.ResetAnsi} {raw.Trim()}\r\n");
 
                     if (line == "exit")
                     {
@@ -166,7 +156,7 @@ namespace DeckSurf
             Output.Section("keys", null);
             Console.WriteLine();
             Output.HelpRow("tab", "complete commands, profile names, and serials");
-            Output.HelpRow("up, down", "recall history");
+            Output.HelpRow("↑ ↓", "recall history");
             Output.HelpRow("esc", "clear the input, stop a running listen");
             Output.HelpRow("ctrl+q", "leave the session");
             Console.WriteLine();

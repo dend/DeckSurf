@@ -19,6 +19,18 @@ namespace DeckSurf
     {
         static int Main(string[] args)
         {
+            if (Output.IsRich)
+            {
+                try
+                {
+                    // Rich output uses glyphs outside legacy codepages.
+                    Console.OutputEncoding = System.Text.Encoding.UTF8;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
             var rootCommand = BuildCommandLine();
 
             // Bare 'deck' on a real terminal opens the interactive session; with

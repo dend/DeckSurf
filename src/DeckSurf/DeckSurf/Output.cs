@@ -26,7 +26,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"  [{Theme.Ok}]+[/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"  [{Theme.Ok}]✓[/] {Markup.Escape(message)}");
             }
             else
             {
@@ -50,7 +50,7 @@ namespace DeckSurf
         {
             if (IsRich)
             {
-                AnsiConsole.MarkupLine($"  [{Theme.Err}]x[/] {Markup.Escape(message)}");
+                AnsiConsole.MarkupLine($"  [{Theme.Err}]✗[/] {Markup.Escape(message)}");
             }
             else
             {
@@ -100,7 +100,7 @@ namespace DeckSurf
 
         internal static void Banner(string version, IReadOnlyList<ConnectedDevice> devices)
         {
-            AnsiConsole.MarkupLine($"  [{Theme.Accent}]*[/] [bold]DeckSurf[/]  [{Theme.Dim}]v{Markup.Escape(version)}[/]");
+            AnsiConsole.MarkupLine($"  [{Theme.Accent}]✻[/] [bold]DeckSurf[/]  [{Theme.Dim}]v{Markup.Escape(version)}[/]");
             AnsiConsole.WriteLine();
 
             if (devices == null || devices.Count == 0)
@@ -353,16 +353,16 @@ namespace DeckSurf
             {
                 if (row.Broken)
                 {
-                    AnsiConsole.MarkupLine($"    [{Theme.Err}]x[/] {Markup.Escape(Pad(row.Name, nameWidth))}  [{Theme.Err}]unreadable[/]");
+                    AnsiConsole.MarkupLine($"    [{Theme.Err}]✗[/] {Markup.Escape(Pad(row.Name, nameWidth))}  [{Theme.Err}]unreadable[/]");
                 }
                 else if (row.Serial == null)
                 {
-                    AnsiConsole.MarkupLine($"    [{Theme.Warn}]![/] {Markup.Escape(Pad(row.Name, nameWidth))}  [{Theme.Warn}]not bound to a device[/]");
+                    AnsiConsole.MarkupLine($"    [{Theme.Warn}]○[/] {Markup.Escape(Pad(row.Name, nameWidth))}  [{Theme.Warn}]not bound to a device[/]");
                 }
                 else
                 {
                     AnsiConsole.MarkupLine(
-                        $"    [{Theme.Ok}]+[/] {Markup.Escape(Pad(row.Name, nameWidth))}  " +
+                        $"    [{Theme.Ok}]●[/] {Markup.Escape(Pad(row.Name, nameWidth))}  " +
                         $"[{Theme.Accent}]{Markup.Escape(Pad(row.Model, modelWidth))}[/]  [{Theme.Dim}]{Markup.Escape(row.Serial)}[/]");
                 }
             }
