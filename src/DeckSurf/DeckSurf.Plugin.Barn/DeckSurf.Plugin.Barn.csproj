@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DeckSurf.SDK" Version="0.1.2" />
+    <PackageReference Include="DeckSurf.SDK" Version="0.1.3" />
     <!-- Explicit because the SDK package only flows ImageSharp itself; the
          text and shape rendering in IconGenerator needs these two. The 2.x
          lines pair with ImageSharp 3.x. -->
