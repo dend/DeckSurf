@@ -144,7 +144,7 @@ namespace DeckSurf.App.Services
         {
             runtimeService.WithDevice(serial, device =>
             {
-                var white = ImageHelper.CreateBlankImage(device.ButtonResolution, DeviceColor.White);
+                var white = ImageHelper.CreateBlankImage(device.ButtonResolution, device.ButtonResolution, DeviceColor.White, device.KeyImageFormat);
                 for (var pass = 0; pass < 2; pass++)
                 {
                     for (var i = 0; i < device.ButtonCount; i++)
