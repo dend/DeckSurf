@@ -6,7 +6,7 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>DeckSurf.App</RootNamespace>
     <AssemblyName>DeckSurf.App</AssemblyName>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <Authors>Den Delimarsky</Authors>
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -54,7 +54,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DeckSurf.SDK" Version="0.1.2" />
+    <PackageReference Include="DeckSurf.SDK" Version="0.1.3" />
   </ItemGroup>
 
 </Project>
