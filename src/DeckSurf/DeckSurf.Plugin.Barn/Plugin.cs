@@ -10,7 +10,7 @@ namespace DeckSurf.Plugin.Barn
     {
         private PluginMetadata _metadata = new()
         {
-            Author = "Den Delimarsky",
+            Author = "Den",
             Id = "DeckSurf.Plugin.Barn",
             Name = "Barn",
             Version = "0.1.0",

@@ -107,8 +107,8 @@
                         <tk:SettingsCard Header="SDK" Description="{x:Bind SdkVersionText}">
                             <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/dend/decksurf-sdk" />
                         </tk:SettingsCard>
-                        <tk:SettingsCard Header="Created by" Description="Den Delimarsky">
-                            <HyperlinkButton Content="den.dev" NavigateUri="https://den.dev" ToolTipService.ToolTip="Den Delimarsky's website" />
+                        <tk:SettingsCard Header="Created by" Description="Den">
+                            <HyperlinkButton Content="den.dev" NavigateUri="https://den.dev" ToolTipService.ToolTip="Den's website" />
                         </tk:SettingsCard>
                     </tk:SettingsExpander.Items>
                 </tk:SettingsExpander>

@@ -7,7 +7,7 @@
     <RootNamespace>DeckSurf.App</RootNamespace>
     <AssemblyName>DeckSurf.App</AssemblyName>
     <Version>0.1.2</Version>
-    <Authors>Den Delimarsky</Authors>
+    <Authors>Den</Authors>
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>

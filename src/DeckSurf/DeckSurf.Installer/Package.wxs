@@ -5,7 +5,7 @@
        change it, or upgrades stop replacing older installs. -->
   <Package
     Name="DeckSurf"
-    Manufacturer="Den Delimarsky"
+    Manufacturer="Den"
     Version="$(var.ProductVersion)"
     UpgradeCode="511420F0-F9EC-414B-A861-09596497C6B7"
     Scope="perMachine">
